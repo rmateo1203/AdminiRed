@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Clientes - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2>Lista de Clientes</h2>
+        <a href="{% url 'clientes:cliente_create' %}" class="btn">➕ Nuevo Cliente</a>
+    </div>
+    
+    <!-- Búsqueda y Filtros -->
+    <div class="search-filters">
+        <form method="get" class="search-form">
+            <input 
+                type="text" 
+                name="q" 
+                value="{{ query }}" 
+                placeholder="Buscar por nombre, teléfono, email o ciudad..."
+                class="form-control"
+            >
+            <select name="estado" class="form-control">
+                <option value="">Todos los estados</option>
+                {% for estado_code, estado_name in estados %}
+                    <option value="{{ estado_code }}" {% if estado_filter == estado_code %}selected{% endif %}>
+                        {{ estado_name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <select name="orden" class="form-control">
+                <option value="-fecha_registro" {% if orden == '-fecha_registro' %}selected{% endif %}>Más recientes</option>
+                <option value="fecha_registro" {% if orden == 'fecha_registro' %}selected{% endif %}>Más antiguos</option>
+                <option value="nombre" {% if orden == 'nombre' %}selected{% endif %}>Apellido A-Z</option>
+                <option value="-nombre" {% if orden == '-nombre' %}selected{% endif %}>Apellido Z-A</option>
+            </select>
+            <button type="submit" class="btn">🔍 Buscar</button>
+            {% if query or estado_filter %}
+                <a href="{% url 'clientes:cliente_list' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <!-- Tabla de Clientes -->
+    {% if page_obj %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+                <th>Email</th>
+                <th>Ciudad</th>
+                <th>Estado</th>
+                <th>Fecha Registro</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cliente in page_obj %}
+            <tr>
+                <td><strong>{{ cliente.nombre_completo }}</strong></td>
+                <td>{{ cliente.telefono }}</td>
+                <td>{{ cliente.email|default:"—" }}</td>
+                <td>{{ cliente.ciudad }}</td>
+                <td>
+                    {% if cliente.estado_cliente == 'activo' %}
+                        <span class="badge badge-success">{{ cliente.get_estado_cliente_display }}</span>
+                    {% elif cliente.estado_cliente == 'inactivo' %}
+                        <span class="badge badge-info">{{ cliente.get_estado_cliente_display }}</span>
+                    {% elif cliente.estado_cliente == 'suspendido' %}
+                        <span class="badge badge-warning">{{ cliente.get_estado_cliente_display }}</span>
+                    {% else %}
+                        <span class="badge badge-danger">{{ cliente.get_estado_cliente_display }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ cliente.fecha_registro|date:"d/m/Y" }}</td>
+                <td>
+                    <a href="{% url 'clientes:cliente_detail' cliente.pk %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Ver</a>
+                    <a href="{% url 'clientes:cliente_update' cliente.pk %}" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Editar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <!-- Paginación -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page=1{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">« Primera</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">‹ Anterior</a>
+        {% endif %}
+        
+        <span class="current">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
+        
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">Siguiente ›</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">Última »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="empty-state">
+        <p>No se encontraron clientes.</p>
+        <a href="{% url 'clientes:cliente_create' %}" class="btn" style="margin-top: 1rem;">Crear primer cliente</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+

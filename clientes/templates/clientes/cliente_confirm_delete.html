@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Cliente - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h2>Confirmar Eliminación</h2>
+    
+    <div class="alert alert-danger">
+        <strong>⚠️ Advertencia:</strong> Esta acción no se puede deshacer.
+    </div>
+    
+    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+        <h3 style="color: #667eea; margin-bottom: 1rem;">¿Estás seguro de que deseas eliminar este cliente?</h3>
+        <p><strong>Nombre Completo:</strong> {{ cliente.nombre_completo }}</p>
+        <p><strong>Nombre:</strong> {{ cliente.nombre }}</p>
+        <p><strong>Apellidos:</strong> {{ cliente.apellido1 }}{% if cliente.apellido2 %} {{ cliente.apellido2 }}{% endif %}</p>
+        <p><strong>Teléfono:</strong> {{ cliente.telefono }}</p>
+        <p><strong>Email:</strong> {{ cliente.email|default:"—" }}</p>
+        <p><strong>Ciudad:</strong> {{ cliente.ciudad }}</p>
+        
+        {% if cliente.tiene_instalacion_activa %}
+            <div class="alert alert-warning" style="margin-top: 1rem;">
+                <strong>⚠️ Advertencia:</strong> Este cliente tiene instalaciones activas asociadas.
+            </div>
+        {% endif %}
+        
+        {% if cliente.tiene_pagos_pendientes %}
+            <div class="alert alert-warning" style="margin-top: 1rem;">
+                <strong>⚠️ Advertencia:</strong> Este cliente tiene pagos pendientes.
+            </div>
+        {% endif %}
+    </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-danger">🗑️ Sí, eliminar</button>
+            <a href="{% url 'clientes:cliente_detail' cliente.pk %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+

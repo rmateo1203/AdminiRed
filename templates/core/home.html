@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inicio - AdminiRed{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero-section {
+        position: relative;
+        width: 100%;
+        height: 400px;
+        overflow: hidden;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    
+    .hero-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+    }
+    
+    .hero-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.85) 0%, rgba(118, 75, 162, 0.85) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        color: white;
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .hero-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .hero-subtitle {
+        font-size: 1.2rem;
+        opacity: 0.95;
+        max-width: 600px;
+    }
+    
+    @media (max-width: 768px) {
+        .hero-section {
+            height: 300px;
+        }
+        
+        .hero-title {
+            font-size: 1.8rem;
+        }
+        
+        .hero-subtitle {
+            font-size: 1rem;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .hero-section {
+            height: 250px;
+        }
+        
+        .hero-title {
+            font-size: 1.5rem;
+        }
+        
+        .hero-subtitle {
+            font-size: 0.9rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section con Imagen de Torres -->
+<div class="hero-section">
+    {% comment %}
+    Para usar una imagen local, descomenta la siguiente línea y comenta la de Unsplash:
+    <img src="{% static 'images/torres-hero.jpg' %}" alt="Torres de telecomunicaciones e internet" class="hero-image" loading="lazy">
+    {% endcomment %}
+    <img 
+        src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" 
+        alt="Torres de telecomunicaciones e internet" 
+        class="hero-image"
+        loading="lazy"
+        onerror="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.display='none';"
+    >
+    <div class="hero-overlay">
+        <h1 class="hero-title">AdminiRed</h1>
+        <p class="hero-subtitle">Sistema para el control total de instalaciones de internet</p>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <!-- Estadísticas de Clientes -->
+    <div class="stat-card">
+        <h3>Total Clientes</h3>
+        <div class="value">{{ total_clientes }}</div>
+        <div class="subtitle">{{ clientes_activos }} activos</div>
+    </div>
+    
+    <div class="stat-card">
+        <h3>Clientes Nuevos</h3>
+        <div class="value">{{ clientes_nuevos_mes }}</div>
+        <div class="subtitle">Últimos 30 días</div>
+    </div>
+    
+    <!-- Estadísticas de Instalaciones -->
+    <div class="stat-card">
+        <h3>Instalaciones</h3>
+        <div class="value">{{ instalaciones_activas }}</div>
+        <div class="subtitle">de {{ total_instalaciones }} totales</div>
+    </div>
+    
+    <div class="stat-card">
+        <h3>Pendientes</h3>
+        <div class="value">{{ instalaciones_pendientes }}</div>
+        <div class="subtitle">{{ instalaciones_programadas }} programadas</div>
+    </div>
+    
+    <!-- Estadísticas de Pagos -->
+    <div class="stat-card">
+        <h3>Pagos Pendientes</h3>
+        <div class="value">{{ pagos_pendientes }}</div>
+        <div class="subtitle">{{ pagos_vencidos }} vencidos</div>
+    </div>
+    
+    <!-- Estadísticas de Inventario -->
+    <div class="stat-card">
+        <h3>Materiales</h3>
+        <div class="value">{{ total_materiales }}</div>
+        <div class="subtitle">
+            {% if materiales_bajo_stock > 0 %}
+                <span style="color: #f59e0b;">{{ materiales_bajo_stock }} bajo stock</span>
+            {% else %}
+                Stock normal
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <h3>Notificaciones</h3>
+        <div class="value">{{ notificaciones_pendientes }}</div>
+        <div class="subtitle">{{ notificaciones_hoy }} enviadas hoy</div>
+    </div>
+</div>
+
+<!-- Alertas -->
+{% if pagos_vencidos > 0 %}
+<div class="alert alert-danger">
+    <strong>⚠️ Atención:</strong> Tienes {{ pagos_vencidos }} pago(s) vencido(s) que requieren atención.
+</div>
+{% endif %}
+
+{% if materiales_agotados > 0 %}
+<div class="alert alert-warning">
+    <strong>⚠️ Inventario:</strong> Tienes {{ materiales_agotados }} material(es) agotado(s) en inventario.
+</div>
+{% endif %}
+
+{% if materiales_bajo_stock > 0 %}
+<div class="alert alert-warning">
+    <strong>⚠️ Inventario:</strong> Tienes {{ materiales_bajo_stock }} material(es) con stock bajo.
+</div>
+{% endif %}
+
+<!-- Próximos Vencimientos -->
+<div class="section">
+    <h2>Próximos Vencimientos (Próximos 7 días)</h2>
+    {% if proximos_vencimientos %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Cliente</th>
+                <th>Concepto</th>
+                <th>Monto</th>
+                <th>Fecha Vencimiento</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pago in proximos_vencimientos %}
+            <tr>
+                <td>{{ pago.cliente.nombre }}</td>
+                <td>{{ pago.concepto }}</td>
+                <td>${{ pago.monto|floatformat:2 }}</td>
+                <td>{{ pago.fecha_vencimiento|date:"d/m/Y" }}</td>
+                <td>
+                    {% if pago.estado == 'vencido' %}
+                        <span class="badge badge-danger">Vencido</span>
+                    {% elif pago.estado == 'pendiente' %}
+                        <span class="badge badge-warning">Pendiente</span>
+                    {% else %}
+                        <span class="badge badge-info">{{ pago.get_estado_display }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>No hay pagos próximos a vencer en los próximos 7 días.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Instalaciones Recientes -->
+<div class="section">
+    <h2>Instalaciones Recientes</h2>
+    {% if instalaciones_recientes %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Cliente</th>
+                <th>Plan</th>
+                <th>Velocidad</th>
+                <th>Estado</th>
+                <th>Fecha Solicitud</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for instalacion in instalaciones_recientes %}
+            <tr>
+                <td>{{ instalacion.cliente.nombre }}</td>
+                <td>{{ instalacion.plan_nombre }}</td>
+                <td>{{ instalacion.velocidad_descarga }} Mbps</td>
+                <td>
+                    {% if instalacion.estado == 'activa' %}
+                        <span class="badge badge-success">{{ instalacion.get_estado_display }}</span>
+                    {% elif instalacion.estado == 'pendiente' %}
+                        <span class="badge badge-warning">{{ instalacion.get_estado_display }}</span>
+                    {% elif instalacion.estado == 'programada' %}
+                        <span class="badge badge-info">{{ instalacion.get_estado_display }}</span>
+                    {% else %}
+                        <span class="badge">{{ instalacion.get_estado_display }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ instalacion.fecha_solicitud|date:"d/m/Y H:i" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>No hay instalaciones recientes.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Acciones Rápidas -->
+<div class="section">
+    <h2>Acciones Rápidas</h2>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        {% if user.is_authenticated %}
+            <a href="{% url 'clientes:cliente_create' %}" class="btn"><i class="fas fa-user-plus"></i> Nuevo Cliente</a>
+            <a href="/admin/instalaciones/instalacion/add/" class="btn"><i class="fas fa-wifi"></i> Nueva Instalación</a>
+            <a href="/admin/pagos/pago/add/" class="btn"><i class="fas fa-dollar-sign"></i> Registrar Pago</a>
+            <a href="/admin/inventario/material/add/" class="btn"><i class="fas fa-boxes"></i> Agregar Material</a>
+            <a href="/admin/" class="btn btn-admin"><i class="fas fa-cog"></i> Administración Completa</a>
+        {% else %}
+            <a href="{% url 'login' %}?next={% url 'clientes:cliente_create' %}" class="btn"><i class="fas fa-user-plus"></i> Nuevo Cliente</a>
+            <a href="{% url 'login' %}?next=/admin/instalaciones/instalacion/add/" class="btn"><i class="fas fa-wifi"></i> Nueva Instalación</a>
+            <a href="{% url 'login' %}?next=/admin/pagos/pago/add/" class="btn"><i class="fas fa-dollar-sign"></i> Registrar Pago</a>
+            <a href="{% url 'login' %}?next=/admin/inventario/material/add/" class="btn"><i class="fas fa-boxes"></i> Agregar Material</a>
+            <a href="{% url 'login' %}?next=/admin/" class="btn btn-admin"><i class="fas fa-cog"></i> Administración Completa</a>
+        {% endif %}
+    </div>
+    {% if not user.is_authenticated %}
+    <p style="margin-top: 1rem; color: #666; font-size: 0.9rem; text-align: center;">
+        <strong>Nota:</strong> Debes iniciar sesión para acceder a estas funciones.
+    </p>
+    {% endif %}
+</div>
+{% endblock %}
+

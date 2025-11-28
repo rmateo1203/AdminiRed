@@ -1,0 +1,305 @@
+{% extends 'base.html' %}
+
+{% block title %}Configurar Menú - AdminiRed{% endblock %}
+
+{% block extra_css %}
+<style>
+    .config-container {
+        max-width: 800px;
+        margin: 2rem auto;
+    }
+    
+    .config-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .config-header h1 {
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+    
+    .config-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .option-card {
+        background: white;
+        border: 3px solid #e0e0e0;
+        border-radius: 15px;
+        padding: 2rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+        position: relative;
+    }
+    
+    .option-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        border-color: #667eea;
+    }
+    
+    .option-card.selected {
+        border-color: #667eea;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+    
+    .option-card input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+    
+    .option-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: #667eea;
+    }
+    
+    .option-icon i {
+        font-size: 4rem;
+    }
+    
+    .option-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+    
+    .option-description {
+        color: #666;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+    
+    .option-preview {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        color: #666;
+    }
+    
+    .config-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+    
+    .btn-save {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem 2.5rem;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    }
+    
+    .btn-cancel {
+        background: #6b7280;
+        color: white;
+        padding: 1rem 2.5rem;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s;
+    }
+    
+    .btn-cancel:hover {
+        background: #4b5563;
+        transform: translateY(-2px);
+    }
+    
+    .preview-left {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .preview-sidebar {
+        width: 80px;
+        height: 120px;
+        background: #667eea;
+        border-radius: 5px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        padding: 0.5rem;
+    }
+    
+    .preview-sidebar-item {
+        width: 100%;
+        height: 12px;
+        background: rgba(255,255,255,0.3);
+        border-radius: 3px;
+    }
+    
+    .preview-content {
+        flex: 1;
+        height: 120px;
+        background: #f0f0f0;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #999;
+        font-size: 0.7rem;
+    }
+    
+    .preview-top {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .preview-top-bar {
+        width: 100%;
+        height: 30px;
+        background: #667eea;
+        border-radius: 5px;
+        display: flex;
+        gap: 0.3rem;
+        padding: 0.5rem;
+        align-items: center;
+    }
+    
+    .preview-top-item {
+        width: 40px;
+        height: 12px;
+        background: rgba(255,255,255,0.3);
+        border-radius: 3px;
+    }
+    
+    .preview-top-content {
+        width: 100%;
+        height: 90px;
+        background: #f0f0f0;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #999;
+        font-size: 0.7rem;
+    }
+    
+    @media (max-width: 768px) {
+        .config-options {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="config-header">
+        <h1><i class="fas fa-cog"></i> Configurar Posición del Menú</h1>
+        <p>Selecciona dónde quieres que aparezca el menú de navegación</p>
+    </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="config-options">
+            <label class="option-card {% if current_position == 'left' %}selected{% endif %}" onclick="selectOption('left', event)">
+                <input type="radio" name="sidebar_position" value="left" {% if current_position == 'left' %}checked{% endif %}>
+                <div class="option-icon"><i class="fas fa-align-left"></i></div>
+                <div class="option-title">Menú Izquierdo</div>
+                <div class="option-description">
+                    El menú aparecerá como una barra lateral fija en el lado izquierdo de la pantalla. Ideal para pantallas grandes y escritorio.
+                </div>
+                <div class="option-preview">
+                    <div class="preview-left">
+                        <div class="preview-sidebar">
+                            <div class="preview-sidebar-item"></div>
+                            <div class="preview-sidebar-item"></div>
+                            <div class="preview-sidebar-item"></div>
+                            <div class="preview-sidebar-item"></div>
+                        </div>
+                        <div class="preview-content">Contenido</div>
+                    </div>
+                </div>
+            </label>
+            
+            <label class="option-card {% if current_position == 'top' %}selected{% endif %}" onclick="selectOption('top', event)">
+                <input type="radio" name="sidebar_position" value="top" {% if current_position == 'top' %}checked{% endif %}>
+                <div class="option-icon"><i class="fas fa-align-center"></i></div>
+                <div class="option-title">Menú Superior</div>
+                <div class="option-description">
+                    El menú aparecerá como una barra horizontal en la parte superior. Ideal para pantallas pequeñas y móviles.
+                </div>
+                <div class="option-preview">
+                    <div class="preview-top">
+                        <div class="preview-top-bar">
+                            <div class="preview-top-item"></div>
+                            <div class="preview-top-item"></div>
+                            <div class="preview-top-item"></div>
+                            <div class="preview-top-item"></div>
+                        </div>
+                        <div class="preview-top-content">Contenido</div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="config-actions">
+            <button type="submit" class="btn-save"><i class="fas fa-save"></i> Guardar Configuración</button>
+            <a href="{% url 'home' %}" class="btn-cancel">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function selectOption(position, event) {
+        // Actualizar visualmente la selección
+        document.querySelectorAll('.option-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        if (event && event.currentTarget) {
+            event.currentTarget.classList.add('selected');
+        }
+        
+        // Marcar el radio button correspondiente
+        const radio = document.querySelector(`input[value="${position}"]`);
+        if (radio) {
+            radio.checked = true;
+        }
+    }
+    
+    // También permitir selección al hacer clic en cualquier parte de la tarjeta
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.option-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                const radio = this.querySelector('input[type="radio"]');
+                if (radio) {
+                    selectOption(radio.value, e);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+
