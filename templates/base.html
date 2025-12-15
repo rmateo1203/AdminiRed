@@ -555,10 +555,11 @@
                     <ul class="sidebar-menu">
                         <li><a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}"><i class="fas fa-home"></i> Inicio</a></li>
                         <li><a href="{% url 'clientes:cliente_list' %}" class="{% if 'clientes' in request.path %}active{% endif %}"><i class="fas fa-users"></i> Clientes</a></li>
-                        <li><a href="/admin/instalaciones/instalacion/" class="{% if 'instalaciones' in request.path %}active{% endif %}"><i class="fas fa-wifi"></i> Instalaciones</a></li>
-                        <li><a href="/admin/pagos/pago/" class="{% if 'pagos' in request.path %}active{% endif %}"><i class="fas fa-dollar-sign"></i> Pagos</a></li>
-                        <li><a href="/admin/inventario/material/" class="{% if 'inventario' in request.path %}active{% endif %}"><i class="fas fa-boxes"></i> Inventario</a></li>
-                        <li><a href="/admin/notificaciones/notificacion/" class="{% if 'notificaciones' in request.path %}active{% endif %}"><i class="fas fa-bell"></i> Notificaciones</a></li>
+                        <li><a href="{% url 'instalaciones:instalacion_list' %}" class="{% if 'instalaciones' in request.path %}active{% endif %}"><i class="fas fa-wifi"></i> Instalaciones</a></li>
+                        <li><a href="{% url 'core:catalogos_dashboard' %}" class="{% if 'catalogos' in request.path %}active{% endif %}"><i class="fas fa-book"></i> Catálogos</a></li>
+                        <li><a href="{% url 'pagos:pago_list' %}" class="{% if 'pagos' in request.path %}active{% endif %}"><i class="fas fa-dollar-sign"></i> Pagos</a></li>
+                        <li><a href="{% url 'inventario:material_list' %}" class="{% if 'inventario' in request.path %}active{% endif %}"><i class="fas fa-boxes"></i> Inventario</a></li>
+                        <li><a href="{% url 'notificaciones:notificacion_list' %}" class="{% if 'notificaciones' in request.path %}active{% endif %}"><i class="fas fa-bell"></i> Notificaciones</a></li>
                         <li><a href="/admin/" class="{% if '/admin/' in request.path and 'instalaciones' not in request.path and 'pagos' not in request.path and 'inventario' not in request.path and 'notificaciones' not in request.path %}active{% endif %}"><i class="fas fa-cog"></i> Administración</a></li>
                     </ul>
                 </aside>
@@ -569,10 +570,11 @@
                 <ul class="sidebar-menu">
                     <li><a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}"><i class="fas fa-home"></i> Inicio</a></li>
                     <li><a href="{% url 'clientes:cliente_list' %}" class="{% if 'clientes' in request.path %}active{% endif %}"><i class="fas fa-users"></i> Clientes</a></li>
-                    <li><a href="/admin/instalaciones/instalacion/" class="{% if 'instalaciones' in request.path %}active{% endif %}"><i class="fas fa-wifi"></i> Instalaciones</a></li>
-                    <li><a href="/admin/pagos/pago/" class="{% if 'pagos' in request.path %}active{% endif %}"><i class="fas fa-dollar-sign"></i> Pagos</a></li>
-                    <li><a href="/admin/inventario/material/" class="{% if 'inventario' in request.path %}active{% endif %}"><i class="fas fa-boxes"></i> Inventario</a></li>
-                    <li><a href="/admin/notificaciones/notificacion/" class="{% if 'notificaciones' in request.path %}active{% endif %}"><i class="fas fa-bell"></i> Notificaciones</a></li>
+                    <li><a href="{% url 'instalaciones:instalacion_list' %}" class="{% if 'instalaciones' in request.path %}active{% endif %}"><i class="fas fa-wifi"></i> Instalaciones</a></li>
+                    <li><a href="{% url 'core:catalogos_dashboard' %}" class="{% if 'catalogos' in request.path %}active{% endif %}"><i class="fas fa-book"></i> Catálogos</a></li>
+                    <li><a href="{% url 'pagos:pago_list' %}" class="{% if 'pagos' in request.path %}active{% endif %}"><i class="fas fa-dollar-sign"></i> Pagos</a></li>
+                    <li><a href="{% url 'inventario:material_list' %}" class="{% if 'inventario' in request.path %}active{% endif %}"><i class="fas fa-boxes"></i> Inventario</a></li>
+                    <li><a href="{% url 'notificaciones:notificacion_list' %}" class="{% if 'notificaciones' in request.path %}active{% endif %}"><i class="fas fa-bell"></i> Notificaciones</a></li>
                     <li><a href="/admin/" class="{% if '/admin/' in request.path and 'instalaciones' not in request.path and 'pagos' not in request.path and 'inventario' not in request.path and 'notificaciones' not in request.path %}active{% endif %}"><i class="fas fa-cog"></i> Administración</a></li>
                 </ul>
             </div>

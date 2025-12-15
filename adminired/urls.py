@@ -27,7 +27,12 @@ urlpatterns = [
     path('logout/', logout_view, name='logout'),
     path('toggle-sidebar/', toggle_sidebar, name='toggle_sidebar'),
     path('config/sidebar/', config_sidebar, name='config_sidebar'),
+    path('', include('core.urls')),
     path('clientes/', include('clientes.urls')),
+    path('instalaciones/', include('instalaciones.urls')),
+    path('pagos/', include('pagos.urls')),
+    path('inventario/', include('inventario.urls')),
+    path('notificaciones/', include('notificaciones.urls')),
     path('admin/', admin.site.urls),
 ]
 

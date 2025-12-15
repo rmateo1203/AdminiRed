@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Instalaciones - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2>Lista de Instalaciones</h2>
+        <a href="{% url 'instalaciones:instalacion_create' %}" class="btn"><i class="fas fa-plus"></i> Nueva Instalación</a>
+    </div>
+    
+    <!-- Búsqueda y Filtros -->
+    <div class="search-filters">
+        <form method="get" class="search-form">
+            <input 
+                type="text" 
+                name="q" 
+                value="{{ query }}" 
+                placeholder="Buscar por cliente, plan, contrato o dirección..."
+                class="form-control"
+            >
+            <select name="estado" class="form-control">
+                <option value="">Todos los estados</option>
+                {% for estado_code, estado_name in estados %}
+                    <option value="{{ estado_code }}" {% if estado_filter == estado_code %}selected{% endif %}>
+                        {{ estado_name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <select name="orden" class="form-control">
+                <option value="-fecha_solicitud" {% if orden == '-fecha_solicitud' %}selected{% endif %}>Más recientes</option>
+                <option value="fecha_solicitud" {% if orden == 'fecha_solicitud' %}selected{% endif %}>Más antiguos</option>
+                <option value="plan_nombre" {% if orden == 'plan_nombre' %}selected{% endif %}>Plan A-Z</option>
+                <option value="-plan_nombre" {% if orden == '-plan_nombre' %}selected{% endif %}>Plan Z-A</option>
+            </select>
+            <button type="submit" class="btn"><i class="fas fa-search"></i> Buscar</button>
+            {% if query or estado_filter %}
+                <a href="{% url 'instalaciones:instalacion_list' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <!-- Estadísticas Rápidas -->
+    {% if instalaciones %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ total_instalaciones }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-wifi"></i> Total Instalaciones</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ activas }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-check-circle"></i> Instalaciones Activas</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ pendientes }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-clock"></i> Pendientes</div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Tabla de Instalaciones -->
+    {% if instalaciones %}
+    <div style="overflow-x: auto;">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa; border-bottom: 2px solid #e5e7eb;">
+                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Cliente</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Plan</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Velocidad</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Tipo</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Estado</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Fecha Solicitud</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">N° Contrato</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Precio Mensual</th>
+                    <th style="padding: 1rem; text-align: center; font-weight: 600; color: #374151;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for instalacion in instalaciones %}
+                <tr style="border-bottom: 1px solid #e5e7eb; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f9fafb'" onmouseout="this.style.backgroundColor=''">
+                    <td style="padding: 1rem;">
+                        <strong style="color: #111827;">{{ instalacion.cliente.nombre_completo }}</strong><br>
+                        <small style="color: #6b7280; font-size: 0.875rem;">{{ instalacion.cliente.telefono }}</small>
+                    </td>
+                    <td style="padding: 1rem; color: #374151;">{{ instalacion.plan_nombre }}</td>
+                    <td style="padding: 1rem; color: #374151;">
+                        <strong>{{ instalacion.velocidad_descarga }} Mbps</strong>
+                        {% if instalacion.velocidad_subida %}
+                            <br><small style="color: #6b7280;">↑ {{ instalacion.velocidad_subida }} Mbps</small>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem; color: #374151;">{{ instalacion.tipo_instalacion|default:"—" }}</td>
+                    <td style="padding: 1rem;">
+                        {% if instalacion.estado == 'activa' %}
+                            <span class="badge badge-success" style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600;">
+                                <i class="fas fa-check-circle"></i> {{ instalacion.get_estado_display }}
+                            </span>
+                        {% elif instalacion.estado == 'pendiente' %}
+                            <span class="badge badge-info" style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #3b82f6; color: white;">
+                                <i class="fas fa-clock"></i> {{ instalacion.get_estado_display }}
+                            </span>
+                        {% elif instalacion.estado == 'programada' or instalacion.estado == 'en_proceso' %}
+                            <span class="badge badge-warning" style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #f59e0b; color: white;">
+                                <i class="fas fa-calendar-check"></i> {{ instalacion.get_estado_display }}
+                            </span>
+                        {% else %}
+                            <span class="badge badge-danger" style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #ef4444; color: white;">
+                                <i class="fas fa-times-circle"></i> {{ instalacion.get_estado_display }}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem; color: #374151;">
+                        {{ instalacion.fecha_solicitud|date:"d/m/Y" }}<br>
+                        <small style="color: #6b7280; font-size: 0.875rem;">{{ instalacion.fecha_solicitud|date:"H:i" }}</small>
+                    </td>
+                    <td style="padding: 1rem;">
+                        <code style="background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem; color: #667eea; font-weight: 600;">
+                            {{ instalacion.numero_contrato }}
+                        </code>
+                    </td>
+                    <td style="padding: 1rem; color: #374151;">
+                        <strong style="color: #10b981;">${{ instalacion.precio_mensual|floatformat:2 }}</strong>
+                    </td>
+                    <td style="padding: 1rem; text-align: center;">
+                        <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                            <a href="{% url 'instalaciones:instalacion_detail' instalacion.pk %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.875rem; text-decoration: none; border-radius: 6px;" title="Ver detalles">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{% url 'instalaciones:instalacion_update' instalacion.pk %}" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem; text-decoration: none; border-radius: 6px;" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 8px; margin-top: 2rem;">
+        <i class="fas fa-wifi" style="font-size: 4rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+        <p style="font-size: 1.25rem; color: #6b7280; margin-bottom: 0.5rem;">No se encontraron instalaciones</p>
+        <p style="color: #9ca3af; margin-bottom: 1.5rem;">Comienza creando tu primera instalación</p>
+        <a href="{% url 'instalaciones:instalacion_create' %}" class="btn" style="margin-top: 1rem;">
+            <i class="fas fa-plus"></i> Crear Primera Instalación
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

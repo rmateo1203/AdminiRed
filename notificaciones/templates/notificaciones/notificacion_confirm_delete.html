@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Notificación - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h2>Confirmar Eliminación</h2>
+    
+    <div class="alert alert-danger">
+        <strong><i class="fas fa-exclamation-triangle"></i> Advertencia:</strong> Esta acción no se puede deshacer.
+    </div>
+    
+    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: #ef4444; margin-bottom: 1rem;"></i>
+            <h3 style="color: #667eea; margin-bottom: 1rem;">¿Estás seguro de que deseas eliminar esta notificación?</h3>
+        </div>
+        
+        <p><strong>Asunto:</strong> {{ notificacion.asunto }}</p>
+        {% if notificacion.cliente %}
+            <p><strong>Cliente:</strong> {{ notificacion.cliente.nombre_completo }}</p>
+        {% else %}
+            <p><strong>Cliente:</strong> General</p>
+        {% endif %}
+        <p><strong>Canal:</strong> {{ notificacion.get_canal_display }}</p>
+        <p><strong>Estado:</strong> {{ notificacion.get_estado_display }}</p>
+        <p><strong>Fecha Creación:</strong> {{ notificacion.fecha_creacion|date:"d/m/Y H:i" }}</p>
+        
+        {% if notificacion.fecha_envio %}
+            <div class="alert alert-warning" style="margin-top: 1rem;">
+                <strong><i class="fas fa-exclamation-triangle"></i> Advertencia:</strong> Esta notificación ya fue enviada.
+            </div>
+        {% endif %}
+    </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Sí, eliminar</button>
+            <a href="{% url 'notificaciones:notificacion_detail' notificacion.pk %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

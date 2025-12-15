@@ -111,7 +111,7 @@ class Notificacion(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.asunto} - {self.cliente.nombre if self.cliente else 'General'}"
+        return f"{self.asunto} - {self.cliente.nombre_completo if self.cliente else 'General'}"
     
     @property
     def esta_pendiente(self):

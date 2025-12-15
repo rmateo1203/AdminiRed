@@ -7,8 +7,9 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
         <h2>{{ cliente.nombre_completo }}</h2>
         <div style="display: flex; gap: 1rem;">
-            <a href="{% url 'clientes:cliente_update' cliente.pk %}" class="btn">✏️ Editar</a>
-            <a href="{% url 'clientes:cliente_list' %}" class="btn btn-secondary">← Volver</a>
+            <a href="{% url 'instalaciones:instalacion_create_for_cliente' cliente.pk %}" class="btn"><i class="fas fa-plus"></i> Nueva Instalación</a>
+            <a href="{% url 'clientes:cliente_update' cliente.pk %}" class="btn"><i class="fas fa-edit"></i> Editar</a>
+            <a href="{% url 'clientes:cliente_list' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
         </div>
     </div>
     
@@ -74,9 +75,12 @@
     {% endif %}
     
     <!-- Instalaciones Recientes -->
-    {% if instalaciones %}
     <div style="margin-top: 2rem;">
-        <h3 style="color: #667eea; margin-bottom: 1rem;">Instalaciones Recientes</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="color: #667eea; margin-bottom: 0;">Instalaciones</h3>
+            <a href="{% url 'instalaciones:instalacion_create_for_cliente' cliente.pk %}" class="btn"><i class="fas fa-plus"></i> Nueva Instalación</a>
+        </div>
+        {% if instalaciones %}
         <table class="table">
             <thead>
                 <tr>
@@ -84,6 +88,7 @@
                     <th>Velocidad</th>
                     <th>Estado</th>
                     <th>Fecha</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -94,11 +99,67 @@
                     <td>
                         {% if instalacion.estado == 'activa' %}
                             <span class="badge badge-success">{{ instalacion.get_estado_display }}</span>
-                        {% else %}
+                        {% elif instalacion.estado == 'pendiente' %}
+                            <span class="badge badge-info">{{ instalacion.get_estado_display }}</span>
+                        {% elif instalacion.estado == 'programada' or instalacion.estado == 'en_proceso' %}
                             <span class="badge badge-warning">{{ instalacion.get_estado_display }}</span>
+                        {% else %}
+                            <span class="badge badge-danger">{{ instalacion.get_estado_display }}</span>
                         {% endif %}
                     </td>
                     <td>{{ instalacion.fecha_solicitud|date:"d/m/Y" }}</td>
+                    <td>
+                        <a href="{% url 'instalaciones:instalacion_detail' instalacion.pk %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.9rem;"><i class="fas fa-eye"></i> Ver</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; text-align: center;">
+            <p style="color: #6b7280; margin-bottom: 1rem;">Este cliente no tiene instalaciones registradas.</p>
+            <a href="{% url 'instalaciones:instalacion_create_for_cliente' cliente.pk %}" class="btn"><i class="fas fa-plus"></i> Crear Primera Instalación</a>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Notificaciones Recientes -->
+    {% if cliente.notificaciones.exists %}
+    <div style="margin-top: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="color: #667eea; margin-bottom: 0;">Notificaciones</h3>
+            <a href="{% url 'notificaciones:notificacion_create_for_cliente' cliente.pk %}" class="btn"><i class="fas fa-plus"></i> Nueva Notificación</a>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Asunto</th>
+                    <th>Canal</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for notificacion in cliente.notificaciones.all|slice:":5" %}
+                <tr>
+                    <td>{{ notificacion.asunto }}</td>
+                    <td>{{ notificacion.get_canal_display }}</td>
+                    <td>
+                        {% if notificacion.estado == 'enviada' %}
+                            <span class="badge badge-success">{{ notificacion.get_estado_display }}</span>
+                        {% elif notificacion.estado == 'pendiente' %}
+                            <span class="badge badge-info">{{ notificacion.get_estado_display }}</span>
+                        {% elif notificacion.estado == 'fallida' %}
+                            <span class="badge badge-danger">{{ notificacion.get_estado_display }}</span>
+                        {% else %}
+                            <span class="badge badge-warning">{{ notificacion.get_estado_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ notificacion.fecha_creacion|date:"d/m/Y" }}</td>
+                    <td>
+                        <a href="{% url 'notificaciones:notificacion_detail' notificacion.pk %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.9rem;"><i class="fas fa-eye"></i> Ver</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -143,7 +204,7 @@
     
     <!-- Acciones -->
     <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #f0f0f0;">
-        <a href="{% url 'clientes:cliente_delete' cliente.pk %}" class="btn btn-danger">🗑️ Eliminar Cliente</a>
+        <a href="{% url 'clientes:cliente_delete' cliente.pk %}" class="btn btn-danger"><i class="fas fa-trash"></i> Eliminar Cliente</a>
     </div>
 </div>
 {% endblock %}

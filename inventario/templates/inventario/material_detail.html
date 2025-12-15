@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Material - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="margin-bottom: 1.5rem;">
+        <h2><i class="fas fa-boxes"></i> Detalle de Material</h2>
+        <a href="{% url 'inventario:material_list' %}" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">
+            <i class="fas fa-arrow-left"></i> Volver a Inventario
+        </a>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+        <!-- Información Principal -->
+        <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <h3 style="color: #667eea; margin-bottom: 1.5rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem;">Información del Material</h3>
+            
+            <div style="display: grid; gap: 1.5rem;">
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Nombre</strong>
+                    <div style="margin-top: 0.5rem; font-size: 1.2rem; font-weight: bold;">{{ material.nombre }}</div>
+                </div>
+                
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Código</strong>
+                    <div style="margin-top: 0.5rem; font-family: monospace; font-size: 1.1rem;">{{ material.codigo }}</div>
+                </div>
+                
+                {% if material.categoria %}
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Categoría</strong>
+                    <div style="margin-top: 0.5rem;">
+                        <span style="padding: 0.5rem 1rem; border-radius: 8px; background: #e0e7ff; color: #667eea;">
+                            {{ material.categoria.nombre }}
+                        </span>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if material.descripcion %}
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Descripción</strong>
+                    <div style="margin-top: 0.5rem;">{{ material.descripcion }}</div>
+                </div>
+                {% endif %}
+                
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                    <div>
+                        <strong style="color: #6b7280; font-size: 0.875rem;">Stock Actual</strong>
+                        <div style="margin-top: 0.5rem; font-size: 1.5rem; font-weight: bold;">
+                            {{ material.stock_actual }} {{ material.unidad_medida }}
+                        </div>
+                    </div>
+                    <div>
+                        <strong style="color: #6b7280; font-size: 0.875rem;">Stock Mínimo</strong>
+                        <div style="margin-top: 0.5rem; font-size: 1.2rem;">
+                            {{ material.stock_minimo }} {{ material.unidad_medida }}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if material.precio_compra or material.precio_venta %}
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                    {% if material.precio_compra %}
+                    <div>
+                        <strong style="color: #6b7280; font-size: 0.875rem;">Precio de Compra</strong>
+                        <div style="margin-top: 0.5rem; font-size: 1.2rem; color: #374151;">
+                            ${{ material.precio_compra|floatformat:2 }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if material.precio_venta %}
+                    <div>
+                        <strong style="color: #6b7280; font-size: 0.875rem;">Precio de Venta</strong>
+                        <div style="margin-top: 0.5rem; font-size: 1.2rem; color: #10b981;">
+                            ${{ material.precio_venta|floatformat:2 }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                {% if material.ubicacion %}
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Ubicación en Almacén</strong>
+                    <div style="margin-top: 0.5rem;">{{ material.ubicacion }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Estado y Acciones -->
+        <div>
+            <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem;">
+                <h3 style="color: #667eea; margin-bottom: 1.5rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem;">Estado</h3>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    {% if material.estado == 'disponible' %}
+                        <span style="padding: 1rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 600; background: #10b981; color: white; display: inline-block; width: 100%; text-align: center;">
+                            <i class="fas fa-check-circle"></i> Disponible
+                        </span>
+                    {% elif material.estado == 'bajo_stock' %}
+                        <span style="padding: 1rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 600; background: #f59e0b; color: white; display: inline-block; width: 100%; text-align: center;">
+                            <i class="fas fa-exclamation-triangle"></i> Bajo Stock
+                        </span>
+                    {% elif material.estado == 'agotado' %}
+                        <span style="padding: 1rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 600; background: #ef4444; color: white; display: inline-block; width: 100%; text-align: center;">
+                            <i class="fas fa-times-circle"></i> Agotado
+                        </span>
+                    {% else %}
+                        <span style="padding: 1rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 600; background: #9ca3af; color: white; display: inline-block; width: 100%; text-align: center;">
+                            {{ material.get_estado_display }}
+                        </span>
+                    {% endif %}
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <a href="{% url 'inventario:material_update' material.pk %}" class="btn btn-secondary" style="text-decoration: none; text-align: center;">
+                        <i class="fas fa-edit"></i> Editar Material
+                    </a>
+                    <a href="{% url 'inventario:movimiento_create' %}?material={{ material.pk }}" class="btn" style="text-decoration: none; text-align: center;">
+                        <i class="fas fa-exchange-alt"></i> Registrar Movimiento
+                    </a>
+                    <a href="{% url 'inventario:material_delete' material.pk %}" class="btn" style="text-decoration: none; text-align: center; background: #ef4444;">
+                        <i class="fas fa-trash"></i> Eliminar Material
+                    </a>
+                </div>
+            </div>
+            
+            {% if movimientos %}
+            <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h3 style="color: #667eea; margin-bottom: 1rem; font-size: 1rem;">Últimos Movimientos</h3>
+                <ul style="list-style: none; padding: 0;">
+                    {% for movimiento in movimientos %}
+                    <li style="padding: 0.75rem; border-bottom: 1px solid #e5e7eb;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>{{ movimiento.get_tipo_display }}</strong>
+                                <br><small style="color: #6b7280;">{{ movimiento.motivo }}</small>
+                            </div>
+                            <div style="text-align: right;">
+                                <strong style="color: {% if movimiento.tipo == 'entrada' %}#10b981{% else %}#ef4444{% endif %};">
+                                    {% if movimiento.tipo == 'entrada' %}+{% else %}-{% endif %}{{ movimiento.cantidad }}
+                                </strong>
+                                <br><small style="color: #6b7280;">{{ movimiento.fecha|date:"d/m/Y" }}</small>
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <a href="{% url 'inventario:movimiento_list' %}?material={{ material.pk }}" style="display: block; text-align: center; margin-top: 1rem; color: #667eea; text-decoration: none;">
+                    Ver todos los movimientos <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

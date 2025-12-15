@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Instalación - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h2>Confirmar Eliminación</h2>
+    
+    <div class="alert alert-danger">
+        <strong><i class="fas fa-exclamation-triangle"></i> Advertencia:</strong> Esta acción no se puede deshacer.
+    </div>
+    
+    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: #ef4444; margin-bottom: 1rem;"></i>
+            <h3 style="color: #667eea; margin-bottom: 1rem;">¿Estás seguro de que deseas eliminar esta instalación?</h3>
+        </div>
+        <p><strong>Cliente:</strong> {{ instalacion.cliente.nombre_completo }}</p>
+        <p><strong>Plan:</strong> {{ instalacion.plan_nombre }}</p>
+        <p><strong>Velocidad:</strong> {{ instalacion.velocidad_descarga }} Mbps</p>
+        <p><strong>Estado:</strong> {{ instalacion.get_estado_display }}</p>
+        <p><strong>N° Contrato:</strong> {{ instalacion.numero_contrato }}</p>
+        <p><strong>Dirección:</strong> {{ instalacion.direccion_instalacion }}</p>
+        <p><strong>Fecha Solicitud:</strong> {{ instalacion.fecha_solicitud|date:"d/m/Y H:i" }}</p>
+        
+        {% if instalacion.pagos.exists %}
+            <div class="alert alert-warning" style="margin-top: 1rem;">
+                <strong><i class="fas fa-exclamation-triangle"></i> Advertencia:</strong> Esta instalación tiene pagos asociados.
+            </div>
+        {% endif %}
+    </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Sí, eliminar</button>
+            <a href="{% url 'instalaciones:instalacion_detail' instalacion.pk %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

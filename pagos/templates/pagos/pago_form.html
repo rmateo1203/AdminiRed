@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="margin-bottom: 1.5rem;">
+        <h2><i class="fas fa-dollar-sign"></i> {{ title }}</h2>
+        <a href="{% url 'pagos:pago_list' %}" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">
+            <i class="fas fa-arrow-left"></i> Volver a Pagos
+        </a>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}" style="margin-bottom: 1rem;">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <form method="post" style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        {% csrf_token %}
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            <div class="form-group">
+                <label for="{{ form.cliente.id_for_label }}">Cliente *</label>
+                {{ form.cliente }}
+                {% if form.cliente.errors %}
+                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.cliente.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.instalacion.id_for_label }}">Instalación</label>
+                {{ form.instalacion }}
+                {% if form.instalacion.errors %}
+                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.instalacion.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.monto.id_for_label }}">Monto *</label>
+                {{ form.monto }}
+                {% if form.monto.errors %}
+                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.monto.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.concepto.id_for_label }}">Concepto *</label>
+                {{ form.concepto }}
+                {% if form.concepto.errors %}
+                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.concepto.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.periodo_mes.id_for_label }}">Mes *</label>
+                {{ form.periodo_mes }}
+                {% if form.periodo_mes.errors %}
+                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.periodo_mes.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.periodo_anio.id_for_label }}">Año *</label>
+                {{ form.periodo_anio }}
+                {% if form.periodo_anio.errors %}
+                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.periodo_anio.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.fecha_vencimiento.id_for_label }}">Fecha de Vencimiento *</label>
+                {{ form.fecha_vencimiento }}
+                {% if form.fecha_vencimiento.errors %}
+                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.fecha_vencimiento.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.fecha_pago.id_for_label }}">Fecha de Pago</label>
+                {{ form.fecha_pago }}
+                {% if form.fecha_pago.errors %}
+                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.fecha_pago.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.estado.id_for_label }}">Estado *</label>
+                {{ form.estado }}
+                {% if form.estado.errors %}
+                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.estado.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.metodo_pago.id_for_label }}">Método de Pago</label>
+                {{ form.metodo_pago }}
+                {% if form.metodo_pago.errors %}
+                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.metodo_pago.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="{{ form.referencia_pago.id_for_label }}">Referencia de Pago</label>
+                {{ form.referencia_pago }}
+                {% if form.referencia_pago.errors %}
+                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.referencia_pago.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="{{ form.notas.id_for_label }}">Notas</label>
+                {{ form.notas }}
+                {% if form.notas.errors %}
+                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.notas.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: flex-end;">
+            <button type="submit" class="btn">
+                <i class="fas fa-save"></i> Guardar
+            </button>
+            <a href="{% url 'pagos:pago_list' %}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Actualizar instalaciones cuando cambie el cliente
+document.addEventListener('DOMContentLoaded', function() {
+    const clienteSelect = document.getElementById('id_cliente');
+    const instalacionSelect = document.getElementById('id_instalacion');
+    
+    if (clienteSelect && instalacionSelect) {
+        clienteSelect.addEventListener('change', function() {
+            const clienteId = this.value;
+            
+            if (clienteId) {
+                // Limpiar opciones actuales
+                instalacionSelect.innerHTML = '<option value="">---------</option>';
+                
+                // Hacer petición para obtener instalaciones del cliente
+                fetch(`/instalaciones/api/cliente/${clienteId}/instalaciones/`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error al obtener instalaciones');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.instalaciones && data.instalaciones.length > 0) {
+                            data.instalaciones.forEach(inst => {
+                                const option = document.createElement('option');
+                                option.value = inst.id;
+                                option.textContent = inst.plan_nombre || `Instalación #${inst.id}`;
+                                instalacionSelect.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        // Si no hay API, simplemente dejar el select vacío
+                    });
+            } else {
+                instalacionSelect.innerHTML = '<option value="">---------</option>';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+

@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Movimiento - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="margin-bottom: 1.5rem;">
+        <h2><i class="fas fa-exchange-alt"></i> Detalle de Movimiento</h2>
+        <a href="{% url 'inventario:movimiento_list' %}" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">
+            <i class="fas fa-arrow-left"></i> Volver a Movimientos
+        </a>
+    </div>
+    
+    <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto;">
+        <h3 style="color: #667eea; margin-bottom: 1.5rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem;">Información del Movimiento</h3>
+        
+        <div style="display: grid; gap: 1.5rem;">
+            <div>
+                <strong style="color: #6b7280; font-size: 0.875rem;">Material</strong>
+                <div style="margin-top: 0.5rem;">
+                    <a href="{% url 'inventario:material_detail' movimiento.material.pk %}" style="color: #667eea; text-decoration: none; font-size: 1.1rem;">
+                        {{ movimiento.material.nombre }}
+                    </a>
+                    <br><small style="color: #6b7280;">{{ movimiento.material.codigo }}</small>
+                </div>
+            </div>
+            
+            <div>
+                <strong style="color: #6b7280; font-size: 0.875rem;">Tipo de Movimiento</strong>
+                <div style="margin-top: 0.5rem;">
+                    {% if movimiento.tipo == 'entrada' %}
+                        <span style="padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 600; background: #10b981; color: white;">
+                            <i class="fas fa-arrow-down"></i> Entrada
+                        </span>
+                    {% elif movimiento.tipo == 'salida' %}
+                        <span style="padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 600; background: #ef4444; color: white;">
+                            <i class="fas fa-arrow-up"></i> Salida
+                        </span>
+                    {% elif movimiento.tipo == 'ajuste' %}
+                        <span style="padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 600; background: #f59e0b; color: white;">
+                            <i class="fas fa-adjust"></i> Ajuste
+                        </span>
+                    {% else %}
+                        <span style="padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 600; background: #3b82f6; color: white;">
+                            <i class="fas fa-undo"></i> Devolución
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div>
+                <strong style="color: #6b7280; font-size: 0.875rem;">Cantidad</strong>
+                <div style="margin-top: 0.5rem; font-size: 1.5rem; font-weight: bold; color: {% if movimiento.tipo == 'entrada' %}#10b981{% else %}#ef4444{% endif %};">
+                    {% if movimiento.tipo == 'entrada' %}+{% else %}-{% endif %}{{ movimiento.cantidad }} {{ movimiento.material.unidad_medida }}
+                </div>
+            </div>
+            
+            <div>
+                <strong style="color: #6b7280; font-size: 0.875rem;">Motivo</strong>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ movimiento.motivo }}</div>
+            </div>
+            
+            <div>
+                <strong style="color: #6b7280; font-size: 0.875rem;">Fecha</strong>
+                <div style="margin-top: 0.5rem;">{{ movimiento.fecha|date:"d/m/Y H:i" }}</div>
+            </div>
+            
+            {% if movimiento.notas %}
+            <div>
+                <strong style="color: #6b7280; font-size: 0.875rem;">Notas</strong>
+                <div style="margin-top: 0.5rem; white-space: pre-wrap;">{{ movimiento.notas }}</div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid #e5e7eb;">
+            <a href="{% url 'inventario:movimiento_list' %}" class="btn btn-secondary" style="text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> Volver a Movimientos
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,11 +1,19 @@
 from django.contrib import admin
-from .models import TipoInstalacion, Instalacion
+from .models import TipoInstalacion, PlanInternet, Instalacion
 
 
 @admin.register(TipoInstalacion)
 class TipoInstalacionAdmin(admin.ModelAdmin):
     list_display = ['nombre', 'descripcion']
     search_fields = ['nombre']
+
+
+@admin.register(PlanInternet)
+class PlanInternetAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'velocidad_descarga', 'velocidad_subida', 'precio_mensual', 'activo']
+    list_filter = ['activo', 'velocidad_descarga']
+    search_fields = ['nombre', 'descripcion']
+    ordering = ['precio_mensual', 'velocidad_descarga']
 
 
 @admin.register(Instalacion)

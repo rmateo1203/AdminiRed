@@ -264,13 +264,13 @@
     <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
         {% if user.is_authenticated %}
             <a href="{% url 'clientes:cliente_create' %}" class="btn"><i class="fas fa-user-plus"></i> Nuevo Cliente</a>
-            <a href="/admin/instalaciones/instalacion/add/" class="btn"><i class="fas fa-wifi"></i> Nueva Instalación</a>
+            <a href="{% url 'instalaciones:instalacion_create' %}" class="btn"><i class="fas fa-wifi"></i> Nueva Instalación</a>
             <a href="/admin/pagos/pago/add/" class="btn"><i class="fas fa-dollar-sign"></i> Registrar Pago</a>
             <a href="/admin/inventario/material/add/" class="btn"><i class="fas fa-boxes"></i> Agregar Material</a>
             <a href="/admin/" class="btn btn-admin"><i class="fas fa-cog"></i> Administración Completa</a>
         {% else %}
             <a href="{% url 'login' %}?next={% url 'clientes:cliente_create' %}" class="btn"><i class="fas fa-user-plus"></i> Nuevo Cliente</a>
-            <a href="{% url 'login' %}?next=/admin/instalaciones/instalacion/add/" class="btn"><i class="fas fa-wifi"></i> Nueva Instalación</a>
+            <a href="{% url 'login' %}?next={% url 'instalaciones:instalacion_create' %}" class="btn"><i class="fas fa-wifi"></i> Nueva Instalación</a>
             <a href="{% url 'login' %}?next=/admin/pagos/pago/add/" class="btn"><i class="fas fa-dollar-sign"></i> Registrar Pago</a>
             <a href="{% url 'login' %}?next=/admin/inventario/material/add/" class="btn"><i class="fas fa-boxes"></i> Agregar Material</a>
             <a href="{% url 'login' %}?next=/admin/" class="btn btn-admin"><i class="fas fa-cog"></i> Administración Completa</a>

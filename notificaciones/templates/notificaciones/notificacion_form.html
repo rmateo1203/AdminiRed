@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2>{{ title }}</h2>
+        <a href="{% if notificacion %}{% url 'notificaciones:notificacion_detail' notificacion.pk %}{% else %}{% url 'notificaciones:notificacion_list' %}{% endif %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <form method="post" id="notificacion-form">
+        {% csrf_token %}
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            <!-- Información Básica -->
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <h3 style="color: #667eea; margin-bottom: 1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
+                    <i class="fas fa-info-circle"></i> Información Básica
+                </h3>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.cliente.id_for_label }}">{{ form.cliente.label }} (opcional)</label>
+                {{ form.cliente }}
+                {% if cliente_pre_seleccionado %}
+                    <input type="hidden" name="cliente" value="{{ cliente_pre_seleccionado.pk }}">
+                {% endif %}
+                {% if form.cliente.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.cliente.errors }}
+                    </div>
+                {% endif %}
+                {% if cliente_pre_seleccionado %}
+                    <small style="color: #6b7280; font-size: 0.875rem; display: block; margin-top: 0.5rem;">
+                        <i class="fas fa-info-circle"></i> Cliente pre-seleccionado: <strong>{{ cliente_pre_seleccionado.nombre_completo }}</strong>
+                    </small>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.tipo.id_for_label }}">{{ form.tipo.label }} (opcional)</label>
+                {{ form.tipo }}
+                {% if form.tipo.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.tipo.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.pago.id_for_label }}">{{ form.pago.label }} (opcional)</label>
+                {{ form.pago }}
+                {% if form.pago.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.pago.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Contenido de la Notificación -->
+            <div class="form-group" style="grid-column: 1 / -1; margin-top: 1rem;">
+                <h3 style="color: #667eea; margin-bottom: 1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
+                    <i class="fas fa-envelope"></i> Contenido de la Notificación
+                </h3>
+            </div>
+            
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="{{ form.asunto.id_for_label }}">{{ form.asunto.label }} *</label>
+                {{ form.asunto }}
+                {% if form.asunto.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.asunto.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="{{ form.mensaje.id_for_label }}">{{ form.mensaje.label }} *</label>
+                {{ form.mensaje }}
+                {% if form.mensaje.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.mensaje.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Configuración de Envío -->
+            <div class="form-group" style="grid-column: 1 / -1; margin-top: 1rem;">
+                <h3 style="color: #667eea; margin-bottom: 1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
+                    <i class="fas fa-cog"></i> Configuración de Envío
+                </h3>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.canal.id_for_label }}">{{ form.canal.label }} *</label>
+                {{ form.canal }}
+                {% if form.canal.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.canal.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.estado.id_for_label }}">{{ form.estado.label }} *</label>
+                {{ form.estado }}
+                {% if form.estado.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.estado.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.fecha_programada.id_for_label }}">{{ form.fecha_programada.label }} (opcional)</label>
+                {{ form.fecha_programada }}
+                {% if form.fecha_programada.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.fecha_programada.errors }}
+                    </div>
+                {% endif %}
+                {% if form.fecha_programada.help_text %}
+                    <small style="color: #6b7280; font-size: 0.875rem;">{{ form.fecha_programada.help_text }}</small>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="form-actions" style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #f0f0f0; display: flex; gap: 1rem; justify-content: flex-end;">
+            <button type="submit" class="btn" style="min-width: 150px; background: #667eea;">
+                <i class="fas fa-save"></i> {% if notificacion %}Actualizar{% else %}Crear{% endif %} Notificación
+            </button>
+            <a href="{% if notificacion %}{% url 'notificaciones:notificacion_detail' notificacion.pk %}{% elif cliente_pre_seleccionado %}{% url 'clientes:cliente_detail' cliente_pre_seleccionado.pk %}{% else %}{% url 'notificaciones:notificacion_list' %}{% endif %}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    .form-group input[type="text"],
+    .form-group input[type="datetime-local"],
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 1rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .form-group small {
+        display: block;
+        margin-top: 0.5rem;
+    }
+    
+    h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+    
+    h3 i {
+        margin-right: 0.5rem;
+    }
+</style>
+{% endblock %}
+

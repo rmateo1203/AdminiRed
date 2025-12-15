@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Notificaciones - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2>Lista de Notificaciones</h2>
+        <a href="{% url 'notificaciones:notificacion_create' %}" class="btn"><i class="fas fa-plus"></i> Nueva Notificación</a>
+    </div>
+    
+    <!-- Búsqueda y Filtros -->
+    <div class="search-filters">
+        <form method="get" class="search-form">
+            <input 
+                type="text" 
+                name="q" 
+                value="{{ query }}" 
+                placeholder="Buscar por asunto, mensaje o cliente..."
+                class="form-control"
+            >
+            <select name="estado" class="form-control">
+                <option value="">Todos los estados</option>
+                {% for estado_code, estado_name in estados %}
+                    <option value="{{ estado_code }}" {% if estado_filter == estado_code %}selected{% endif %}>
+                        {{ estado_name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <select name="canal" class="form-control">
+                <option value="">Todos los canales</option>
+                {% for canal_code, canal_name in canales %}
+                    <option value="{{ canal_code }}" {% if canal_filter == canal_code %}selected{% endif %}>
+                        {{ canal_name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <select name="orden" class="form-control">
+                <option value="-fecha_creacion" {% if orden == '-fecha_creacion' %}selected{% endif %}>Más recientes</option>
+                <option value="fecha_creacion" {% if orden == 'fecha_creacion' %}selected{% endif %}>Más antiguos</option>
+                <option value="asunto" {% if orden == 'asunto' %}selected{% endif %}>Asunto A-Z</option>
+            </select>
+            <button type="submit" class="btn"><i class="fas fa-search"></i> Buscar</button>
+            {% if query or estado_filter or canal_filter %}
+                <a href="{% url 'notificaciones:notificacion_list' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <!-- Estadísticas Rápidas -->
+    {% if notificaciones %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ total_notificaciones }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-bell"></i> Total Notificaciones</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ pendientes }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-clock"></i> Pendientes</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ enviadas }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-check-circle"></i> Enviadas</div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Tabla de Notificaciones -->
+    {% if notificaciones %}
+    <div style="overflow-x: auto;">
+        <table class="table" style="width: 100%; background: white; border-radius: 12px; overflow: hidden;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Asunto</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Cliente</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Canal</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Estado</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Fecha Creación</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Fecha Envío</th>
+                    <th style="padding: 1rem; text-align: center; font-weight: 600;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for notificacion in notificaciones %}
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 1rem;">
+                        <strong style="color: #111827;">{{ notificacion.asunto }}</strong>
+                        {% if notificacion.tipo %}
+                            <br><small style="color: #6b7280; font-size: 0.875rem;">{{ notificacion.tipo.nombre }}</small>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem;">
+                        {% if notificacion.cliente %}
+                            <a href="{% url 'clientes:cliente_detail' notificacion.cliente.pk %}" style="color: #667eea; text-decoration: none;">
+                                {{ notificacion.cliente.nombre_completo }}
+                            </a>
+                        {% else %}
+                            <span style="color: #9ca3af;">General</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem;">
+                        {% if notificacion.canal == 'email' %}
+                            <i class="fas fa-envelope" style="color: #3b82f6;"></i> Email
+                        {% elif notificacion.canal == 'sms' %}
+                            <i class="fas fa-sms" style="color: #10b981;"></i> SMS
+                        {% elif notificacion.canal == 'whatsapp' %}
+                            <i class="fab fa-whatsapp" style="color: #25d366;"></i> WhatsApp
+                        {% else %}
+                            <i class="fas fa-bell" style="color: #667eea;"></i> Sistema
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem;">
+                        {% if notificacion.estado == 'enviada' %}
+                            <span class="badge badge-success" style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #10b981; color: white;">
+                                <i class="fas fa-check-circle"></i> {{ notificacion.get_estado_display }}
+                            </span>
+                        {% elif notificacion.estado == 'pendiente' %}
+                            <span class="badge badge-info" style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #3b82f6; color: white;">
+                                <i class="fas fa-clock"></i> {{ notificacion.get_estado_display }}
+                            </span>
+                        {% elif notificacion.estado == 'fallida' %}
+                            <span class="badge badge-danger" style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #ef4444; color: white;">
+                                <i class="fas fa-times-circle"></i> {{ notificacion.get_estado_display }}
+                            </span>
+                        {% else %}
+                            <span class="badge badge-warning" style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #f59e0b; color: white;">
+                                <i class="fas fa-ban"></i> {{ notificacion.get_estado_display }}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem; color: #374151;">
+                        {{ notificacion.fecha_creacion|date:"d/m/Y H:i" }}
+                    </td>
+                    <td style="padding: 1rem; color: #374151;">
+                        {{ notificacion.fecha_envio|date:"d/m/Y H:i"|default:"—" }}
+                    </td>
+                    <td style="padding: 1rem; text-align: center;">
+                        <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                            <a href="{% url 'notificaciones:notificacion_detail' notificacion.pk %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.875rem; text-decoration: none; border-radius: 6px;" title="Ver detalles">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{% url 'notificaciones:notificacion_update' notificacion.pk %}" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem; text-decoration: none; border-radius: 6px;" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 8px; margin-top: 2rem;">
+        <i class="fas fa-bell" style="font-size: 4rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+        <p style="font-size: 1.25rem; color: #6b7280; margin-bottom: 0.5rem;">No se encontraron notificaciones</p>
+        <p style="color: #9ca3af; margin-bottom: 1.5rem;">Comienza creando tu primera notificación</p>
+        <a href="{% url 'notificaciones:notificacion_create' %}" class="btn" style="margin-top: 1rem;">
+            <i class="fas fa-plus"></i> Crear Primera Notificación
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

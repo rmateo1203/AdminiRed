@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Pago - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="margin-bottom: 1.5rem;">
+        <h2><i class="fas fa-dollar-sign"></i> Detalle de Pago</h2>
+        <a href="{% url 'pagos:pago_list' %}" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">
+            <i class="fas fa-arrow-left"></i> Volver a Pagos
+        </a>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+        <!-- Información Principal -->
+        <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <h3 style="color: #667eea; margin-bottom: 1.5rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem;">Información del Pago</h3>
+            
+            <div style="display: grid; gap: 1.5rem;">
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Cliente</strong>
+                    <div style="margin-top: 0.5rem;">
+                        <a href="{% url 'clientes:cliente_detail' pago.cliente.pk %}" style="color: #667eea; text-decoration: none; font-size: 1.1rem;">
+                            {{ pago.cliente.nombre_completo }}
+                        </a>
+                    </div>
+                </div>
+                
+                {% if pago.instalacion %}
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Instalación</strong>
+                    <div style="margin-top: 0.5rem;">
+                        <a href="{% url 'instalaciones:instalacion_detail' pago.instalacion.pk %}" style="color: #667eea; text-decoration: none;">
+                            {{ pago.instalacion.plan_nombre }}
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Concepto</strong>
+                    <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ pago.concepto }}</div>
+                </div>
+                
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Monto</strong>
+                    <div style="margin-top: 0.5rem; font-size: 1.5rem; font-weight: bold; color: #10b981;">
+                        ${{ pago.monto|floatformat:2 }}
+                    </div>
+                </div>
+                
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Período</strong>
+                    <div style="margin-top: 0.5rem;">{{ pago.get_periodo_mes_display }} {{ pago.periodo_anio }}</div>
+                </div>
+                
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Fecha de Vencimiento</strong>
+                    <div style="margin-top: 0.5rem;">
+                        {{ pago.fecha_vencimiento|date:"d/m/Y" }}
+                        {% if pago.esta_vencido and pago.estado != 'pagado' %}
+                            <span style="color: #ef4444; font-weight: 600; margin-left: 0.5rem;">
+                                ({{ pago.dias_vencido }} día(s) vencido)
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if pago.fecha_pago %}
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Fecha de Pago</strong>
+                    <div style="margin-top: 0.5rem;">{{ pago.fecha_pago|date:"d/m/Y H:i" }}</div>
+                </div>
+                {% endif %}
+                
+                {% if pago.metodo_pago %}
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Método de Pago</strong>
+                    <div style="margin-top: 0.5rem;">{{ pago.get_metodo_pago_display }}</div>
+                </div>
+                {% endif %}
+                
+                {% if pago.referencia_pago %}
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Referencia de Pago</strong>
+                    <div style="margin-top: 0.5rem;">{{ pago.referencia_pago }}</div>
+                </div>
+                {% endif %}
+                
+                {% if pago.notas %}
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Notas</strong>
+                    <div style="margin-top: 0.5rem; white-space: pre-wrap;">{{ pago.notas }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Estado y Acciones -->
+        <div>
+            <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem;">
+                <h3 style="color: #667eea; margin-bottom: 1.5rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem;">Estado</h3>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    {% if pago.estado == 'pagado' %}
+                        <span style="padding: 1rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 600; background: #10b981; color: white; display: inline-block; width: 100%; text-align: center;">
+                            <i class="fas fa-check-circle"></i> Pagado
+                        </span>
+                    {% elif pago.estado == 'vencido' %}
+                        <span style="padding: 1rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 600; background: #ef4444; color: white; display: inline-block; width: 100%; text-align: center;">
+                            <i class="fas fa-exclamation-triangle"></i> Vencido
+                        </span>
+                    {% elif pago.estado == 'pendiente' %}
+                        <span style="padding: 1rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 600; background: #f59e0b; color: white; display: inline-block; width: 100%; text-align: center;">
+                            <i class="fas fa-clock"></i> Pendiente
+                        </span>
+                    {% else %}
+                        <span style="padding: 1rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 600; background: #9ca3af; color: white; display: inline-block; width: 100%; text-align: center;">
+                            <i class="fas fa-ban"></i> {{ pago.get_estado_display }}
+                        </span>
+                    {% endif %}
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <a href="{% url 'pagos:pago_update' pago.pk %}" class="btn btn-secondary" style="text-decoration: none; text-align: center;">
+                        <i class="fas fa-edit"></i> Editar Pago
+                    </a>
+                    {% if pago.estado != 'pagado' %}
+                        <a href="{% url 'pagos:pago_marcar_pagado' pago.pk %}" class="btn" style="text-decoration: none; text-align: center; background: #10b981;">
+                            <i class="fas fa-check"></i> Marcar como Pagado
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'pagos:pago_delete' pago.pk %}" class="btn" style="text-decoration: none; text-align: center; background: #ef4444;">
+                        <i class="fas fa-trash"></i> Eliminar Pago
+                    </a>
+                </div>
+            </div>
+            
+            {% if notificaciones %}
+            <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h3 style="color: #667eea; margin-bottom: 1rem; font-size: 1rem;">Notificaciones Relacionadas</h3>
+                <ul style="list-style: none; padding: 0;">
+                    {% for notificacion in notificaciones %}
+                    <li style="padding: 0.75rem; border-bottom: 1px solid #e5e7eb;">
+                        <a href="{% url 'notificaciones:notificacion_detail' notificacion.pk %}" style="color: #667eea; text-decoration: none;">
+                            {{ notificacion.asunto }}
+                        </a>
+                        <br><small style="color: #6b7280;">{{ notificacion.fecha_creacion|date:"d/m/Y" }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

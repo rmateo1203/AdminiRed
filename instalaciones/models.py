@@ -18,6 +18,40 @@ class TipoInstalacion(models.Model):
         return self.nombre
 
 
+class PlanInternet(models.Model):
+    """Catálogo de planes de internet disponibles."""
+    nombre = models.CharField(max_length=100, unique=True, verbose_name='Nombre del plan')
+    velocidad_descarga = models.IntegerField(
+        validators=[MinValueValidator(1)],
+        verbose_name='Velocidad de descarga (Mbps)',
+        help_text='Velocidad de descarga en Mbps'
+    )
+    velocidad_subida = models.IntegerField(
+        validators=[MinValueValidator(1)],
+        verbose_name='Velocidad de subida (Mbps)',
+        blank=True,
+        null=True,
+        help_text='Velocidad de subida en Mbps (opcional)'
+    )
+    precio_mensual = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        verbose_name='Precio mensual',
+        help_text='Precio mensual del plan'
+    )
+    descripcion = models.TextField(blank=True, verbose_name='Descripción')
+    activo = models.BooleanField(default=True, verbose_name='Activo', help_text='Indica si el plan está disponible')
+    
+    class Meta:
+        verbose_name = 'Plan de Internet'
+        verbose_name_plural = 'Planes de Internet'
+        ordering = ['precio_mensual', 'velocidad_descarga']
+    
+    def __str__(self):
+        return f"{self.nombre} - {self.velocidad_descarga} Mbps - ${self.precio_mensual}/mes"
+
+
 class Instalacion(models.Model):
     """Modelo para gestionar instalaciones de internet."""
     
@@ -55,22 +89,34 @@ class Instalacion(models.Model):
     )
     
     # Plan y velocidad
-    plan_nombre = models.CharField(max_length=100, verbose_name='Nombre del plan')
+    plan = models.ForeignKey(
+        'PlanInternet',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='instalaciones',
+        verbose_name='Plan de Internet',
+        help_text='Plan del catálogo (opcional, puede especificar manualmente)'
+    )
+    plan_nombre = models.CharField(max_length=100, verbose_name='Nombre del plan', help_text='Nombre personalizado del plan (si no se selecciona del catálogo)')
     velocidad_descarga = models.IntegerField(
         validators=[MinValueValidator(1)],
-        verbose_name='Velocidad de descarga (Mbps)'
+        verbose_name='Velocidad de descarga (Mbps)',
+        help_text='Se llena automáticamente si se selecciona un plan del catálogo'
     )
     velocidad_subida = models.IntegerField(
         validators=[MinValueValidator(1)],
         verbose_name='Velocidad de subida (Mbps)',
         blank=True,
-        null=True
+        null=True,
+        help_text='Se llena automáticamente si se selecciona un plan del catálogo'
     )
     precio_mensual = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         validators=[MinValueValidator(0)],
-        verbose_name='Precio mensual'
+        verbose_name='Precio mensual',
+        help_text='Se llena automáticamente si se selecciona un plan del catálogo'
     )
     
     # Estado y fechas
@@ -105,7 +151,7 @@ class Instalacion(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.cliente.nombre} - {self.plan_nombre} ({self.estado})"
+        return f"{self.cliente.nombre_completo} - {self.plan_nombre} ({self.estado})"
     
     @property
     def esta_activa(self):

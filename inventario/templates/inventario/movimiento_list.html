@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Movimientos de Inventario - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2><i class="fas fa-exchange-alt"></i> Movimientos de Inventario</h2>
+        <a href="{% url 'inventario:movimiento_create' %}" class="btn"><i class="fas fa-plus"></i> Nuevo Movimiento</a>
+    </div>
+    
+    <!-- Búsqueda y Filtros -->
+    <div class="search-filters">
+        <form method="get" class="search-form">
+            <input 
+                type="text" 
+                name="q" 
+                value="{{ query }}" 
+                placeholder="Buscar por material, motivo o notas..."
+                class="form-control"
+            >
+            <select name="tipo" class="form-control">
+                <option value="">Todos los tipos</option>
+                {% for tipo_code, tipo_name in tipos %}
+                    <option value="{{ tipo_code }}" {% if tipo_filter == tipo_code %}selected{% endif %}>
+                        {{ tipo_name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <select name="material" class="form-control">
+                <option value="">Todos los materiales</option>
+                {% for material in materiales %}
+                    <option value="{{ material.pk }}" {% if material_filter == material.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ material.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+            <select name="orden" class="form-control">
+                <option value="-fecha" {% if orden == '-fecha' %}selected{% endif %}>Más recientes</option>
+                <option value="fecha" {% if orden == 'fecha' %}selected{% endif %}>Más antiguos</option>
+            </select>
+            <button type="submit" class="btn"><i class="fas fa-search"></i> Buscar</button>
+            {% if query or tipo_filter or material_filter %}
+                <a href="{% url 'inventario:movimiento_list' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <!-- Tabla de Movimientos -->
+    {% if page_obj %}
+    <div style="overflow-x: auto;">
+        <table class="table" style="width: 100%; background: white; border-radius: 12px; overflow: hidden;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Fecha</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Material</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Tipo</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Cantidad</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Motivo</th>
+                    <th style="padding: 1rem; text-align: center; font-weight: 600;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for movimiento in page_obj %}
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 1rem; color: #374151;">
+                        {{ movimiento.fecha|date:"d/m/Y H:i" }}
+                    </td>
+                    <td style="padding: 1rem;">
+                        <a href="{% url 'inventario:material_detail' movimiento.material.pk %}" style="color: #667eea; text-decoration: none;">
+                            <strong>{{ movimiento.material.nombre }}</strong>
+                        </a>
+                        <br><small style="color: #6b7280; font-size: 0.875rem;">{{ movimiento.material.codigo }}</small>
+                    </td>
+                    <td style="padding: 1rem;">
+                        {% if movimiento.tipo == 'entrada' %}
+                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #10b981; color: white;">
+                                <i class="fas fa-arrow-down"></i> Entrada
+                            </span>
+                        {% elif movimiento.tipo == 'salida' %}
+                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #ef4444; color: white;">
+                                <i class="fas fa-arrow-up"></i> Salida
+                            </span>
+                        {% elif movimiento.tipo == 'ajuste' %}
+                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #f59e0b; color: white;">
+                                <i class="fas fa-adjust"></i> Ajuste
+                            </span>
+                        {% else %}
+                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #3b82f6; color: white;">
+                                <i class="fas fa-undo"></i> Devolución
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem;">
+                        <strong style="color: {% if movimiento.tipo == 'entrada' %}#10b981{% else %}#ef4444{% endif %}; font-size: 1.1rem;">
+                            {% if movimiento.tipo == 'entrada' %}+{% else %}-{% endif %}{{ movimiento.cantidad }}
+                        </strong>
+                        <span style="color: #6b7280; font-size: 0.875rem;">{{ movimiento.material.unidad_medida }}</span>
+                    </td>
+                    <td style="padding: 1rem; color: #374151;">{{ movimiento.motivo }}</td>
+                    <td style="padding: 1rem; text-align: center;">
+                        <a href="{% url 'inventario:movimiento_detail' movimiento.pk %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.875rem; text-decoration: none; border-radius: 6px;" title="Ver detalles">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Paginación -->
+        {% if page_obj.has_other_pages %}
+        <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 0.5rem;">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if tipo_filter %}&tipo={{ tipo_filter }}{% endif %}{% if material_filter %}&material={{ material_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-secondary">
+                    <i class="fas fa-chevron-left"></i> Anterior
+                </a>
+            {% endif %}
+            
+            <span style="padding: 0.5rem 1rem; background: white; border-radius: 6px; display: flex; align-items: center;">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+            
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if tipo_filter %}&tipo={{ tipo_filter }}{% endif %}{% if material_filter %}&material={{ material_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-secondary">
+                    Siguiente <i class="fas fa-chevron-right"></i>
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 8px; margin-top: 2rem;">
+        <i class="fas fa-exchange-alt" style="font-size: 4rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+        <p style="font-size: 1.25rem; color: #6b7280; margin-bottom: 0.5rem;">No se encontraron movimientos</p>
+        <p style="color: #9ca3af; margin-bottom: 1.5rem;">Comienza registrando tu primer movimiento</p>
+        <a href="{% url 'inventario:movimiento_create' %}" class="btn" style="margin-top: 1rem;">
+            <i class="fas fa-plus"></i> Crear Primer Movimiento
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

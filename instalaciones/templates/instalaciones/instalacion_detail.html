@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ instalacion }} - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2>{{ instalacion }}</h2>
+        <div style="display: flex; gap: 1rem;">
+            <a href="{% url 'instalaciones:instalacion_update' instalacion.pk %}" class="btn"><i class="fas fa-edit"></i> Editar</a>
+            <a href="{% url 'instalaciones:instalacion_list' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
+        </div>
+    </div>
+    
+    <!-- Tarjeta de Estado -->
+    <div style="background: {% if instalacion.estado == 'activa' %}linear-gradient(135deg, #10b981 0%, #059669 100%){% elif instalacion.estado == 'pendiente' %}linear-gradient(135deg, #3b82f6 0%, #2563eb 100%){% elif instalacion.estado == 'programada' or instalacion.estado == 'en_proceso' %}linear-gradient(135deg, #f59e0b 0%, #d97706 100%){% else %}linear-gradient(135deg, #ef4444 0%, #dc2626 100%){% endif %}; color: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Estado Actual</div>
+                <div style="font-size: 1.5rem; font-weight: bold;">{{ instalacion.get_estado_display }}</div>
+            </div>
+            <div style="font-size: 3rem; opacity: 0.3;">
+                <i class="fas fa-wifi"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Información de la Instalación -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div>
+            <h3 style="color: #667eea; margin-bottom: 1rem;"><i class="fas fa-user"></i> Información del Cliente</h3>
+            <p><strong>Cliente:</strong> <a href="{% url 'clientes:cliente_detail' instalacion.cliente.pk %}">{{ instalacion.cliente.nombre_completo }}</a></p>
+            <p><strong>Teléfono:</strong> {{ instalacion.cliente.telefono }}</p>
+            <p><strong>Email:</strong> {{ instalacion.cliente.email|default:"—" }}</p>
+        </div>
+        
+        <div>
+            <h3 style="color: #667eea; margin-bottom: 1rem;"><i class="fas fa-tachometer-alt"></i> Plan y Velocidad</h3>
+            <p><strong>Plan:</strong> {{ instalacion.plan_nombre }}</p>
+            <p><strong>Velocidad Descarga:</strong> {{ instalacion.velocidad_descarga }} Mbps</p>
+            <p><strong>Velocidad Subida:</strong> {{ instalacion.velocidad_subida|default:"—" }} {% if instalacion.velocidad_subida %}Mbps{% endif %}</p>
+            <p><strong>Precio Mensual:</strong> ${{ instalacion.precio_mensual|floatformat:2 }}</p>
+        </div>
+        
+        <div>
+            <h3 style="color: #667eea; margin-bottom: 1rem;"><i class="fas fa-calendar-alt"></i> Estado y Fechas</h3>
+            <p><strong>Estado:</strong> 
+                {% if instalacion.estado == 'activa' %}
+                    <span class="badge badge-success">{{ instalacion.get_estado_display }}</span>
+                {% elif instalacion.estado == 'pendiente' %}
+                    <span class="badge badge-info">{{ instalacion.get_estado_display }}</span>
+                {% elif instalacion.estado == 'programada' or instalacion.estado == 'en_proceso' %}
+                    <span class="badge badge-warning">{{ instalacion.get_estado_display }}</span>
+                {% else %}
+                    <span class="badge badge-danger">{{ instalacion.get_estado_display }}</span>
+                {% endif %}
+            </p>
+            <p><strong>Fecha Solicitud:</strong> {{ instalacion.fecha_solicitud|date:"d/m/Y H:i" }}</p>
+            <p><strong>Fecha Programada:</strong> {{ instalacion.fecha_programada|date:"d/m/Y H:i"|default:"—" }}</p>
+            <p><strong>Fecha Instalación:</strong> {{ instalacion.fecha_instalacion|date:"d/m/Y H:i"|default:"—" }}</p>
+            <p><strong>Fecha Activación:</strong> {{ instalacion.fecha_activacion|date:"d/m/Y H:i"|default:"—" }}</p>
+        </div>
+        
+        <div>
+            <h3 style="color: #667eea; margin-bottom: 1rem;"><i class="fas fa-network-wired"></i> Información Técnica</h3>
+            <p><strong>Tipo Instalación:</strong> {{ instalacion.tipo_instalacion|default:"—" }}</p>
+            <p><strong>N° Contrato:</strong> {{ instalacion.numero_contrato }}</p>
+            <p><strong>IP Asignada:</strong> {{ instalacion.ip_asignada|default:"—" }}</p>
+            <p><strong>MAC Equipo:</strong> {{ instalacion.mac_equipo|default:"—" }}</p>
+        </div>
+        
+        <div style="grid-column: 1 / -1;">
+            <h3 style="color: #667eea; margin-bottom: 1rem;"><i class="fas fa-map-marker-alt"></i> Dirección de Instalación</h3>
+            <p>{{ instalacion.direccion_instalacion }}</p>
+            {% if instalacion.coordenadas %}
+                <p><strong>Coordenadas:</strong> {{ instalacion.coordenadas }}</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if instalacion.notas_instalacion %}
+    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
+        <h3 style="color: #667eea; margin-bottom: 0.5rem;"><i class="fas fa-sticky-note"></i> Notas de Instalación</h3>
+        <p>{{ instalacion.notas_instalacion }}</p>
+    </div>
+    {% endif %}
+    
+    {% if instalacion.notas_tecnicas %}
+    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
+        <h3 style="color: #667eea; margin-bottom: 0.5rem;"><i class="fas fa-cog"></i> Notas Técnicas</h3>
+        <p>{{ instalacion.notas_tecnicas }}</p>
+    </div>
+    {% endif %}
+    
+    <!-- Pagos Relacionados -->
+    {% if pagos %}
+    <div style="margin-top: 2rem;">
+        <h3 style="color: #667eea; margin-bottom: 1rem;"><i class="fas fa-money-bill-wave"></i> Pagos Relacionados</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Concepto</th>
+                    <th>Monto</th>
+                    <th>Fecha Vencimiento</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pago in pagos %}
+                <tr>
+                    <td>{{ pago.concepto }}</td>
+                    <td>${{ pago.monto|floatformat:2 }}</td>
+                    <td>{{ pago.fecha_vencimiento|date:"d/m/Y" }}</td>
+                    <td>
+                        {% if pago.estado == 'pagado' %}
+                            <span class="badge badge-success">{{ pago.get_estado_display }}</span>
+                        {% elif pago.estado == 'vencido' %}
+                            <span class="badge badge-danger">{{ pago.get_estado_display }}</span>
+                        {% else %}
+                            <span class="badge badge-warning">{{ pago.get_estado_display }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    
+    <!-- Acciones -->
+    <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #f0f0f0;">
+        <a href="{% url 'instalaciones:instalacion_delete' instalacion.pk %}" class="btn btn-danger"><i class="fas fa-trash"></i> Eliminar Instalación</a>
+    </div>
+</div>
+{% endblock %}
+

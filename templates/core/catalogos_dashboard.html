@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Catálogos - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2><i class="fas fa-book"></i> Catálogos del Sistema</h2>
+    </div>
+    
+    <p style="color: #6b7280; margin-bottom: 2rem; font-size: 1.1rem;">
+        Gestiona todos los catálogos del sistema desde un lugar centralizado. Los catálogos permiten mantener datos de referencia consistentes y reutilizables.
+    </p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+        {% for catalogo in catalogos %}
+        <div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s;" 
+             onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'"
+             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'">
+            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                <div style="width: 60px; height: 60px; border-radius: 12px; background: {{ catalogo.color }}; display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
+                    <i class="{{ catalogo.icon }}" style="font-size: 2rem; color: white;"></i>
+                </div>
+                <div>
+                    <h3 style="color: #111827; margin: 0; font-size: 1.25rem; font-weight: 600;">{{ catalogo.nombre }}</h3>
+                    <p style="color: #6b7280; margin: 0.25rem 0 0 0; font-size: 0.875rem;">
+                        <strong style="color: {{ catalogo.color }};">{{ catalogo.count }}</strong> registros
+                    </p>
+                </div>
+            </div>
+            
+            <p style="color: #6b7280; margin-bottom: 1.5rem; line-height: 1.6;">
+                {{ catalogo.descripcion }}
+            </p>
+            
+            <a href="{% url catalogo.url %}" class="btn" style="width: 100%; text-align: center; background: {{ catalogo.color }}; border: none;">
+                <i class="fas fa-cog"></i> Gestionar Catálogo
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div style="margin-top: 3rem; padding: 2rem; background: #f8f9fa; border-radius: 12px;">
+        <h3 style="color: #667eea; margin-bottom: 1rem;"><i class="fas fa-info-circle"></i> ¿Qué son los catálogos?</h3>
+        <p style="color: #6b7280; line-height: 1.8;">
+            Los catálogos son listas de referencia que permiten mantener datos consistentes y reutilizables en todo el sistema. 
+            Por ejemplo, los tipos de instalación se pueden usar en múltiples instalaciones, asegurando que los nombres y descripciones 
+            sean siempre los mismos y facilitando la generación de reportes y estadísticas.
+        </p>
+    </div>
+</div>
+{% endblock %}
+

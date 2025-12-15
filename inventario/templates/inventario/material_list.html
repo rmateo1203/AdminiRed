@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventario - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2><i class="fas fa-boxes"></i> Inventario de Materiales</h2>
+        <div style="display: flex; gap: 1rem;">
+            <a href="{% url 'inventario:movimiento_create' %}" class="btn btn-secondary"><i class="fas fa-exchange-alt"></i> Nuevo Movimiento</a>
+            <a href="{% url 'inventario:material_create' %}" class="btn"><i class="fas fa-plus"></i> Nuevo Material</a>
+        </div>
+    </div>
+    
+    <!-- Búsqueda y Filtros -->
+    <div class="search-filters">
+        <form method="get" class="search-form">
+            <input 
+                type="text" 
+                name="q" 
+                value="{{ query }}" 
+                placeholder="Buscar por nombre, código o descripción..."
+                class="form-control"
+            >
+            <select name="estado" class="form-control">
+                <option value="">Todos los estados</option>
+                {% for estado_code, estado_name in estados %}
+                    <option value="{{ estado_code }}" {% if estado_filter == estado_code %}selected{% endif %}>
+                        {{ estado_name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <select name="categoria" class="form-control">
+                <option value="">Todas las categorías</option>
+                {% for categoria in categorias %}
+                    <option value="{{ categoria.pk }}" {% if categoria_filter == categoria.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ categoria.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+            <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: white; border-radius: 6px;">
+                <input type="checkbox" name="stock_bajo" value="1" {% if stock_bajo == '1' %}checked{% endif %}>
+                <span>Stock bajo</span>
+            </label>
+            <select name="orden" class="form-control">
+                <option value="nombre" {% if orden == 'nombre' %}selected{% endif %}>Nombre A-Z</option>
+                <option value="-nombre" {% if orden == '-nombre' %}selected{% endif %}>Nombre Z-A</option>
+                <option value="stock_actual" {% if orden == 'stock_actual' %}selected{% endif %}>Stock (menor)</option>
+                <option value="-stock_actual" {% if orden == '-stock_actual' %}selected{% endif %}>Stock (mayor)</option>
+            </select>
+            <button type="submit" class="btn"><i class="fas fa-search"></i> Buscar</button>
+            {% if query or estado_filter or categoria_filter or stock_bajo %}
+                <a href="{% url 'inventario:material_list' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <!-- Estadísticas Rápidas -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ total_materiales }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-boxes"></i> Total Materiales</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ materiales_disponibles }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-check-circle"></i> Disponibles</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ materiales_bajo_stock }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-exclamation-triangle"></i> Bajo Stock</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ materiales_agotados }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-times-circle"></i> Agotados</div>
+        </div>
+    </div>
+    
+    <!-- Tabla de Materiales -->
+    {% if page_obj %}
+    <div style="overflow-x: auto;">
+        <table class="table" style="width: 100%; background: white; border-radius: 12px; overflow: hidden;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Nombre</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Código</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Categoría</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Stock</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Estado</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Precio Compra</th>
+                    <th style="padding: 1rem; text-align: center; font-weight: 600;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for material in page_obj %}
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 1rem;">
+                        <strong style="color: #111827;">{{ material.nombre }}</strong>
+                    </td>
+                    <td style="padding: 1rem; color: #6b7280; font-family: monospace;">{{ material.codigo }}</td>
+                    <td style="padding: 1rem;">
+                        {% if material.categoria %}
+                            <span style="padding: 0.25rem 0.75rem; border-radius: 12px; background: #e0e7ff; color: #667eea; font-size: 0.875rem;">
+                                {{ material.categoria.nombre }}
+                            </span>
+                        {% else %}
+                            <span style="color: #9ca3af;">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem;">
+                        <strong style="font-size: 1.1rem;">{{ material.stock_actual }}</strong>
+                        <span style="color: #6b7280; font-size: 0.875rem;">{{ material.unidad_medida }}</span>
+                        {% if material.necesita_reposicion %}
+                            <br><small style="color: #f59e0b; font-weight: 600;">Mín: {{ material.stock_minimo }}</small>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem;">
+                        {% if material.estado == 'disponible' %}
+                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #10b981; color: white;">
+                                <i class="fas fa-check-circle"></i> Disponible
+                            </span>
+                        {% elif material.estado == 'bajo_stock' %}
+                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #f59e0b; color: white;">
+                                <i class="fas fa-exclamation-triangle"></i> Bajo Stock
+                            </span>
+                        {% elif material.estado == 'agotado' %}
+                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #ef4444; color: white;">
+                                <i class="fas fa-times-circle"></i> Agotado
+                            </span>
+                        {% else %}
+                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #9ca3af; color: white;">
+                                {{ material.get_estado_display }}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem;">
+                        {% if material.precio_compra %}
+                            <span style="color: #374151;">${{ material.precio_compra|floatformat:2 }}</span>
+                        {% else %}
+                            <span style="color: #9ca3af;">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem; text-align: center;">
+                        <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                            <a href="{% url 'inventario:material_detail' material.pk %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.875rem; text-decoration: none; border-radius: 6px;" title="Ver detalles">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{% url 'inventario:material_update' material.pk %}" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem; text-decoration: none; border-radius: 6px;" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Paginación -->
+        {% if page_obj.has_other_pages %}
+        <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 0.5rem;">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if categoria_filter %}&categoria={{ categoria_filter }}{% endif %}{% if stock_bajo %}&stock_bajo={{ stock_bajo }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-secondary">
+                    <i class="fas fa-chevron-left"></i> Anterior
+                </a>
+            {% endif %}
+            
+            <span style="padding: 0.5rem 1rem; background: white; border-radius: 6px; display: flex; align-items: center;">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+            
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if categoria_filter %}&categoria={{ categoria_filter }}{% endif %}{% if stock_bajo %}&stock_bajo={{ stock_bajo }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-secondary">
+                    Siguiente <i class="fas fa-chevron-right"></i>
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 8px; margin-top: 2rem;">
+        <i class="fas fa-boxes" style="font-size: 4rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+        <p style="font-size: 1.25rem; color: #6b7280; margin-bottom: 0.5rem;">No se encontraron materiales</p>
+        <p style="color: #9ca3af; margin-bottom: 1.5rem;">Comienza registrando tu primer material</p>
+        <a href="{% url 'inventario:material_create' %}" class="btn" style="margin-top: 1rem;">
+            <i class="fas fa-plus"></i> Crear Primer Material
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

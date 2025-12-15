@@ -1,0 +1,370 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2>{{ title }}</h2>
+        <a href="{% if instalacion %}{% url 'instalaciones:instalacion_detail' instalacion.pk %}{% else %}{% url 'instalaciones:instalacion_list' %}{% endif %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <form method="post" id="instalacion-form">
+        {% csrf_token %}
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            <!-- Información Básica -->
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <h3 style="color: #667eea; margin-bottom: 1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
+                    <i class="fas fa-info-circle"></i> Información Básica
+                </h3>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.cliente.id_for_label }}">{{ form.cliente.label }} *</label>
+                {{ form.cliente }}
+                {% if cliente_pre_seleccionado %}
+                    {# Campo hidden para enviar el valor cuando el select está disabled #}
+                    <input type="hidden" name="cliente" value="{{ cliente_pre_seleccionado.pk }}">
+                {% endif %}
+                {% if form.cliente.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.cliente.errors }}
+                    </div>
+                {% endif %}
+                {% if cliente_pre_seleccionado %}
+                    <small style="color: #6b7280; font-size: 0.875rem; display: block; margin-top: 0.5rem;">
+                        <i class="fas fa-info-circle"></i> Cliente pre-seleccionado: <strong>{{ cliente_pre_seleccionado.nombre_completo }}</strong>
+                    </small>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.tipo_instalacion.id_for_label }}">{{ form.tipo_instalacion.label }} (opcional)</label>
+                {{ form.tipo_instalacion }}
+                {% if form.tipo_instalacion.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.tipo_instalacion.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.numero_contrato.id_for_label }}">{{ form.numero_contrato.label }} *</label>
+                {{ form.numero_contrato }}
+                {% if form.numero_contrato.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.numero_contrato.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.estado.id_for_label }}">{{ form.estado.label }} *</label>
+                {{ form.estado }}
+                {% if form.estado.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.estado.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="{{ form.direccion_instalacion.id_for_label }}">{{ form.direccion_instalacion.label }} *</label>
+                {{ form.direccion_instalacion }}
+                {% if form.direccion_instalacion.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.direccion_instalacion.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.coordenadas.id_for_label }}">{{ form.coordenadas.label }} (opcional)</label>
+                {{ form.coordenadas }}
+                {% if form.coordenadas.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.coordenadas.errors }}
+                    </div>
+                {% endif %}
+                {% if form.coordenadas.help_text %}
+                    <small style="color: #6b7280; font-size: 0.875rem;">{{ form.coordenadas.help_text }}</small>
+                {% endif %}
+            </div>
+            
+            <!-- Plan y Velocidad -->
+            <div class="form-group" style="grid-column: 1 / -1; margin-top: 1rem;">
+                <h3 style="color: #667eea; margin-bottom: 1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
+                    <i class="fas fa-tachometer-alt"></i> Plan y Velocidad
+                </h3>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.plan.id_for_label }}">{{ form.plan.label }} (opcional)</label>
+                {{ form.plan }}
+                {% if form.plan.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.plan.errors }}
+                    </div>
+                {% endif %}
+                <small style="color: #6b7280; font-size: 0.875rem; display: block; margin-top: 0.5rem;">
+                    <i class="fas fa-info-circle"></i> Selecciona un plan del catálogo para llenar automáticamente los campos, o completa manualmente
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.plan_nombre.id_for_label }}">{{ form.plan_nombre.label }} *</label>
+                {{ form.plan_nombre }}
+                {% if form.plan_nombre.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.plan_nombre.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.velocidad_descarga.id_for_label }}">{{ form.velocidad_descarga.label }} *</label>
+                {{ form.velocidad_descarga }}
+                {% if form.velocidad_descarga.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.velocidad_descarga.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.velocidad_subida.id_for_label }}">{{ form.velocidad_subida.label }} (opcional)</label>
+                {{ form.velocidad_subida }}
+                {% if form.velocidad_subida.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.velocidad_subida.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.precio_mensual.id_for_label }}">{{ form.precio_mensual.label }} *</label>
+                {{ form.precio_mensual }}
+                {% if form.precio_mensual.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.precio_mensual.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Fechas -->
+            <div class="form-group" style="grid-column: 1 / -1; margin-top: 1rem;">
+                <h3 style="color: #667eea; margin-bottom: 1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
+                    <i class="fas fa-calendar-alt"></i> Fechas
+                </h3>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.fecha_programada.id_for_label }}">{{ form.fecha_programada.label }} (opcional)</label>
+                {{ form.fecha_programada }}
+                {% if form.fecha_programada.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.fecha_programada.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.fecha_instalacion.id_for_label }}">{{ form.fecha_instalacion.label }} (opcional)</label>
+                {{ form.fecha_instalacion }}
+                {% if form.fecha_instalacion.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.fecha_instalacion.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.fecha_activacion.id_for_label }}">{{ form.fecha_activacion.label }} (opcional)</label>
+                {{ form.fecha_activacion }}
+                {% if form.fecha_activacion.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.fecha_activacion.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Información Técnica -->
+            <div class="form-group" style="grid-column: 1 / -1; margin-top: 1rem;">
+                <h3 style="color: #667eea; margin-bottom: 1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
+                    <i class="fas fa-network-wired"></i> Información Técnica
+                </h3>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.ip_asignada.id_for_label }}">{{ form.ip_asignada.label }} (opcional)</label>
+                {{ form.ip_asignada }}
+                {% if form.ip_asignada.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.ip_asignada.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.mac_equipo.id_for_label }}">{{ form.mac_equipo.label }} (opcional)</label>
+                {{ form.mac_equipo }}
+                {% if form.mac_equipo.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.mac_equipo.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Notas -->
+            <div class="form-group" style="grid-column: 1 / -1; margin-top: 1rem;">
+                <h3 style="color: #667eea; margin-bottom: 1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
+                    <i class="fas fa-sticky-note"></i> Notas
+                </h3>
+            </div>
+            
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="{{ form.notas_instalacion.id_for_label }}">{{ form.notas_instalacion.label }} (opcional)</label>
+                {{ form.notas_instalacion }}
+                {% if form.notas_instalacion.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.notas_instalacion.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="{{ form.notas_tecnicas.id_for_label }}">{{ form.notas_tecnicas.label }} (opcional)</label>
+                {{ form.notas_tecnicas }}
+                {% if form.notas_tecnicas.errors %}
+                    <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+                        {{ form.notas_tecnicas.errors }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="form-actions" style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #f0f0f0; display: flex; gap: 1rem; justify-content: flex-end;">
+            <button type="submit" class="btn" style="min-width: 150px;">
+                <i class="fas fa-save"></i> {% if instalacion %}Actualizar{% else %}Crear{% endif %} Instalación
+            </button>
+            <a href="{% if instalacion %}{% url 'instalaciones:instalacion_detail' instalacion.pk %}{% elif cliente_pre_seleccionado %}{% url 'clientes:cliente_detail' cliente_pre_seleccionado.pk %}{% else %}{% url 'instalaciones:instalacion_list' %}{% endif %}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    .form-group input[type="text"],
+    .form-group input[type="number"],
+    .form-group input[type="datetime-local"],
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 1rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .form-group small {
+        display: block;
+        margin-top: 0.5rem;
+    }
+    
+    h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+    
+    h3 i {
+        margin-right: 0.5rem;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const planSelect = document.getElementById('id_plan');
+    const planNombreInput = document.getElementById('id_plan_nombre');
+    const velocidadDescargaInput = document.getElementById('id_velocidad_descarga');
+    const velocidadSubidaInput = document.getElementById('id_velocidad_subida');
+    const precioMensualInput = document.getElementById('id_precio_mensual');
+    
+    if (planSelect) {
+        planSelect.addEventListener('change', function() {
+            const planId = this.value;
+            
+            if (planId) {
+                // Obtener datos del plan desde la API
+                fetch(`{% url 'instalaciones:get_plan_data' 0 %}`.replace('0', planId))
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.error('Error:', data.error);
+                            return;
+                        }
+                        
+                        // Llenar campos automáticamente
+                        if (planNombreInput && !planNombreInput.value) {
+                            planNombreInput.value = data.nombre;
+                        }
+                        if (velocidadDescargaInput) {
+                            velocidadDescargaInput.value = data.velocidad_descarga;
+                        }
+                        if (velocidadSubidaInput && data.velocidad_subida) {
+                            velocidadSubidaInput.value = data.velocidad_subida;
+                        }
+                        if (precioMensualInput) {
+                            precioMensualInput.value = data.precio_mensual.toFixed(2);
+                        }
+                        
+                        // Mostrar mensaje de confirmación
+                        if (planNombreInput) {
+                            planNombreInput.style.borderColor = '#10b981';
+                            setTimeout(() => {
+                                planNombreInput.style.borderColor = '';
+                            }, 2000);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al obtener datos del plan:', error);
+                    });
+            } else {
+                // Si se deselecciona el plan, limpiar campos (opcional)
+                // Puedes comentar esto si prefieres mantener los valores
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+

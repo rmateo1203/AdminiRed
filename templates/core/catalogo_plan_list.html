@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ catalogo_nombre }} - Catálogos{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div>
+            <h2><i class="fas fa-tachometer-alt"></i> {{ catalogo_nombre }}</h2>
+            <a href="{% url 'core:catalogos_dashboard' %}" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">
+                <i class="fas fa-arrow-left"></i> Volver a Catálogos
+            </a>
+        </div>
+        <button onclick="mostrarFormulario()" class="btn" style="background: #8b5cf6;">
+            <i class="fas fa-plus"></i> Nuevo Plan
+        </button>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}" style="margin-bottom: 1rem;">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <!-- Formulario de creación/edición (oculto inicialmente) -->
+    <div id="formulario" style="display: none; background: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 id="formulario-titulo" style="color: #8b5cf6; margin-bottom: 1.5rem;">Nuevo Plan</h3>
+        <form id="catalogo-form" method="post">
+            {% csrf_token %}
+            <input type="hidden" id="registro-id" name="registro_id" value="">
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                <div class="form-group">
+                    <label for="nombre">Nombre del Plan *</label>
+                    <input type="text" id="nombre" name="nombre" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="velocidad_descarga">Velocidad Descarga (Mbps) *</label>
+                    <input type="number" id="velocidad_descarga" name="velocidad_descarga" class="form-control" min="1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="velocidad_subida">Velocidad Subida (Mbps) (opcional)</label>
+                    <input type="number" id="velocidad_subida" name="velocidad_subida" class="form-control" min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="precio_mensual">Precio Mensual *</label>
+                    <input type="number" id="precio_mensual" name="precio_mensual" class="form-control" step="0.01" min="0" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="activo" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="activo" name="activo" checked>
+                        Plan Activo
+                    </label>
+                    
+                </div>
+                
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="descripcion">Descripción</label>
+                    <textarea id="descripcion" name="descripcion" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+            
+            <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="submit" class="btn" style="background: #8b5cf6;">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+                <button type="button" onclick="ocultarFormulario()" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Búsqueda -->
+    <div style="margin-bottom: 1.5rem;">
+        <form method="get" style="display: flex; gap: 1rem;">
+            <input 
+                type="text" 
+                name="q" 
+                value="{{ query }}" 
+                placeholder="Buscar por nombre o descripción..."
+                class="form-control"
+                style="flex: 1;"
+            >
+            <button type="submit" class="btn"><i class="fas fa-search"></i> Buscar</button>
+            {% if query %}
+                <a href="{% url 'core:catalogo_plan_internet_list' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <!-- Tabla de Planes -->
+    {% if tipos %}
+    <div style="overflow-x: auto;">
+        <table class="table" style="width: 100%; background: white; border-radius: 12px; overflow: hidden;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Nombre</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Velocidad</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Precio Mensual</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Estado</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Descripción</th>
+                    <th style="padding: 1rem; text-align: center; font-weight: 600;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for plan in tipos %}
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 1rem;"><strong>{{ plan.nombre }}</strong></td>
+                    <td style="padding: 1rem;">
+                        <strong>{{ plan.velocidad_descarga }} Mbps</strong>
+                        {% if plan.velocidad_subida %}
+                            <br><small style="color: #6b7280;">↑ {{ plan.velocidad_subida }} Mbps</small>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem;">
+                        <strong style="color: #10b981; font-size: 1.1rem;">${{ plan.precio_mensual|floatformat:2 }}</strong>
+                    </td>
+                    <td style="padding: 1rem;">
+                        {% if plan.activo %}
+                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #10b981; color: white;">
+                                <i class="fas fa-check-circle"></i> Activo
+                            </span>
+                        {% else %}
+                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #9ca3af; color: white;">
+                                <i class="fas fa-times-circle"></i> Inactivo
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem; color: #6b7280;">{{ plan.descripcion|default:"—"|truncatewords:10 }}</td>
+                    <td style="padding: 1rem; text-align: center;">
+                        <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                            <button onclick="editarRegistro({{ plan.id }}, '{{ plan.nombre|escapejs }}', {{ plan.velocidad_descarga }}, {{ plan.velocidad_subida|default:"null" }}, {{ plan.precio_mensual }}, '{{ plan.descripcion|default:""|escapejs }}', {{ plan.activo|yesno:"true,false" }})" 
+                                    class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <form method="post" action="{% url 'core:catalogo_plan_internet_delete' plan.pk %}" 
+                                  style="display: inline;" onsubmit="return confirm('¿Estás seguro de eliminar este plan?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.875rem;" title="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 3rem; background: white; border-radius: 12px;">
+        <i class="fas fa-tachometer-alt" style="font-size: 4rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+        <p style="font-size: 1.25rem; color: #6b7280; margin-bottom: 0.5rem;">No hay planes registrados</p>
+        <p style="color: #9ca3af;">Comienza creando tu primer plan</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function mostrarFormulario() {
+    document.getElementById('formulario').style.display = 'block';
+    document.getElementById('formulario-titulo').textContent = 'Nuevo Plan';
+    document.getElementById('catalogo-form').action = '{% url "core:catalogo_plan_internet_create" %}';
+    document.getElementById('catalogo-form').reset();
+    document.getElementById('registro-id').value = '';
+    document.getElementById('activo').checked = true;
+    document.getElementById('formulario').scrollIntoView({ behavior: 'smooth' });
+}
+
+function ocultarFormulario() {
+    document.getElementById('formulario').style.display = 'none';
+    document.getElementById('catalogo-form').reset();
+    document.getElementById('registro-id').value = '';
+}
+
+function editarRegistro(id, nombre, velocidad_descarga, velocidad_subida, precio_mensual, descripcion, activo) {
+    document.getElementById('formulario').style.display = 'block';
+    document.getElementById('formulario-titulo').textContent = 'Editar Plan';
+    document.getElementById('registro-id').value = id;
+    document.getElementById('nombre').value = nombre;
+    document.getElementById('velocidad_descarga').value = velocidad_descarga;
+    document.getElementById('velocidad_subida').value = velocidad_subida || '';
+    document.getElementById('precio_mensual').value = precio_mensual;
+    document.getElementById('descripcion').value = descripcion || '';
+    document.getElementById('activo').checked = activo;
+    document.getElementById('catalogo-form').action = '{% url "core:catalogo_plan_internet_update" 0 %}'.replace('0', id);
+    document.getElementById('formulario').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+
+<style>
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+</style>
+{% endblock %}
+
