@@ -2,6 +2,253 @@
 
 {% block title %}{{ title }} - AdminiRed{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Estilos del buscador de categorías */
+    .categoria-search-container {
+        position: relative;
+    }
+    
+    .categoria-search-input {
+        width: 100%;
+        padding: 0.75rem;
+        padding-left: 2.5rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s;
+    }
+    
+    .categoria-search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .categoria-search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        pointer-events: none;
+    }
+    
+    .categoria-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        max-height: 250px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .categoria-results.active {
+        display: block;
+    }
+    
+    .categoria-result-item {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid #f3f4f6;
+        transition: background-color 0.2s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .categoria-result-item:last-child {
+        border-bottom: none;
+    }
+    
+    .categoria-result-item:hover,
+    .categoria-result-item.selected {
+        background-color: #f0f4ff;
+    }
+    
+    .categoria-result-name {
+        font-weight: 600;
+        color: #111827;
+    }
+    
+    .categoria-result-count {
+        font-size: 0.8rem;
+        color: #6b7280;
+        background: #f3f4f6;
+        padding: 0.2rem 0.5rem;
+        border-radius: 10px;
+    }
+    
+    .categoria-selected {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: linear-gradient(135deg, #f0f4ff 0%, #e8ecff 100%);
+        border: 2px solid #667eea;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin-top: 0.5rem;
+    }
+    
+    .categoria-selected-name {
+        flex: 1;
+        font-weight: 600;
+        color: #667eea;
+    }
+    
+    .categoria-selected-remove {
+        background: none;
+        border: none;
+        color: #ef4444;
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+    
+    .categoria-selected-remove:hover {
+        background: #fee2e2;
+    }
+    
+    .categoria-add-new {
+        padding: 0.75rem 1rem;
+        background: #f0fdf4;
+        border-top: 1px solid #d1fae5;
+        cursor: pointer;
+        color: #059669;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .categoria-add-new:hover {
+        background: #dcfce7;
+    }
+    
+    .no-results {
+        padding: 1rem;
+        text-align: center;
+        color: #6b7280;
+    }
+    
+    /* Estilos del buscador de unidad de medida */
+    .unidad-search-container {
+        position: relative;
+    }
+    
+    .unidad-search-input {
+        width: 100%;
+        padding: 0.75rem;
+        padding-left: 2.5rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s;
+    }
+    
+    .unidad-search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .unidad-search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        pointer-events: none;
+    }
+    
+    .unidad-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        max-height: 250px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .unidad-results.active {
+        display: block;
+    }
+    
+    .unidad-result-item {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid #f3f4f6;
+        transition: background-color 0.2s;
+    }
+    
+    .unidad-result-item:last-child {
+        border-bottom: none;
+    }
+    
+    .unidad-result-item:hover,
+    .unidad-result-item.selected {
+        background-color: #f0f4ff;
+    }
+    
+    .unidad-result-name {
+        font-weight: 600;
+        color: #111827;
+    }
+    
+    .unidad-result-code {
+        font-size: 0.8rem;
+        color: #6b7280;
+        margin-left: 0.5rem;
+    }
+    
+    .unidad-selected {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+        border: 2px solid #10b981;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin-top: 0.5rem;
+    }
+    
+    .unidad-selected-name {
+        flex: 1;
+        font-weight: 600;
+        color: #059669;
+    }
+    
+    .unidad-selected-remove {
+        background: none;
+        border: none;
+        color: #ef4444;
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+    
+    .unidad-selected-remove:hover {
+        background: #fee2e2;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="section">
     <div style="margin-bottom: 1.5rem;">
@@ -40,11 +287,44 @@
             </div>
             
             <div class="form-group">
-                <label for="{{ form.categoria.id_for_label }}">Categoría</label>
-                {{ form.categoria }}
+                <label><i class="fas fa-tag"></i> Categoría</label>
+                
+                <!-- Campo oculto para el ID de la categoría -->
+                <input type="hidden" name="categoria" id="id_categoria" value="{{ form.categoria.value|default:'' }}">
+                
+                <!-- Buscador -->
+                <div class="categoria-search-container" id="categoriaSearchContainer">
+                    <i class="fas fa-search categoria-search-icon"></i>
+                    <input 
+                        type="text" 
+                        class="categoria-search-input" 
+                        id="categoriaSearchInput"
+                        placeholder="Buscar o crear categoría..."
+                        autocomplete="off"
+                        {% if material and material.categoria %}style="display: none;"{% endif %}
+                    >
+                    <div class="categoria-results" id="categoriaResults"></div>
+                </div>
+                
+                <!-- Categoría seleccionada -->
+                <div class="categoria-selected {% if material and material.categoria %}{% else %}style="display: none;"{% endif %}" id="categoriaSelected">
+                    <i class="fas fa-tag" style="color: #667eea;"></i>
+                    <span class="categoria-selected-name" id="categoriaSelectedName">
+                        {% if material and material.categoria %}{{ material.categoria.nombre }}{% endif %}
+                    </span>
+                    <button type="button" class="categoria-selected-remove" onclick="removeSelectedCategoria()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
                 {% if form.categoria.errors %}
                     <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.categoria.errors }}</div>
                 {% endif %}
+                <small style="color: #6b7280; display: block; margin-top: 0.25rem;">
+                    <a href="{% url 'inventario:categoria_create' %}" target="_blank" style="color: #667eea;">
+                        <i class="fas fa-plus"></i> Crear nueva categoría
+                    </a>
+                </small>
             </div>
             
             <div class="form-group" style="grid-column: 1 / -1;">
@@ -72,8 +352,33 @@
             </div>
             
             <div class="form-group">
-                <label for="{{ form.unidad_medida.id_for_label }}">Unidad de Medida *</label>
-                {{ form.unidad_medida }}
+                <label><i class="fas fa-ruler"></i> Unidad de Medida *</label>
+                
+                <!-- Campo oculto para el valor de la unidad -->
+                <input type="hidden" name="unidad_medida" id="id_unidad_medida" value="{{ form.unidad_medida.value|default:'pza' }}">
+                
+                <!-- Buscador -->
+                <div class="unidad-search-container" id="unidadSearchContainer">
+                    <i class="fas fa-search unidad-search-icon"></i>
+                    <input 
+                        type="text" 
+                        class="unidad-search-input" 
+                        id="unidadSearchInput"
+                        placeholder="Buscar unidad de medida..."
+                        autocomplete="off"
+                    >
+                    <div class="unidad-results" id="unidadResults"></div>
+                </div>
+                
+                <!-- Unidad seleccionada -->
+                <div class="unidad-selected" id="unidadSelected" style="display: none;">
+                    <i class="fas fa-ruler" style="color: #10b981;"></i>
+                    <span class="unidad-selected-name" id="unidadSelectedName"></span>
+                    <button type="button" class="unidad-selected-remove" onclick="removeSelectedUnidad()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
                 {% if form.unidad_medida.errors %}
                     <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.unidad_medida.errors }}</div>
                 {% endif %}
@@ -104,7 +409,7 @@
             </div>
         </div>
         
-        <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: flex-end;">
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: flex-end; flex-wrap: wrap;">
             <button type="submit" class="btn">
                 <i class="fas fa-save"></i> Guardar
             </button>
@@ -114,5 +419,299 @@
         </div>
     </form>
 </div>
+
+<script>
+// ============================================
+// UNIDADES DE MEDIDA - Lista de opciones
+// ============================================
+const UNIDADES_MEDIDA = [
+    { code: 'pza', name: 'Pieza (Pza)' },
+    { code: 'caja', name: 'Caja' },
+    { code: 'paquete', name: 'Paquete' },
+    { code: 'rollo', name: 'Rollo' },
+    { code: 'metro', name: 'Metro (m)' },
+    { code: 'kg', name: 'Kilogramo (Kg)' },
+    { code: 'litro', name: 'Litro (L)' },
+    { code: 'par', name: 'Par' },
+    { code: 'juego', name: 'Juego' },
+    { code: 'bolsa', name: 'Bolsa' },
+    { code: 'bobina', name: 'Bobina' },
+    { code: 'carrete', name: 'Carrete' },
+    { code: 'unidad', name: 'Unidad' },
+    { code: 'docena', name: 'Docena' },
+    { code: 'millar', name: 'Millar' },
+    { code: 'otro', name: 'Otro' },
+];
+
+// ============================================
+// Variables globales para Categorías
+// ============================================
+let searchTimeout = null;
+let selectedIndex = -1;
+let resultados = [];
+
+// Elementos del DOM - Categorías
+const categoriaInput = document.getElementById('id_categoria');
+const catSearchInput = document.getElementById('categoriaSearchInput');
+const catResultsContainer = document.getElementById('categoriaResults');
+const catSelectedDiv = document.getElementById('categoriaSelected');
+const catSelectedName = document.getElementById('categoriaSelectedName');
+
+// ============================================
+// Variables para Unidades
+// ============================================
+let unidadSelectedIndex = -1;
+let unidadResultados = [];
+
+// Elementos del DOM - Unidades
+const unidadInput = document.getElementById('id_unidad_medida');
+const unidadSearchInput = document.getElementById('unidadSearchInput');
+const unidadResultsContainer = document.getElementById('unidadResults');
+const unidadSelectedDiv = document.getElementById('unidadSelected');
+const unidadSelectedName = document.getElementById('unidadSelectedName');
+
+// ============================================
+// Funciones para Categorías
+// ============================================
+function buscarCategorias(query) {
+    catResultsContainer.innerHTML = '<div class="no-results"><i class="fas fa-spinner fa-spin"></i> Buscando...</div>';
+    catResultsContainer.classList.add('active');
+    
+    fetch(`{% url 'inventario:api_buscar_categorias' %}?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            resultados = data.categorias;
+            selectedIndex = -1;
+            
+            let html = '';
+            
+            if (resultados.length === 0) {
+                html = '<div class="no-results"><i class="fas fa-info-circle"></i> No se encontraron categorías</div>';
+            } else {
+                resultados.forEach((categoria, index) => {
+                    html += `
+                        <div class="categoria-result-item" data-index="${index}" onclick="selectCategoria(${index})">
+                            <span class="categoria-result-name">
+                                <i class="fas fa-tag" style="color: #667eea; margin-right: 0.5rem;"></i>
+                                ${categoria.nombre}
+                            </span>
+                            <span class="categoria-result-count">${categoria.num_materiales} material(es)</span>
+                        </div>
+                    `;
+                });
+            }
+            
+            html += `
+                <a href="{% url 'inventario:categoria_create' %}" target="_blank" class="categoria-add-new">
+                    <i class="fas fa-plus-circle"></i> Crear nueva categoría
+                </a>
+            `;
+            
+            catResultsContainer.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            catResultsContainer.innerHTML = '<div class="no-results"><i class="fas fa-exclamation-triangle"></i> Error al buscar</div>';
+        });
+}
+
+function selectCategoria(index) {
+    const categoria = resultados[index];
+    if (!categoria) return;
+    
+    categoriaInput.value = categoria.id;
+    catSelectedName.textContent = categoria.nombre;
+    catSearchInput.style.display = 'none';
+    catSearchInput.value = '';
+    catResultsContainer.classList.remove('active');
+    catSelectedDiv.style.display = 'flex';
+}
+
+function removeSelectedCategoria() {
+    categoriaInput.value = '';
+    catSelectedDiv.style.display = 'none';
+    catSearchInput.style.display = 'block';
+    catSearchInput.value = '';
+    catSearchInput.focus();
+}
+
+function handleCategoriaKeyNavigation(e) {
+    const items = catResultsContainer.querySelectorAll('.categoria-result-item');
+    
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+        updateCategoriaSelectedItem(items);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedIndex = Math.max(selectedIndex - 1, 0);
+        updateCategoriaSelectedItem(items);
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+        e.preventDefault();
+        selectCategoria(selectedIndex);
+    } else if (e.key === 'Escape') {
+        catResultsContainer.classList.remove('active');
+    }
+}
+
+function updateCategoriaSelectedItem(items) {
+    items.forEach((item, index) => {
+        item.classList.toggle('selected', index === selectedIndex);
+    });
+    
+    if (items[selectedIndex]) {
+        items[selectedIndex].scrollIntoView({ block: 'nearest' });
+    }
+}
+
+// ============================================
+// Funciones para Unidades de Medida
+// ============================================
+function buscarUnidades(query) {
+    const queryLower = query.toLowerCase();
+    
+    // Filtrar unidades
+    unidadResultados = UNIDADES_MEDIDA.filter(u => 
+        u.name.toLowerCase().includes(queryLower) || 
+        u.code.toLowerCase().includes(queryLower)
+    );
+    
+    unidadSelectedIndex = -1;
+    
+    let html = '';
+    
+    if (unidadResultados.length === 0) {
+        html = '<div class="no-results"><i class="fas fa-info-circle"></i> No se encontraron unidades</div>';
+    } else {
+        unidadResultados.forEach((unidad, index) => {
+            html += `
+                <div class="unidad-result-item" data-index="${index}" onclick="selectUnidad(${index})">
+                    <span class="unidad-result-name">
+                        <i class="fas fa-ruler" style="color: #10b981; margin-right: 0.5rem;"></i>
+                        ${unidad.name}
+                    </span>
+                    <span class="unidad-result-code">${unidad.code}</span>
+                </div>
+            `;
+        });
+    }
+    
+    unidadResultsContainer.innerHTML = html;
+    unidadResultsContainer.classList.add('active');
+}
+
+function selectUnidad(index) {
+    const unidad = unidadResultados[index];
+    if (!unidad) return;
+    
+    unidadInput.value = unidad.code;
+    unidadSelectedName.textContent = unidad.name;
+    unidadSearchInput.style.display = 'none';
+    unidadSearchInput.value = '';
+    unidadResultsContainer.classList.remove('active');
+    unidadSelectedDiv.style.display = 'flex';
+}
+
+function removeSelectedUnidad() {
+    unidadInput.value = '';
+    unidadSelectedDiv.style.display = 'none';
+    unidadSearchInput.style.display = 'block';
+    unidadSearchInput.value = '';
+    unidadSearchInput.focus();
+}
+
+function handleUnidadKeyNavigation(e) {
+    const items = unidadResultsContainer.querySelectorAll('.unidad-result-item');
+    
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        unidadSelectedIndex = Math.min(unidadSelectedIndex + 1, items.length - 1);
+        updateUnidadSelectedItem(items);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        unidadSelectedIndex = Math.max(unidadSelectedIndex - 1, 0);
+        updateUnidadSelectedItem(items);
+    } else if (e.key === 'Enter' && unidadSelectedIndex >= 0) {
+        e.preventDefault();
+        selectUnidad(unidadSelectedIndex);
+    } else if (e.key === 'Escape') {
+        unidadResultsContainer.classList.remove('active');
+    }
+}
+
+function updateUnidadSelectedItem(items) {
+    items.forEach((item, index) => {
+        item.classList.toggle('selected', index === unidadSelectedIndex);
+    });
+    
+    if (items[unidadSelectedIndex]) {
+        items[unidadSelectedIndex].scrollIntoView({ block: 'nearest' });
+    }
+}
+
+function getUnidadNameByCode(code) {
+    const unidad = UNIDADES_MEDIDA.find(u => u.code === code);
+    return unidad ? unidad.name : code;
+}
+
+// ============================================
+// Event Listeners
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    // === Categorías ===
+    if (catSearchInput) {
+        catSearchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                buscarCategorias(this.value.trim());
+            }, 200);
+        });
+        
+        catSearchInput.addEventListener('focus', function() {
+            buscarCategorias(this.value.trim());
+        });
+        
+        catSearchInput.addEventListener('keydown', handleCategoriaKeyNavigation);
+    }
+    
+    // Si ya hay una categoría seleccionada (edición)
+    if (categoriaInput && categoriaInput.value) {
+        catSearchInput.style.display = 'none';
+        catSelectedDiv.style.display = 'flex';
+    }
+    
+    // === Unidades de Medida ===
+    if (unidadSearchInput) {
+        unidadSearchInput.addEventListener('input', function() {
+            buscarUnidades(this.value.trim());
+        });
+        
+        unidadSearchInput.addEventListener('focus', function() {
+            buscarUnidades(this.value.trim());
+        });
+        
+        unidadSearchInput.addEventListener('keydown', handleUnidadKeyNavigation);
+    }
+    
+    // Si ya hay una unidad seleccionada (edición o valor por defecto)
+    if (unidadInput && unidadInput.value) {
+        unidadSelectedName.textContent = getUnidadNameByCode(unidadInput.value);
+        unidadSearchInput.style.display = 'none';
+        unidadSelectedDiv.style.display = 'flex';
+    }
+    
+    // === Cerrar resultados al hacer clic fuera ===
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.categoria-search-container')) {
+            catResultsContainer.classList.remove('active');
+        }
+        if (!e.target.closest('.unidad-search-container')) {
+            unidadResultsContainer.classList.remove('active');
+        }
+    });
+});
+</script>
 {% endblock %}
+
+
 

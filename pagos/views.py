@@ -3,10 +3,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Sum, Count
 from django.utils import timezone
+from django.http import JsonResponse
 from datetime import timedelta
 from .models import Pago, PlanPago
 from .forms import PagoForm, PlanPagoForm
 from clientes.models import Cliente
+from instalaciones.models import Instalacion
 
 
 @login_required
@@ -150,6 +152,7 @@ def pago_update(request, pk):
         'form': form,
         'pago': pago,
         'title': 'Editar Pago',
+        'cliente_pre_seleccionado': pago.cliente,  # Para mostrar en el buscador
     }
     
     return render(request, 'pagos/pago_form.html', context)
@@ -195,3 +198,69 @@ def pago_marcar_pagado(request, pk):
     }
     
     return render(request, 'pagos/pago_marcar_pagado.html', context)
+
+
+# ============================================
+# API para búsqueda de clientes
+# ============================================
+
+@login_required
+def buscar_clientes(request):
+    """API para buscar clientes por nombre, apellido, teléfono o email."""
+    query = request.GET.get('q', '').strip()
+    
+    if len(query) < 2:
+        return JsonResponse({'clientes': []})
+    
+    clientes = Cliente.objects.filter(
+        Q(nombre__icontains=query) |
+        Q(apellido1__icontains=query) |
+        Q(apellido2__icontains=query) |
+        Q(telefono__icontains=query) |
+        Q(email__icontains=query)
+    ).order_by('nombre', 'apellido1')[:15]
+    
+    data = {
+        'clientes': [
+            {
+                'id': c.id,
+                'nombre_completo': c.nombre_completo,
+                'telefono': c.telefono,
+                'email': c.email or '',
+                'estado': c.get_estado_cliente_display(),
+                'ciudad': c.ciudad or '',
+            }
+            for c in clientes
+        ]
+    }
+    
+    return JsonResponse(data)
+
+
+@login_required
+def obtener_instalaciones_cliente(request, cliente_id):
+    """API para obtener las instalaciones de un cliente."""
+    try:
+        cliente = Cliente.objects.get(pk=cliente_id)
+        instalaciones = cliente.instalaciones.all()
+        
+        data = {
+            'cliente': {
+                'id': cliente.id,
+                'nombre_completo': cliente.nombre_completo,
+            },
+            'instalaciones': [
+                {
+                    'id': inst.id,
+                    'plan_nombre': inst.plan_nombre or f'Instalación #{inst.id}',
+                    'estado': inst.get_estado_display(),
+                    'precio_mensual': str(inst.precio_mensual),
+                    'direccion': inst.direccion_instalacion or '',
+                }
+                for inst in instalaciones
+            ]
+        }
+        
+        return JsonResponse(data)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'error': 'Cliente no encontrado'}, status=404)

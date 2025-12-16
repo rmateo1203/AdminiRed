@@ -2,6 +2,179 @@
 
 {% block title %}{{ title }} - AdminiRed{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Estilos del buscador de clientes */
+    .cliente-search-container {
+        position: relative;
+    }
+    
+    .cliente-search-input {
+        width: 100%;
+        padding: 0.75rem;
+        padding-left: 2.5rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s;
+    }
+    
+    .cliente-search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .cliente-search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        pointer-events: none;
+    }
+    
+    .cliente-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .cliente-results.active {
+        display: block;
+    }
+    
+    .cliente-result-item {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid #f3f4f6;
+        transition: background-color 0.2s;
+    }
+    
+    .cliente-result-item:last-child {
+        border-bottom: none;
+    }
+    
+    .cliente-result-item:hover,
+    .cliente-result-item.selected {
+        background-color: #f0f4ff;
+    }
+    
+    .cliente-result-name {
+        font-weight: 600;
+        color: #111827;
+    }
+    
+    .cliente-result-info {
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+    }
+    
+    .cliente-result-badge {
+        display: inline-block;
+        padding: 0.15rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+    }
+    
+    .badge-activo {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .badge-inactivo {
+        background: #e5e7eb;
+        color: #6b7280;
+    }
+    
+    .badge-suspendido {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .cliente-selected-card {
+        background: linear-gradient(135deg, #f0f4ff 0%, #e8ecff 100%);
+        border: 2px solid #667eea;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+        display: none;
+    }
+    
+    .cliente-selected-card.active {
+        display: block;
+    }
+    
+    .cliente-selected-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .cliente-selected-name {
+        font-weight: 700;
+        color: #667eea;
+        font-size: 1.1rem;
+    }
+    
+    .cliente-selected-remove {
+        background: none;
+        border: none;
+        color: #ef4444;
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        transition: background-color 0.2s;
+    }
+    
+    .cliente-selected-remove:hover {
+        background: #fee2e2;
+    }
+    
+    .cliente-selected-details {
+        font-size: 0.9rem;
+        color: #374151;
+    }
+    
+    .no-results {
+        padding: 1rem;
+        text-align: center;
+        color: #6b7280;
+    }
+    
+    .searching {
+        padding: 1rem;
+        text-align: center;
+        color: #667eea;
+    }
+    
+    @media (max-width: 768px) {
+        .cliente-results {
+            max-height: 250px;
+        }
+        
+        .cliente-result-item {
+            padding: 0.65rem 0.75rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="section">
     <div style="margin-bottom: 1.5rem;">
@@ -23,9 +196,49 @@
         {% csrf_token %}
         
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-            <div class="form-group">
-                <label for="{{ form.cliente.id_for_label }}">Cliente *</label>
-                {{ form.cliente }}
+            <!-- Buscador de Cliente -->
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label><i class="fas fa-user"></i> Cliente *</label>
+                
+                <!-- Campo oculto para el ID del cliente -->
+                <input type="hidden" name="cliente" id="id_cliente" value="{{ form.cliente.value|default:'' }}">
+                
+                <!-- Buscador -->
+                <div class="cliente-search-container" id="clienteSearchContainer">
+                    <i class="fas fa-search cliente-search-icon"></i>
+                    <input 
+                        type="text" 
+                        class="cliente-search-input" 
+                        id="clienteSearchInput"
+                        placeholder="Buscar cliente por nombre, teléfono o email..."
+                        autocomplete="off"
+                        {% if cliente_pre_seleccionado %}style="display: none;"{% endif %}
+                    >
+                    <div class="cliente-results" id="clienteResults"></div>
+                </div>
+                
+                <!-- Card del cliente seleccionado -->
+                <div class="cliente-selected-card {% if cliente_pre_seleccionado or form.cliente.value %}active{% endif %}" id="clienteSelectedCard">
+                    <div class="cliente-selected-header">
+                        <span class="cliente-selected-name" id="clienteSelectedName">
+                            {% if cliente_pre_seleccionado %}
+                                {{ cliente_pre_seleccionado.nombre_completo }}
+                            {% endif %}
+                        </span>
+                        <button type="button" class="cliente-selected-remove" onclick="removeSelectedCliente()">
+                            <i class="fas fa-times"></i> Cambiar
+                        </button>
+                    </div>
+                    <div class="cliente-selected-details" id="clienteSelectedDetails">
+                        {% if cliente_pre_seleccionado %}
+                            <i class="fas fa-phone"></i> {{ cliente_pre_seleccionado.telefono }}
+                            {% if cliente_pre_seleccionado.email %}
+                                &nbsp;|&nbsp; <i class="fas fa-envelope"></i> {{ cliente_pre_seleccionado.email }}
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                
                 {% if form.cliente.errors %}
                     <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.cliente.errors }}</div>
                 {% endif %}
@@ -132,45 +345,201 @@
 </div>
 
 <script>
-// Actualizar instalaciones cuando cambie el cliente
-document.addEventListener('DOMContentLoaded', function() {
-    const clienteSelect = document.getElementById('id_cliente');
-    const instalacionSelect = document.getElementById('id_instalacion');
+// Variables globales
+let searchTimeout = null;
+let selectedIndex = -1;
+let resultados = [];
+
+// Elementos del DOM
+const clienteInput = document.getElementById('id_cliente');
+const searchInput = document.getElementById('clienteSearchInput');
+const resultsContainer = document.getElementById('clienteResults');
+const selectedCard = document.getElementById('clienteSelectedCard');
+const selectedName = document.getElementById('clienteSelectedName');
+const selectedDetails = document.getElementById('clienteSelectedDetails');
+const instalacionSelect = document.getElementById('id_instalacion');
+
+// Buscar clientes
+function buscarClientes(query) {
+    if (query.length < 2) {
+        resultsContainer.classList.remove('active');
+        return;
+    }
     
-    if (clienteSelect && instalacionSelect) {
-        clienteSelect.addEventListener('change', function() {
-            const clienteId = this.value;
+    resultsContainer.innerHTML = '<div class="searching"><i class="fas fa-spinner fa-spin"></i> Buscando...</div>';
+    resultsContainer.classList.add('active');
+    
+    fetch(`{% url 'pagos:api_buscar_clientes' %}?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            resultados = data.clientes;
+            selectedIndex = -1;
             
-            if (clienteId) {
-                // Limpiar opciones actuales
-                instalacionSelect.innerHTML = '<option value="">---------</option>';
-                
-                // Hacer petición para obtener instalaciones del cliente
-                fetch(`/instalaciones/api/cliente/${clienteId}/instalaciones/`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Error al obtener instalaciones');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.instalaciones && data.instalaciones.length > 0) {
-                            data.instalaciones.forEach(inst => {
-                                const option = document.createElement('option');
-                                option.value = inst.id;
-                                option.textContent = inst.plan_nombre || `Instalación #${inst.id}`;
-                                instalacionSelect.appendChild(option);
-                            });
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        // Si no hay API, simplemente dejar el select vacío
-                    });
+            if (resultados.length === 0) {
+                resultsContainer.innerHTML = '<div class="no-results"><i class="fas fa-info-circle"></i> No se encontraron clientes</div>';
             } else {
-                instalacionSelect.innerHTML = '<option value="">---------</option>';
+                let html = '';
+                resultados.forEach((cliente, index) => {
+                    const badgeClass = cliente.estado.toLowerCase() === 'activo' ? 'badge-activo' : 
+                                       cliente.estado.toLowerCase() === 'suspendido' ? 'badge-suspendido' : 'badge-inactivo';
+                    html += `
+                        <div class="cliente-result-item" data-index="${index}" onclick="selectCliente(${index})">
+                            <div class="cliente-result-name">
+                                ${cliente.nombre_completo}
+                                <span class="cliente-result-badge ${badgeClass}">${cliente.estado}</span>
+                            </div>
+                            <div class="cliente-result-info">
+                                <i class="fas fa-phone"></i> ${cliente.telefono}
+                                ${cliente.email ? `&nbsp;|&nbsp; <i class="fas fa-envelope"></i> ${cliente.email}` : ''}
+                                ${cliente.ciudad ? `&nbsp;|&nbsp; <i class="fas fa-map-marker-alt"></i> ${cliente.ciudad}` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                resultsContainer.innerHTML = html;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resultsContainer.innerHTML = '<div class="no-results"><i class="fas fa-exclamation-triangle"></i> Error al buscar</div>';
+        });
+}
+
+// Seleccionar cliente
+function selectCliente(index) {
+    const cliente = resultados[index];
+    if (!cliente) return;
+    
+    // Actualizar campo oculto
+    clienteInput.value = cliente.id;
+    
+    // Mostrar card del cliente seleccionado
+    selectedName.textContent = cliente.nombre_completo;
+    selectedDetails.innerHTML = `
+        <i class="fas fa-phone"></i> ${cliente.telefono}
+        ${cliente.email ? `&nbsp;|&nbsp; <i class="fas fa-envelope"></i> ${cliente.email}` : ''}
+        ${cliente.ciudad ? `&nbsp;|&nbsp; <i class="fas fa-map-marker-alt"></i> ${cliente.ciudad}` : ''}
+    `;
+    
+    // Ocultar buscador, mostrar card
+    searchInput.style.display = 'none';
+    searchInput.value = '';
+    resultsContainer.classList.remove('active');
+    selectedCard.classList.add('active');
+    
+    // Cargar instalaciones del cliente
+    cargarInstalaciones(cliente.id);
+}
+
+// Remover cliente seleccionado
+function removeSelectedCliente() {
+    clienteInput.value = '';
+    selectedCard.classList.remove('active');
+    searchInput.style.display = 'block';
+    searchInput.value = '';
+    searchInput.focus();
+    
+    // Limpiar instalaciones
+    if (instalacionSelect) {
+        instalacionSelect.innerHTML = '<option value="">---------</option>';
+    }
+}
+
+// Cargar instalaciones de un cliente
+function cargarInstalaciones(clienteId) {
+    if (!instalacionSelect) return;
+    
+    instalacionSelect.innerHTML = '<option value="">Cargando instalaciones...</option>';
+    
+    fetch(`{% url 'pagos:api_instalaciones_cliente' cliente_id=0 %}`.replace('0', clienteId))
+        .then(response => response.json())
+        .then(data => {
+            instalacionSelect.innerHTML = '<option value="">---------</option>';
+            
+            if (data.instalaciones && data.instalaciones.length > 0) {
+                data.instalaciones.forEach(inst => {
+                    const option = document.createElement('option');
+                    option.value = inst.id;
+                    option.textContent = `${inst.plan_nombre} - $${inst.precio_mensual}/mes`;
+                    if (inst.estado) {
+                        option.textContent += ` (${inst.estado})`;
+                    }
+                    instalacionSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            instalacionSelect.innerHTML = '<option value="">---------</option>';
+        });
+}
+
+// Navegar con teclado
+function handleKeyNavigation(e) {
+    const items = resultsContainer.querySelectorAll('.cliente-result-item');
+    
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+        updateSelectedItem(items);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedIndex = Math.max(selectedIndex - 1, 0);
+        updateSelectedItem(items);
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+        e.preventDefault();
+        selectCliente(selectedIndex);
+    } else if (e.key === 'Escape') {
+        resultsContainer.classList.remove('active');
+    }
+}
+
+function updateSelectedItem(items) {
+    items.forEach((item, index) => {
+        item.classList.toggle('selected', index === selectedIndex);
+    });
+    
+    // Scroll al elemento seleccionado
+    if (items[selectedIndex]) {
+        items[selectedIndex].scrollIntoView({ block: 'nearest' });
+    }
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Búsqueda con debounce
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                buscarClientes(this.value.trim());
+            }, 300);
+        });
+        
+        // Navegación con teclado
+        searchInput.addEventListener('keydown', handleKeyNavigation);
+        
+        // Cerrar resultados al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.cliente-search-container')) {
+                resultsContainer.classList.remove('active');
             }
         });
+        
+        // Mostrar resultados al enfocar si hay texto
+        searchInput.addEventListener('focus', function() {
+            if (this.value.trim().length >= 2) {
+                buscarClientes(this.value.trim());
+            }
+        });
+    }
+    
+    // Si ya hay un cliente seleccionado (edición), cargar sus instalaciones
+    if (clienteInput && clienteInput.value && instalacionSelect) {
+        // No cargar instalaciones si ya están cargadas (edición)
+        if (instalacionSelect.options.length <= 1) {
+            cargarInstalaciones(clienteInput.value);
+        }
     }
 });
 </script>

@@ -4,9 +4,12 @@
 
 {% block content %}
 <div class="section">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <h2><i class="fas fa-exchange-alt"></i> Movimientos de Inventario</h2>
-        <a href="{% url 'inventario:movimiento_create' %}" class="btn"><i class="fas fa-plus"></i> Nuevo Movimiento</a>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="{% url 'inventario:material_list' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> <span class="desktop-only">Volver a </span>Inventario</a>
+            <a href="{% url 'inventario:movimiento_create' %}" class="btn"><i class="fas fa-plus"></i> <span class="desktop-only">Nuevo </span>Movimiento</a>
+        </div>
     </div>
     
     <!-- Búsqueda y Filtros -->
@@ -48,60 +51,66 @@
     
     <!-- Tabla de Movimientos -->
     {% if page_obj %}
-    <div style="overflow-x: auto;">
-        <table class="table" style="width: 100%; background: white; border-radius: 12px; overflow: hidden;">
+    <div class="table-responsive">
+        <table class="table data-table" style="width: 100%; background: white; border-radius: 12px; overflow: hidden;">
             <thead>
                 <tr style="background: #f8f9fa;">
-                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Fecha</th>
-                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Material</th>
-                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Tipo</th>
-                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Cantidad</th>
-                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Motivo</th>
-                    <th style="padding: 1rem; text-align: center; font-weight: 600;">Acciones</th>
+                    <th class="hide-mobile" style="padding: 0.75rem; text-align: left; font-weight: 600;">Fecha</th>
+                    <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Material</th>
+                    <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Tipo</th>
+                    <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Cantidad</th>
+                    <th class="hide-mobile" style="padding: 0.75rem; text-align: left; font-weight: 600;">Motivo</th>
+                    <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 {% for movimiento in page_obj %}
                 <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 1rem; color: #374151;">
+                    <td class="hide-mobile" style="padding: 0.75rem; color: #374151;">
                         {{ movimiento.fecha|date:"d/m/Y H:i" }}
                     </td>
-                    <td style="padding: 1rem;">
+                    <td style="padding: 0.75rem;">
                         <a href="{% url 'inventario:material_detail' movimiento.material.pk %}" style="color: #667eea; text-decoration: none;">
                             <strong>{{ movimiento.material.nombre }}</strong>
                         </a>
-                        <br><small style="color: #6b7280; font-size: 0.875rem;">{{ movimiento.material.codigo }}</small>
+                        <br><small style="color: #6b7280; font-size: 0.8rem;">{{ movimiento.material.codigo }}</small>
+                        <span class="mobile-only" style="display: block; font-size: 0.75rem; color: #9ca3af;">{{ movimiento.fecha|date:"d/m/Y" }}</span>
                     </td>
-                    <td style="padding: 1rem;">
+                    <td style="padding: 0.75rem;">
                         {% if movimiento.tipo == 'entrada' %}
-                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #10b981; color: white;">
-                                <i class="fas fa-arrow-down"></i> Entrada
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #10b981; color: white; white-space: nowrap;">
+                                <i class="fas fa-arrow-down"></i> <span class="desktop-only">Entrada</span>
                             </span>
                         {% elif movimiento.tipo == 'salida' %}
-                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #ef4444; color: white;">
-                                <i class="fas fa-arrow-up"></i> Salida
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #ef4444; color: white; white-space: nowrap;">
+                                <i class="fas fa-arrow-up"></i> <span class="desktop-only">Salida</span>
                             </span>
                         {% elif movimiento.tipo == 'ajuste' %}
-                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #f59e0b; color: white;">
-                                <i class="fas fa-adjust"></i> Ajuste
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #f59e0b; color: white; white-space: nowrap;">
+                                <i class="fas fa-adjust"></i> <span class="desktop-only">Ajuste</span>
                             </span>
                         {% else %}
-                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #3b82f6; color: white;">
-                                <i class="fas fa-undo"></i> Devolución
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #3b82f6; color: white; white-space: nowrap;">
+                                <i class="fas fa-undo"></i> <span class="desktop-only">Devolución</span>
                             </span>
                         {% endif %}
                     </td>
-                    <td style="padding: 1rem;">
-                        <strong style="color: {% if movimiento.tipo == 'entrada' %}#10b981{% else %}#ef4444{% endif %}; font-size: 1.1rem;">
-                            {% if movimiento.tipo == 'entrada' %}+{% else %}-{% endif %}{{ movimiento.cantidad }}
+                    <td style="padding: 0.75rem;">
+                        <strong style="color: {% if movimiento.tipo == 'entrada' or movimiento.tipo == 'devolucion' %}#10b981{% else %}#ef4444{% endif %}; font-size: 1rem;">
+                            {% if movimiento.tipo == 'entrada' or movimiento.tipo == 'devolucion' %}+{% else %}-{% endif %}{{ movimiento.cantidad }}
                         </strong>
-                        <span style="color: #6b7280; font-size: 0.875rem;">{{ movimiento.material.unidad_medida }}</span>
+                        <span style="color: #6b7280; font-size: 0.75rem;">{{ movimiento.material.get_unidad_medida_display }}</span>
                     </td>
-                    <td style="padding: 1rem; color: #374151;">{{ movimiento.motivo }}</td>
-                    <td style="padding: 1rem; text-align: center;">
-                        <a href="{% url 'inventario:movimiento_detail' movimiento.pk %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.875rem; text-decoration: none; border-radius: 6px;" title="Ver detalles">
-                            <i class="fas fa-eye"></i>
-                        </a>
+                    <td class="hide-mobile" style="padding: 0.75rem; color: #374151;">{{ movimiento.motivo|truncatewords:5 }}</td>
+                    <td style="padding: 0.75rem; text-align: center;">
+                        <div style="display: flex; gap: 0.25rem; justify-content: center;">
+                            <a href="{% url 'inventario:movimiento_detail' movimiento.pk %}" class="btn btn-action" title="Ver detalles">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{% url 'inventario:movimiento_delete' movimiento.pk %}" class="btn btn-action" style="background: #ef4444;" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -141,4 +150,6 @@
     {% endif %}
 </div>
 {% endblock %}
+
+
 

@@ -27,6 +27,25 @@ class Material(models.Model):
         ('descontinuado', 'Descontinuado'),
     ]
     
+    UNIDAD_MEDIDA_CHOICES = [
+        ('pza', 'Pieza (Pza)'),
+        ('caja', 'Caja'),
+        ('paquete', 'Paquete'),
+        ('rollo', 'Rollo'),
+        ('metro', 'Metro (m)'),
+        ('kg', 'Kilogramo (Kg)'),
+        ('litro', 'Litro (L)'),
+        ('par', 'Par'),
+        ('juego', 'Juego'),
+        ('bolsa', 'Bolsa'),
+        ('bobina', 'Bobina'),
+        ('carrete', 'Carrete'),
+        ('unidad', 'Unidad'),
+        ('docena', 'Docena'),
+        ('millar', 'Millar'),
+        ('otro', 'Otro'),
+    ]
+    
     # Información básica
     nombre = models.CharField(max_length=200, verbose_name='Nombre del material')
     codigo = models.CharField(max_length=50, unique=True, verbose_name='Código del material')
@@ -53,9 +72,9 @@ class Material(models.Model):
     )
     unidad_medida = models.CharField(
         max_length=20,
-        default='unidad',
-        verbose_name='Unidad de medida',
-        help_text='Ej: unidad, metro, kg, etc.'
+        choices=UNIDAD_MEDIDA_CHOICES,
+        default='pza',
+        verbose_name='Unidad de medida'
     )
     
     # Precios

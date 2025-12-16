@@ -24,9 +24,7 @@ class PagoForm(forms.ModelForm):
             'notas',
         ]
         widgets = {
-            'cliente': forms.Select(attrs={
-                'class': 'form-control'
-            }),
+            'cliente': forms.HiddenInput(),  # Campo oculto, se maneja con el buscador
             'instalacion': forms.Select(attrs={
                 'class': 'form-control'
             }),
@@ -85,8 +83,11 @@ class PagoForm(forms.ModelForm):
         if cliente_id:
             self.fields['cliente'].initial = cliente_id
             self.fields['instalacion'].queryset = Instalacion.objects.filter(cliente_id=cliente_id)
+        elif self.instance and self.instance.pk and self.instance.cliente:
+            # Modo edición: cargar instalaciones del cliente actual
+            self.fields['instalacion'].queryset = Instalacion.objects.filter(cliente=self.instance.cliente)
         else:
-            self.fields['instalacion'].queryset = Instalacion.objects.none()
+            self.fields['instalacion'].queryset = Instalacion.objects.all()
         
         # Hacer campos opcionales
         self.fields['instalacion'].required = False
@@ -133,4 +134,6 @@ class PlanPagoForm(forms.ModelForm):
         self.fields['instalacion'].queryset = Instalacion.objects.filter(
             estado='activa'
         ).order_by('cliente__nombre', 'cliente__apellido1')
+
+
 

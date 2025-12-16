@@ -368,6 +368,24 @@
             background-color: #5d3a7e;
         }
         
+        /* Botones de acción en tablas */
+        .btn-action {
+            padding: 0.4rem 0.6rem;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+        }
+        
+        .btn-success {
+            background-color: #10b981;
+        }
+        
+        .btn-success:hover {
+            background-color: #059669;
+        }
+        
         .alert {
             padding: 1rem;
             border-radius: 5px;
@@ -505,27 +523,332 @@
             border-color: #667eea;
         }
         
-        @media (max-width: 768px) {
+        /* Botón menú hamburguesa */
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+        }
+        
+        .menu-toggle:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+        
+        /* Overlay para móvil */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 998;
+        }
+        
+        .sidebar-overlay.active {
+            display: block;
+        }
+        
+        /* Tablas responsivas */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 1rem;
+        }
+        
+        /* Media Queries para tablets */
+        @media (max-width: 992px) {
             .header-content {
-                flex-direction: column;
-                gap: 1rem;
+                padding: 0 1rem;
             }
             
-            .nav {
-                flex-wrap: wrap;
-                justify-content: center;
+            .container,
+            .container-full {
+                padding: 1rem;
+            }
+            
+            .sidebar-left {
+                width: 220px;
             }
             
             .stats-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        /* Media Queries para móviles */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: row;
+                justify-content: space-between;
+                padding: 0 1rem;
             }
             
+            .logo {
+                font-size: 1.4rem;
+            }
+            
+            .menu-toggle {
+                display: block;
+            }
+            
+            .nav {
+                display: none;
+            }
+            
+            .nav.mobile-open {
+                display: flex;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                flex-direction: column;
+                padding: 1rem;
+                gap: 0.5rem;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            }
+            
+            .nav.mobile-open a {
+                text-align: center;
+                padding: 0.75rem;
+            }
+            
+            /* Sidebar móvil */
+            .app-wrapper {
+                flex-direction: column;
+            }
+            
+            .sidebar-left {
+                position: fixed;
+                top: 0;
+                left: -280px;
+                width: 280px;
+                height: 100vh;
+                max-height: 100vh;
+                z-index: 999;
+                transition: left 0.3s ease;
+                padding-top: 2rem;
+                border-radius: 0;
+            }
+            
+            .sidebar-left.mobile-open {
+                left: 0;
+            }
+            
+            .sidebar-left .close-sidebar {
+                display: block;
+                position: absolute;
+                top: 1rem;
+                right: 1rem;
+                background: none;
+                border: none;
+                font-size: 1.5rem;
+                color: #667eea;
+                cursor: pointer;
+            }
+            
+            body.sidebar-left-active .sidebar-left {
+                display: block;
+            }
+            
+            .main-content {
+                width: 100%;
+                padding: 0.5rem;
+            }
+            
+            /* Sidebar superior en móvil */
+            .sidebar-top {
+                padding: 0.75rem;
+                margin-bottom: 1rem;
+                overflow-x: auto;
+            }
+            
+            .sidebar-top .sidebar-menu {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                gap: 0.5rem;
+                padding-bottom: 0.5rem;
+            }
+            
+            .sidebar-top .sidebar-menu a {
+                padding: 0.4rem 0.75rem;
+                font-size: 0.85rem;
+            }
+            
+            .sidebar-top .sidebar-menu a i {
+                display: none;
+            }
+            
+            /* Estadísticas */
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .stat-card {
+                padding: 1rem;
+            }
+            
+            .stat-card h3 {
+                font-size: 1.5rem;
+            }
+            
+            /* Tablas */
+            .data-table {
+                font-size: 0.85rem;
+            }
+            
+            .data-table th,
+            .data-table td {
+                padding: 0.5rem 0.75rem;
+            }
+            
+            /* Ocultar columnas secundarias en móvil */
+            .hide-mobile {
+                display: none !important;
+            }
+            
+            /* Acciones en tabla */
+            .btn-action {
+                padding: 0.3rem 0.5rem;
+                font-size: 0.75rem;
+            }
+            
+            /* Formularios */
             .search-form {
                 flex-direction: column;
             }
             
+            .search-form input,
+            .search-form select {
+                min-width: 100%;
+            }
+            
             .form-actions {
                 flex-direction: column;
+            }
+            
+            .form-actions .btn {
+                width: 100%;
+                text-align: center;
+            }
+            
+            /* Contenedores */
+            .container,
+            .container-full {
+                padding: 0.75rem;
+            }
+            
+            .card,
+            .search-filters {
+                padding: 1rem;
+                border-radius: 8px;
+            }
+            
+            /* Encabezado de sección */
+            .section-header h2 {
+                font-size: 1.3rem;
+            }
+            
+            /* Paginación */
+            .pagination {
+                flex-wrap: wrap;
+            }
+            
+            .pagination a,
+            .pagination span {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.85rem;
+            }
+            
+            /* Footer */
+            .footer {
+                padding: 1rem;
+                font-size: 0.85rem;
+            }
+            
+            /* Botón configuración sidebar */
+            .sidebar-toggle {
+                bottom: 1rem;
+                right: 1rem;
+                width: 45px;
+                height: 45px;
+                font-size: 1rem;
+            }
+            
+            /* Alertas */
+            .alert {
+                padding: 0.75rem;
+                font-size: 0.9rem;
+            }
+        }
+        
+        /* Media Queries para móviles pequeños */
+        @media (max-width: 480px) {
+            .logo {
+                font-size: 1.2rem;
+            }
+            
+            .header {
+                padding: 1rem 0;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+            
+            .section-header .btn {
+                width: 100%;
+                text-align: center;
+            }
+            
+            /* Cards de detalle */
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .detail-item label {
+                font-size: 0.8rem;
+            }
+            
+            .detail-item span {
+                font-size: 0.95rem;
+            }
+            
+            /* Botones de acciones en detalles */
+            .card-actions {
+                flex-direction: column;
+            }
+            
+            .card-actions .btn {
+                width: 100%;
+            }
+        }
+        
+        /* Estilos para ocultar elementos en móvil */
+        @media (max-width: 768px) {
+            .desktop-only {
+                display: none !important;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-only {
+                display: none !important;
+            }
+            
+            .sidebar-left .close-sidebar {
+                display: none;
             }
         }
     </style>
@@ -535,10 +858,14 @@
     <header class="header">
         <div class="header-content">
             <div class="logo"><i class="fas fa-globe-americas"></i> AdminiRed</div>
-            <nav class="nav">
+            {% if user.is_authenticated %}
+            <button class="menu-toggle" onclick="toggleMobileMenu()" aria-label="Abrir menú">
+                <i class="fas fa-bars" id="menuIcon"></i>
+            </button>
+            {% endif %}
+            <nav class="nav" id="mainNav">
                 {% if user.is_authenticated %}
-                    {# Solo mostrar Cerrar Sesión, los demás enlaces están en el sidebar #}
-                    <a href="{% url 'logout' %}">Cerrar Sesión ({{ user.username }})</a>
+                    <a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión ({{ user.username }})</a>
                 {% else %}
                     <a href="{% url 'home' %}">Inicio</a>
                     <a href="{% url 'login' %}">Iniciar Sesión</a>
@@ -547,10 +874,16 @@
         </div>
     </header>
     
+    <!-- Overlay para móvil -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
+    
     <main>
         {% if user.is_authenticated and sidebar_position == 'left' %}
             <div class="app-wrapper">
-                <aside class="sidebar-left">
+                <aside class="sidebar-left" id="sidebarLeft">
+                    <button class="close-sidebar" onclick="closeMobileSidebar()" aria-label="Cerrar menú">
+                        <i class="fas fa-times"></i>
+                    </button>
                     <h3 style="color: #667eea; margin-bottom: 1rem; font-size: 1.1rem;">Menú</h3>
                     <ul class="sidebar-menu">
                         <li><a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}"><i class="fas fa-home"></i> Inicio</a></li>
@@ -619,6 +952,72 @@
         function goToSidebarConfig() {
             window.location.href = '{% url "config_sidebar" %}';
         }
+        
+        // Menú móvil
+        function toggleMobileMenu() {
+            const nav = document.getElementById('mainNav');
+            const sidebar = document.getElementById('sidebarLeft');
+            const overlay = document.getElementById('sidebarOverlay');
+            const menuIcon = document.getElementById('menuIcon');
+            
+            // Si hay sidebar izquierdo, abrir el sidebar
+            if (sidebar) {
+                sidebar.classList.toggle('mobile-open');
+                overlay.classList.toggle('active');
+                document.body.style.overflow = sidebar.classList.contains('mobile-open') ? 'hidden' : '';
+            } else {
+                // Si no hay sidebar, abrir el menú de navegación
+                nav.classList.toggle('mobile-open');
+            }
+            
+            // Cambiar icono
+            if (menuIcon) {
+                menuIcon.classList.toggle('fa-bars');
+                menuIcon.classList.toggle('fa-times');
+            }
+        }
+        
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('sidebarLeft');
+            const overlay = document.getElementById('sidebarOverlay');
+            const menuIcon = document.getElementById('menuIcon');
+            
+            if (sidebar) {
+                sidebar.classList.remove('mobile-open');
+            }
+            if (overlay) {
+                overlay.classList.remove('active');
+            }
+            document.body.style.overflow = '';
+            
+            if (menuIcon) {
+                menuIcon.classList.remove('fa-times');
+                menuIcon.classList.add('fa-bars');
+            }
+        }
+        
+        // Cerrar menú al cambiar tamaño de ventana
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                closeMobileSidebar();
+                const nav = document.getElementById('mainNav');
+                if (nav) {
+                    nav.classList.remove('mobile-open');
+                }
+            }
+        });
+        
+        // Cerrar menú al hacer clic en un enlace (móvil)
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarLinks = document.querySelectorAll('.sidebar-left .sidebar-menu a');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth <= 768) {
+                        closeMobileSidebar();
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>

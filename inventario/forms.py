@@ -2,6 +2,29 @@ from django import forms
 from .models import Material, MovimientoInventario, CategoriaMaterial
 
 
+class CategoriaMaterialForm(forms.ModelForm):
+    """Formulario para crear y editar categorías de materiales."""
+    
+    class Meta:
+        model = CategoriaMaterial
+        fields = ['nombre', 'descripcion']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre de la categoría'
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descripción de la categoría (opcional)'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['descripcion'].required = False
+
+
 class MaterialForm(forms.ModelForm):
     """Formulario para crear y editar materiales."""
     
@@ -28,9 +51,7 @@ class MaterialForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Código único del material'
             }),
-            'categoria': forms.Select(attrs={
-                'class': 'form-control'
-            }),
+            'categoria': forms.HiddenInput(),  # Campo oculto, se maneja con el buscador
             'descripcion': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
@@ -46,10 +67,7 @@ class MaterialForm(forms.ModelForm):
                 'min': 0,
                 'placeholder': '0'
             }),
-            'unidad_medida': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ej: unidad, metro, kg'
-            }),
+            'unidad_medida': forms.HiddenInput(),  # Campo oculto, se maneja con el buscador
             'precio_compra': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
@@ -139,4 +157,6 @@ class MovimientoInventarioForm(forms.ModelForm):
             
             movimiento.save()
         return movimiento
+
+
 

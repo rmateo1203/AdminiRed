@@ -11,5 +11,11 @@ urlpatterns = [
     path('<int:pk>/editar/', views.pago_update, name='pago_update'),
     path('<int:pk>/eliminar/', views.pago_delete, name='pago_delete'),
     path('<int:pk>/marcar-pagado/', views.pago_marcar_pagado, name='pago_marcar_pagado'),
+    
+    # API para búsqueda de clientes
+    path('api/buscar-clientes/', views.buscar_clientes, name='api_buscar_clientes'),
+    path('api/cliente/<int:cliente_id>/instalaciones/', views.obtener_instalaciones_cliente, name='api_instalaciones_cliente'),
 ]
+
+
 

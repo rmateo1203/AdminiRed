@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Categorías de Materiales - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <h2><i class="fas fa-tags"></i> Categorías de Materiales</h2>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="{% url 'inventario:material_list' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> <span class="desktop-only">Volver a </span>Inventario</a>
+            <a href="{% url 'inventario:categoria_create' %}" class="btn"><i class="fas fa-plus"></i> Nueva Categoría</a>
+        </div>
+    </div>
+    
+    <!-- Búsqueda -->
+    <div class="search-filters">
+        <form method="get" class="search-form">
+            <input 
+                type="text" 
+                name="q" 
+                value="{{ query }}" 
+                placeholder="Buscar por nombre o descripción..."
+                class="form-control"
+                style="flex: 1;"
+            >
+            <button type="submit" class="btn"><i class="fas fa-search"></i> Buscar</button>
+            {% if query %}
+                <a href="{% url 'inventario:categoria_list' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <!-- Lista de Categorías -->
+    {% if categorias %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+        {% for categoria in categorias %}
+        <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; transition: transform 0.2s, box-shadow 0.2s;" 
+             onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.15)';"
+             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)';">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.25rem; color: white;">
+                <h3 style="margin: 0; font-size: 1.2rem;">
+                    <i class="fas fa-tag"></i> {{ categoria.nombre }}
+                </h3>
+            </div>
+            <div style="padding: 1.25rem;">
+                {% if categoria.descripcion %}
+                    <p style="color: #6b7280; margin-bottom: 1rem; font-size: 0.9rem;">{{ categoria.descripcion|truncatewords:20 }}</p>
+                {% else %}
+                    <p style="color: #9ca3af; margin-bottom: 1rem; font-size: 0.9rem; font-style: italic;">Sin descripción</p>
+                {% endif %}
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                    <div>
+                        <span style="background: {% if categoria.num_materiales > 0 %}#e0e7ff{% else %}#f3f4f6{% endif %}; color: {% if categoria.num_materiales > 0 %}#667eea{% else %}#9ca3af{% endif %}; padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
+                            <i class="fas fa-boxes"></i> {{ categoria.num_materiales }} material{{ categoria.num_materiales|pluralize:"es" }}
+                        </span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <a href="{% url 'inventario:categoria_update' categoria.pk %}" class="btn btn-secondary btn-action" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'inventario:categoria_delete' categoria.pk %}" class="btn btn-action" style="background: #ef4444;" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="text-align: center; padding: 3rem; background: white; border-radius: 12px; margin-top: 1.5rem;">
+        <i class="fas fa-tags" style="font-size: 4rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+        <p style="font-size: 1.25rem; color: #6b7280; margin-bottom: 0.5rem;">No se encontraron categorías</p>
+        <p style="color: #9ca3af; margin-bottom: 1.5rem;">Crea categorías para organizar tus materiales</p>
+        <a href="{% url 'inventario:categoria_create' %}" class="btn">
+            <i class="fas fa-plus"></i> Crear Primera Categoría
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Categoría - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="margin-bottom: 1.5rem;">
+        <h2><i class="fas fa-trash"></i> Eliminar Categoría</h2>
+        <a href="{% url 'inventario:categoria_list' %}" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">
+            <i class="fas fa-arrow-left"></i> Volver a Categorías
+        </a>
+    </div>
+    
+    <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px;">
+        {% if num_materiales > 0 %}
+            <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                <h3 style="color: #92400e; margin-bottom: 0.5rem;">
+                    <i class="fas fa-exclamation-triangle"></i> No se puede eliminar
+                </h3>
+                <p style="color: #92400e; margin: 0;">
+                    Esta categoría tiene <strong>{{ num_materiales }} material{{ num_materiales|pluralize:"es" }}</strong> asociado{{ num_materiales|pluralize:"s" }}.
+                    Debes reasignar o eliminar los materiales antes de poder eliminar esta categoría.
+                </p>
+            </div>
+            
+            <div style="background: #f8f9fa; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 1rem; color: #374151;">
+                    <i class="fas fa-tag"></i> {{ categoria.nombre }}
+                </h4>
+                {% if categoria.descripcion %}
+                    <p style="color: #6b7280;">{{ categoria.descripcion }}</p>
+                {% endif %}
+            </div>
+            
+            <a href="{% url 'inventario:categoria_list' %}" class="btn btn-secondary" style="width: 100%; text-align: center;">
+                <i class="fas fa-arrow-left"></i> Volver a Categorías
+            </a>
+        {% else %}
+            <div style="background: #fee2e2; border: 2px solid #ef4444; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                <h3 style="color: #991b1b; margin-bottom: 0.5rem;">
+                    <i class="fas fa-exclamation-triangle"></i> ¿Estás seguro?
+                </h3>
+                <p style="color: #991b1b; margin: 0;">
+                    Esta acción no se puede deshacer. La categoría será eliminada permanentemente.
+                </p>
+            </div>
+            
+            <div style="background: #f8f9fa; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 0.5rem; color: #374151;">
+                    <i class="fas fa-tag"></i> {{ categoria.nombre }}
+                </h4>
+                {% if categoria.descripcion %}
+                    <p style="color: #6b7280; margin: 0;">{{ categoria.descripcion }}</p>
+                {% endif %}
+            </div>
+            
+            <form method="post" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="background: #ef4444; flex: 1;">
+                    <i class="fas fa-trash"></i> Sí, Eliminar
+                </button>
+                <a href="{% url 'inventario:categoria_list' %}" class="btn btn-secondary" style="flex: 1; text-align: center;">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

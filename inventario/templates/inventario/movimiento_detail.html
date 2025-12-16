@@ -50,8 +50,8 @@
             
             <div>
                 <strong style="color: #6b7280; font-size: 0.875rem;">Cantidad</strong>
-                <div style="margin-top: 0.5rem; font-size: 1.5rem; font-weight: bold; color: {% if movimiento.tipo == 'entrada' %}#10b981{% else %}#ef4444{% endif %};">
-                    {% if movimiento.tipo == 'entrada' %}+{% else %}-{% endif %}{{ movimiento.cantidad }} {{ movimiento.material.unidad_medida }}
+                <div style="margin-top: 0.5rem; font-size: 1.5rem; font-weight: bold; color: {% if movimiento.tipo == 'entrada' or movimiento.tipo == 'devolucion' %}#10b981{% else %}#ef4444{% endif %};">
+                    {% if movimiento.tipo == 'entrada' or movimiento.tipo == 'devolucion' %}+{% else %}-{% endif %}{{ movimiento.cantidad }} {{ movimiento.material.get_unidad_medida_display }}
                 </div>
             </div>
             
@@ -73,12 +73,17 @@
             {% endif %}
         </div>
         
-        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid #e5e7eb;">
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid #e5e7eb; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
             <a href="{% url 'inventario:movimiento_list' %}" class="btn btn-secondary" style="text-decoration: none;">
                 <i class="fas fa-arrow-left"></i> Volver a Movimientos
+            </a>
+            <a href="{% url 'inventario:movimiento_delete' movimiento.pk %}" class="btn" style="text-decoration: none; background: #ef4444;">
+                <i class="fas fa-trash"></i> Eliminar Movimiento
             </a>
         </div>
     </div>
 </div>
 {% endblock %}
+
+
 

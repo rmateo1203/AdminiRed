@@ -49,14 +49,23 @@
                     <div>
                         <strong style="color: #6b7280; font-size: 0.875rem;">Stock Actual</strong>
                         <div style="margin-top: 0.5rem; font-size: 1.5rem; font-weight: bold;">
-                            {{ material.stock_actual }} {{ material.unidad_medida }}
+                            {{ material.stock_actual }} {{ material.get_unidad_medida_display }}
                         </div>
                     </div>
                     <div>
                         <strong style="color: #6b7280; font-size: 0.875rem;">Stock Mínimo</strong>
                         <div style="margin-top: 0.5rem; font-size: 1.2rem;">
-                            {{ material.stock_minimo }} {{ material.unidad_medida }}
+                            {{ material.stock_minimo }} {{ material.get_unidad_medida_display }}
                         </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Unidad de Medida</strong>
+                    <div style="margin-top: 0.5rem;">
+                        <span style="padding: 0.5rem 1rem; border-radius: 8px; background: #f3f4f6; color: #374151;">
+                            {{ material.get_unidad_medida_display }}
+                        </span>
                     </div>
                 </div>
                 
@@ -158,4 +167,6 @@
     </div>
 </div>
 {% endblock %}
+
+
 

@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Movimiento - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="margin-bottom: 1.5rem;">
+        <h2><i class="fas fa-trash"></i> Eliminar Movimiento</h2>
+        <a href="{% url 'inventario:movimiento_list' %}" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">
+            <i class="fas fa-arrow-left"></i> Volver a Movimientos
+        </a>
+    </div>
+    
+    <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px;">
+        <div style="background: #fee2e2; border: 2px solid #ef4444; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+            <h3 style="color: #991b1b; margin-bottom: 0.5rem;">
+                <i class="fas fa-exclamation-triangle"></i> ¿Estás seguro?
+            </h3>
+            <p style="color: #991b1b; margin: 0;">
+                Al eliminar este movimiento, el stock del material <strong>{{ movimiento.material.nombre }}</strong> será revertido automáticamente.
+            </p>
+        </div>
+        
+        <div style="background: #f8f9fa; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+            <h4 style="margin-bottom: 1rem; color: #374151;">Detalles del Movimiento</h4>
+            
+            <div style="display: grid; gap: 0.75rem;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280;">Material:</span>
+                    <strong>{{ movimiento.material.nombre }}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280;">Tipo:</span>
+                    <span style="padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; font-weight: 600;
+                        {% if movimiento.tipo == 'entrada' or movimiento.tipo == 'devolucion' %}
+                            background: #d1fae5; color: #065f46;
+                        {% elif movimiento.tipo == 'salida' %}
+                            background: #fee2e2; color: #991b1b;
+                        {% else %}
+                            background: #e5e7eb; color: #374151;
+                        {% endif %}">
+                        {{ movimiento.get_tipo_display }}
+                    </span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280;">Cantidad:</span>
+                    <strong style="font-size: 1.1rem;">{{ movimiento.cantidad }}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280;">Motivo:</span>
+                    <span>{{ movimiento.motivo }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280;">Fecha:</span>
+                    <span>{{ movimiento.fecha|date:"d/m/Y H:i" }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: #dbeafe; border: 1px solid #3b82f6; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+            <p style="color: #1e40af; margin: 0; font-size: 0.9rem;">
+                <i class="fas fa-info-circle"></i>
+                <strong>Stock actual del material:</strong> {{ movimiento.material.stock_actual }} {{ movimiento.material.get_unidad_medida_display }}
+                <br>
+                {% if movimiento.tipo == 'entrada' or movimiento.tipo == 'devolucion' %}
+                    <strong>Después de eliminar:</strong> {{ movimiento.material.stock_actual|add:movimiento.cantidad|add:"-"|add:movimiento.cantidad|add:"-"|add:movimiento.cantidad }} (se reducirá)
+                {% elif movimiento.tipo == 'salida' %}
+                    <strong>Después de eliminar:</strong> se aumentará en {{ movimiento.cantidad }}
+                {% endif %}
+            </p>
+        </div>
+        
+        <form method="post" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            {% csrf_token %}
+            <button type="submit" class="btn" style="background: #ef4444; flex: 1;">
+                <i class="fas fa-trash"></i> Sí, Eliminar y Revertir Stock
+            </button>
+            <a href="{% url 'inventario:movimiento_detail' movimiento.pk %}" class="btn btn-secondary" style="flex: 1; text-align: center;">
+                <i class="fas fa-times"></i> Cancelar
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

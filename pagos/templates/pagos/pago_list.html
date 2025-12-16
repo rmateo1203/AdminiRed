@@ -4,9 +4,9 @@
 
 {% block content %}
 <div class="section">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <h2><i class="fas fa-dollar-sign"></i> Lista de Pagos</h2>
-        <a href="{% url 'pagos:pago_create' %}" class="btn"><i class="fas fa-plus"></i> Nuevo Pago</a>
+        <a href="{% url 'pagos:pago_create' %}" class="btn"><i class="fas fa-plus"></i> <span class="desktop-only">Nuevo </span>Pago</a>
     </div>
     
     <!-- Búsqueda y Filtros -->
@@ -94,15 +94,15 @@
     
     <!-- Tabla de Pagos -->
     {% if page_obj %}
-    <div style="overflow-x: auto;">
-        <table class="table" style="width: 100%; background: white; border-radius: 12px; overflow: hidden;">
+    <div class="table-responsive">
+        <table class="table data-table" style="width: 100%; background: white; border-radius: 12px; overflow: hidden;">
             <thead>
                 <tr style="background: #f8f9fa;">
                     <th style="padding: 1rem; text-align: left; font-weight: 600;">Cliente</th>
-                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Concepto</th>
+                    <th class="hide-mobile" style="padding: 1rem; text-align: left; font-weight: 600;">Concepto</th>
                     <th style="padding: 1rem; text-align: left; font-weight: 600;">Monto</th>
-                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Período</th>
-                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Vencimiento</th>
+                    <th class="hide-mobile" style="padding: 1rem; text-align: left; font-weight: 600;">Período</th>
+                    <th class="hide-mobile" style="padding: 1rem; text-align: left; font-weight: 600;">Vencimiento</th>
                     <th style="padding: 1rem; text-align: left; font-weight: 600;">Estado</th>
                     <th style="padding: 1rem; text-align: center; font-weight: 600;">Acciones</th>
                 </tr>
@@ -110,56 +110,57 @@
             <tbody>
                 {% for pago in page_obj %}
                 <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 1rem;">
+                    <td style="padding: 0.75rem;">
                         <a href="{% url 'clientes:cliente_detail' pago.cliente.pk %}" style="color: #667eea; text-decoration: none;">
                             <strong>{{ pago.cliente.nombre_completo }}</strong>
                         </a>
                         {% if pago.instalacion %}
-                            <br><small style="color: #6b7280; font-size: 0.875rem;">{{ pago.instalacion.plan_nombre }}</small>
+                            <br><small style="color: #6b7280; font-size: 0.8rem;">{{ pago.instalacion.plan_nombre }}</small>
                         {% endif %}
+                        <span class="mobile-only" style="display: block; font-size: 0.75rem; color: #6b7280;">{{ pago.get_periodo_mes_display }} {{ pago.periodo_anio }}</span>
                     </td>
-                    <td style="padding: 1rem;">{{ pago.concepto }}</td>
-                    <td style="padding: 1rem;">
-                        <strong style="color: #10b981; font-size: 1.1rem;">${{ pago.monto|floatformat:2 }}</strong>
+                    <td class="hide-mobile" style="padding: 0.75rem;">{{ pago.concepto }}</td>
+                    <td style="padding: 0.75rem;">
+                        <strong style="color: #10b981; font-size: 1rem;">${{ pago.monto|floatformat:2 }}</strong>
                     </td>
-                    <td style="padding: 1rem; color: #374151;">
+                    <td class="hide-mobile" style="padding: 0.75rem; color: #374151;">
                         {{ pago.get_periodo_mes_display }} {{ pago.periodo_anio }}
                     </td>
-                    <td style="padding: 1rem; color: #374151;">
+                    <td class="hide-mobile" style="padding: 0.75rem; color: #374151;">
                         {{ pago.fecha_vencimiento|date:"d/m/Y" }}
                         {% if pago.esta_vencido and pago.estado != 'pagado' %}
                             <br><small style="color: #ef4444; font-weight: 600;">{{ pago.dias_vencido }} día(s) vencido</small>
                         {% endif %}
                     </td>
-                    <td style="padding: 1rem;">
+                    <td style="padding: 0.75rem;">
                         {% if pago.estado == 'pagado' %}
-                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #10b981; color: white;">
-                                <i class="fas fa-check-circle"></i> Pagado
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #10b981; color: white; white-space: nowrap;">
+                                <i class="fas fa-check-circle"></i> <span class="desktop-only">Pagado</span>
                             </span>
                         {% elif pago.estado == 'vencido' %}
-                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #ef4444; color: white;">
-                                <i class="fas fa-exclamation-triangle"></i> Vencido
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #ef4444; color: white; white-space: nowrap;">
+                                <i class="fas fa-exclamation-triangle"></i> <span class="desktop-only">Vencido</span>
                             </span>
                         {% elif pago.estado == 'pendiente' %}
-                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #f59e0b; color: white;">
-                                <i class="fas fa-clock"></i> Pendiente
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #f59e0b; color: white; white-space: nowrap;">
+                                <i class="fas fa-clock"></i> <span class="desktop-only">Pendiente</span>
                             </span>
                         {% else %}
-                            <span style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #9ca3af; color: white;">
-                                <i class="fas fa-ban"></i> {{ pago.get_estado_display }}
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #9ca3af; color: white; white-space: nowrap;">
+                                <i class="fas fa-ban"></i> <span class="desktop-only">{{ pago.get_estado_display }}</span>
                             </span>
                         {% endif %}
                     </td>
-                    <td style="padding: 1rem; text-align: center;">
-                        <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
-                            <a href="{% url 'pagos:pago_detail' pago.pk %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.875rem; text-decoration: none; border-radius: 6px;" title="Ver detalles">
+                    <td style="padding: 0.75rem; text-align: center;">
+                        <div style="display: flex; gap: 0.25rem; justify-content: center; flex-wrap: wrap;">
+                            <a href="{% url 'pagos:pago_detail' pago.pk %}" class="btn btn-action" title="Ver detalles">
                                 <i class="fas fa-eye"></i>
                             </a>
-                            <a href="{% url 'pagos:pago_update' pago.pk %}" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem; text-decoration: none; border-radius: 6px;" title="Editar">
+                            <a href="{% url 'pagos:pago_update' pago.pk %}" class="btn btn-secondary btn-action" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </a>
                             {% if pago.estado != 'pagado' %}
-                                <a href="{% url 'pagos:pago_marcar_pagado' pago.pk %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.875rem; text-decoration: none; border-radius: 6px; background: #10b981;" title="Marcar como pagado">
+                                <a href="{% url 'pagos:pago_marcar_pagado' pago.pk %}" class="btn btn-success btn-action" title="Marcar como pagado">
                                     <i class="fas fa-check"></i>
                                 </a>
                             {% endif %}
