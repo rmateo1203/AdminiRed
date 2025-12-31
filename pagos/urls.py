@@ -12,6 +12,14 @@ urlpatterns = [
     path('<int:pk>/eliminar/', views.pago_delete, name='pago_delete'),
     path('<int:pk>/marcar-pagado/', views.pago_marcar_pagado, name='pago_marcar_pagado'),
     
+    # Exportación
+    path('exportar/excel/', views.pago_exportar_excel, name='pago_exportar_excel'),
+    path('exportar/pdf/', views.pago_exportar_pdf, name='pago_exportar_pdf'),
+    
+    # Calendario y Reportes
+    path('calendario/', views.pago_calendario, name='pago_calendario'),
+    path('reportes/', views.pago_reportes, name='pago_reportes'),
+    
     # API para búsqueda de clientes
     path('api/buscar-clientes/', views.buscar_clientes, name='api_buscar_clientes'),
     path('api/cliente/<int:cliente_id>/instalaciones/', views.obtener_instalaciones_cliente, name='api_instalaciones_cliente'),

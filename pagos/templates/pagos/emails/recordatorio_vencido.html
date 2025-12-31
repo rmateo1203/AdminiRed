@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago Vencido - Urgente</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+            margin: -30px -30px 30px -30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            margin: 20px 0;
+        }
+        .alert-urgent {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .alert-urgent strong {
+            color: #721c24;
+        }
+        .payment-details {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .payment-details h3 {
+            margin-top: 0;
+            color: #495057;
+            border-bottom: 2px solid #dc3545;
+            padding-bottom: 10px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #6c757d;
+        }
+        .detail-value {
+            color: #212529;
+            font-weight: 600;
+        }
+        .amount {
+            font-size: 24px;
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .days-overdue {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+            margin: 15px 0;
+            border: 2px solid #dc3545;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .warning-box strong {
+            color: #856404;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠️ Pago Vencido - Urgente</h1>
+        </div>
+        
+        <div class="content">
+            <p>Estimado/a <strong>{{ cliente.nombre_completo }}</strong>,</p>
+            
+            <div class="alert-urgent">
+                <strong>⚠️ ATENCIÓN:</strong> Su pago está vencido y requiere atención inmediata.
+            </div>
+            
+            <div class="payment-details">
+                <h3>📋 Detalles del Pago</h3>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Concepto:</span>
+                    <span class="detail-value">{{ pago.concepto }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Monto:</span>
+                    <span class="detail-value amount">${{ pago.monto|floatformat:2 }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Fecha de vencimiento:</span>
+                    <span class="detail-value">{{ fecha_vencimiento }}</span>
+                </div>
+                
+                {% if pago.instalacion %}
+                <div class="detail-row">
+                    <span class="detail-label">Instalación:</span>
+                    <span class="detail-value">{{ pago.instalacion.numero_contrato }}</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="days-overdue">
+                🚨 Días vencido: {{ dias_vencido }} día(s)
+            </div>
+            
+            <div class="warning-box">
+                <strong>🚨 URGENTE:</strong> Su pago está vencido. Por favor, realice el pago lo antes posible para evitar:
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Interrupciones en su servicio</li>
+                    <li>Recargos por mora</li>
+                    <li>Problemas con su cuenta</li>
+                </ul>
+            </div>
+            
+            <p>Si tiene alguna pregunta o necesita asistencia, no dude en contactarnos inmediatamente.</p>
+        </div>
+        
+        <div class="footer">
+            <p>Saludos cordiales,<br><strong>Equipo AdminiRed</strong></p>
+            <p style="font-size: 12px; color: #adb5bd;">Este es un mensaje automático, por favor no responda a este correo.</p>
+        </div>
+    </div>
+</body>
+</html>
+

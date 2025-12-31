@@ -3,8 +3,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
 from django.http import JsonResponse
-from .models import Instalacion, PlanInternet
-from .forms import InstalacionForm
+from django.core.paginator import Paginator
+import logging
+from .models import Instalacion, PlanInternet, ConfiguracionNumeroContrato
+from .forms import InstalacionForm, ConfiguracionNumeroContratoForm
+from .services import NumeroContratoService
+from clientes.models import Cliente
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -33,13 +39,21 @@ def instalacion_list(request):
     orden = request.GET.get('orden', '-fecha_solicitud')
     instalaciones = instalaciones.order_by(orden)
     
-    # Calcular estadísticas
+    # Calcular estadísticas (antes de paginación)
     total_instalaciones = instalaciones.count()
     activas = instalaciones.filter(estado='activa').count()
     pendientes = instalaciones.filter(estado__in=['pendiente', 'programada', 'en_proceso']).count()
+    programadas = instalaciones.filter(estado='programada').count()
+    suspendidas = instalaciones.filter(estado='suspendida').count()
+    canceladas = instalaciones.filter(estado='cancelada').count()
+    
+    # Paginación
+    paginator = Paginator(instalaciones, 20)  # 20 por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
     
     context = {
-        'instalaciones': instalaciones,
+        'page_obj': page_obj,
         'query': query,
         'estado_filter': estado_filter,
         'orden': orden,
@@ -47,6 +61,9 @@ def instalacion_list(request):
         'total_instalaciones': total_instalaciones,
         'activas': activas,
         'pendientes': pendientes,
+        'programadas': programadas,
+        'suspendidas': suspendidas,
+        'canceladas': canceladas,
     }
     
     return render(request, 'instalaciones/instalacion_list.html', context)
@@ -89,13 +106,13 @@ def instalacion_create(request, cliente_id=None):
             form.data['cliente'] = cliente_pre_seleccionado.pk
         
         if form.is_valid():
-            instalacion = form.save()
-            # Si se seleccionó un plan del catálogo, actualizar el plan_nombre si está vacío
-            if instalacion.plan and not instalacion.plan_nombre:
-                instalacion.plan_nombre = instalacion.plan.nombre
-                instalacion.save()
-            messages.success(request, f'Instalación "{instalacion}" creada exitosamente.')
-            return redirect('instalaciones:instalacion_detail', pk=instalacion.pk)
+            try:
+                instalacion = form.save()
+                messages.success(request, f'Instalación "{instalacion}" creada exitosamente.')
+                return redirect('instalaciones:instalacion_detail', pk=instalacion.pk)
+            except Exception as e:
+                messages.error(request, f'Error al crear la instalación: {str(e)}')
+                logger.error(f'Error al crear instalación: {str(e)}')
     else:
         form = InstalacionForm()
         # Pre-llenar el cliente si se proporciona
@@ -116,20 +133,23 @@ def instalacion_create(request, cliente_id=None):
 @login_required
 def instalacion_update(request, pk):
     """Actualiza una instalación existente."""
-    instalacion = get_object_or_404(Instalacion, pk=pk)
+    instalacion = get_object_or_404(Instalacion.objects.select_related('cliente'), pk=pk)
     
     if request.method == 'POST':
         form = InstalacionForm(request.POST, instance=instalacion)
         if form.is_valid():
-            instalacion = form.save()
-            # Si se seleccionó un plan del catálogo, actualizar el plan_nombre si está vacío
-            if instalacion.plan and not instalacion.plan_nombre:
-                instalacion.plan_nombre = instalacion.plan.nombre
-                instalacion.save()
-            messages.success(request, f'Instalación "{instalacion}" actualizada exitosamente.')
-            return redirect('instalaciones:instalacion_detail', pk=instalacion.pk)
+            try:
+                instalacion = form.save()
+                messages.success(request, f'Instalación "{instalacion}" actualizada exitosamente.')
+                return redirect('instalaciones:instalacion_detail', pk=instalacion.pk)
+            except Exception as e:
+                messages.error(request, f'Error al actualizar la instalación: {str(e)}')
+                logger.error(f'Error al actualizar instalación {instalacion.pk}: {str(e)}')
     else:
         form = InstalacionForm(instance=instalacion)
+        # Pre-llenar el cliente en el formulario
+        if instalacion.cliente:
+            form.fields['cliente'].initial = instalacion.cliente
     
     context = {
         'form': form,
@@ -171,3 +191,155 @@ def get_plan_data(request, plan_id):
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+
+# ============================================
+# API para búsqueda de clientes
+# ============================================
+
+@login_required
+def buscar_clientes_api(request):
+    """API para buscar clientes por nombre, apellido, teléfono o email."""
+    query = request.GET.get('q', '').strip()
+    
+    if len(query) < 2:
+        return JsonResponse({'clientes': []})
+    
+    clientes = Cliente.objects.filter(
+        Q(nombre__icontains=query) |
+        Q(apellido1__icontains=query) |
+        Q(apellido2__icontains=query) |
+        Q(telefono__icontains=query) |
+        Q(email__icontains=query)
+    ).order_by('nombre', 'apellido1')[:15]
+    
+    data = {
+        'clientes': [
+            {
+                'id': c.id,
+                'nombre_completo': c.nombre_completo,
+                'telefono': c.telefono,
+                'email': c.email or '',
+                'estado': c.get_estado_cliente_display(),
+                'ciudad': c.ciudad or '',
+            }
+            for c in clientes
+        ]
+    }
+    
+    return JsonResponse(data)
+
+
+@login_required
+def get_cliente_instalaciones_api(request, cliente_id):
+    """API para obtener las instalaciones de un cliente."""
+    try:
+        cliente = Cliente.objects.get(pk=cliente_id)
+        instalaciones = cliente.instalaciones.all().order_by('-fecha_solicitud')
+        
+        data = {
+            'cliente': {
+                'id': cliente.id,
+                'nombre_completo': cliente.nombre_completo,
+            },
+            'instalaciones': [
+                {
+                    'id': inst.id,
+                    'plan_nombre': inst.plan_nombre or f'Instalación #{inst.id}',
+                    'estado': inst.get_estado_display(),
+                    'precio_mensual': str(inst.precio_mensual),
+                    'direccion': inst.direccion_instalacion or '',
+                    'numero_contrato': inst.numero_contrato or '',
+                    'fecha_solicitud': inst.fecha_solicitud.strftime('%d/%m/%Y') if inst.fecha_solicitud else '',
+                }
+                for inst in instalaciones
+            ]
+        }
+        
+        return JsonResponse(data)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'error': 'Cliente no encontrado'}, status=404)
+
+
+@login_required
+def configurar_numero_contrato(request):
+    """Vista para configurar la generación automática de números de contrato."""
+    config = ConfiguracionNumeroContrato.get_activa()
+    
+    if request.method == 'POST':
+        form = ConfiguracionNumeroContratoForm(request.POST, instance=config)
+        if form.is_valid():
+            config = form.save()
+            messages.success(request, 'Configuración de número de contrato actualizada exitosamente.')
+            return redirect('instalaciones:configurar_numero_contrato')
+    else:
+        form = ConfiguracionNumeroContratoForm(instance=config)
+    
+    # Generar preview del formato
+    preview = None
+    if form.is_valid() or request.method == 'GET':
+        try:
+            preview = NumeroContratoService.obtener_preview(
+                formato=form['formato'].value() or config.formato,
+                prefijo=form['prefijo'].value() or config.prefijo,
+                numero_inicial=form['numero_inicial'].value() or config.numero_inicial,
+                digitos_secuencia=form['digitos_secuencia'].value() or config.digitos_secuencia,
+                reiniciar_diario=form['reiniciar_diario'].value() if form['reiniciar_diario'].value() is not None else config.reiniciar_diario
+            )
+        except:
+            preview = None
+    
+    # Ejemplos de formatos
+    ejemplos_formatos = [
+        {
+            'formato': 'INST-{YYYY}{MM}{DD}-{####}',
+            'descripcion': 'INST-20241215-0001',
+            'ejemplo': 'Con año completo, mes y día'
+        },
+        {
+            'formato': '{PREFIJO}-{YY}{MM}{DD}-{####}',
+            'descripcion': 'INST-241215-0001',
+            'ejemplo': 'Con año de 2 dígitos'
+        },
+        {
+            'formato': 'CONTRATO-{YYYY}-{####}',
+            'descripcion': 'CONTRATO-2024-0001',
+            'ejemplo': 'Solo año y número secuencial'
+        },
+        {
+            'formato': '{PREFIJO}{YYYY}{MM}{DD}{####}',
+            'descripcion': 'INST202412150001',
+            'ejemplo': 'Sin separadores'
+        },
+    ]
+    
+    context = {
+        'form': form,
+        'config': config,
+        'preview': preview,
+        'ejemplos_formatos': ejemplos_formatos,
+    }
+    
+    return render(request, 'instalaciones/configurar_numero_contrato.html', context)
+
+
+@login_required
+def preview_numero_contrato(request):
+    """API para obtener preview del número de contrato."""
+    formato = request.GET.get('formato', '')
+    prefijo = request.GET.get('prefijo', 'INST')
+    numero_inicial = int(request.GET.get('numero_inicial', 1))
+    digitos_secuencia = int(request.GET.get('digitos_secuencia', 4))
+    reiniciar_diario = request.GET.get('reiniciar_diario', 'true').lower() == 'true'
+    
+    try:
+        preview = NumeroContratoService.obtener_preview(
+            formato=formato,
+            prefijo=prefijo,
+            numero_inicial=numero_inicial,
+            digitos_secuencia=digitos_secuencia,
+            reiniciar_diario=reiniciar_diario
+        )
+        return JsonResponse({'preview': preview, 'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e), 'success': False}, status=400)

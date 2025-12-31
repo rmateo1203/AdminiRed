@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import TipoInstalacion, PlanInternet, Instalacion
+from .models import TipoInstalacion, PlanInternet, Instalacion, ConfiguracionNumeroContrato
 
 
 @admin.register(TipoInstalacion)
@@ -14,6 +14,25 @@ class PlanInternetAdmin(admin.ModelAdmin):
     list_filter = ['activo', 'velocidad_descarga']
     search_fields = ['nombre', 'descripcion']
     ordering = ['precio_mensual', 'velocidad_descarga']
+
+
+@admin.register(ConfiguracionNumeroContrato)
+class ConfiguracionNumeroContratoAdmin(admin.ModelAdmin):
+    list_display = ['formato', 'prefijo', 'numero_inicial', 'digitos_secuencia', 'reiniciar_diario', 'activa', 'fecha_actualizacion']
+    list_filter = ['activa', 'reiniciar_diario']
+    readonly_fields = ['fecha_creacion', 'fecha_actualizacion']
+    fieldsets = (
+        ('Configuración General', {
+            'fields': ('activa', 'formato', 'prefijo')
+        }),
+        ('Secuencia', {
+            'fields': ('numero_inicial', 'digitos_secuencia', 'reiniciar_diario')
+        }),
+        ('Información', {
+            'fields': ('fecha_creacion', 'fecha_actualizacion'),
+            'classes': ('collapse',)
+        }),
+    )
 
 
 @admin.register(Instalacion)

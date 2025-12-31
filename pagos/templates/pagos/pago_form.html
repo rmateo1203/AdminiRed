@@ -25,6 +25,11 @@
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
     
+    .cliente-search-input::placeholder {
+        color: #9ca3af;
+        font-style: italic;
+    }
+    
     .cliente-search-icon {
         position: absolute;
         left: 0.75rem;
@@ -195,10 +200,39 @@
     <form method="post" style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
         {% csrf_token %}
         
+        <!-- Instrucciones iniciales -->
+        <div style="background: #f0f4ff; border-left: 4px solid #667eea; padding: 1rem; margin-bottom: 1.5rem; border-radius: 4px;">
+            <div style="display: flex; align-items: start; gap: 0.75rem;">
+                <i class="fas fa-info-circle" style="color: #667eea; margin-top: 0.25rem;"></i>
+                <div>
+                    <strong style="color: #667eea; display: block; margin-bottom: 0.5rem;">¿Cómo crear un nuevo pago?</strong>
+                    <p style="margin: 0; color: #374151; font-size: 0.9rem; line-height: 1.6;">
+                        1. Busca y selecciona el cliente<br>
+                        2. Elige la instalación (si aplica)<br>
+                        3. Si hay un Plan de Pago activo, puedes usar el botón "Aplicar Valores del Plan" para llenar automáticamente los campos<br>
+                        4. Completa los campos restantes y guarda
+                    </p>
+                </div>
+            </div>
+        </div>
+        
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            <!-- Sección: Información del Cliente -->
+            <div style="grid-column: 1 / -1; border-bottom: 2px solid #e5e7eb; padding-bottom: 1rem; margin-bottom: 1rem;">
+                <h3 style="margin: 0; color: #667eea; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-user-circle"></i> Información del Cliente
+                </h3>
+            </div>
+            
             <!-- Buscador de Cliente -->
             <div class="form-group" style="grid-column: 1 / -1;">
-                <label><i class="fas fa-user"></i> Cliente *</label>
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-user"></i> 
+                    <span>Cliente <span style="color: #ef4444;">*</span></span>
+                    <span style="font-size: 0.75rem; color: #6b7280; font-weight: normal; margin-left: auto;">
+                        <i class="fas fa-question-circle" title="Busca por nombre, teléfono o email. Escribe al menos 2 caracteres."></i>
+                    </span>
+                </label>
                 
                 <!-- Campo oculto para el ID del cliente -->
                 <input type="hidden" name="cliente" id="id_cliente" value="{{ form.cliente.value|default:'' }}">
@@ -210,7 +244,7 @@
                         type="text" 
                         class="cliente-search-input" 
                         id="clienteSearchInput"
-                        placeholder="Buscar cliente por nombre, teléfono o email..."
+                        placeholder="Escribe al menos 2 caracteres para buscar (nombre, teléfono o email)..."
                         autocomplete="off"
                         {% if cliente_pre_seleccionado %}style="display: none;"{% endif %}
                     >
@@ -245,31 +279,98 @@
             </div>
             
             <div class="form-group">
-                <label for="{{ form.instalacion.id_for_label }}">Instalación</label>
+                <label for="{{ form.instalacion.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-wifi"></i> 
+                    <span>Instalación</span>
+                    <span style="font-size: 0.75rem; color: #6b7280; font-weight: normal; margin-left: auto;">
+                        <i class="fas fa-question-circle" title="Selecciona la instalación del cliente. Si el cliente tiene un Plan de Pago activo, se mostrará información adicional."></i>
+                    </span>
+                </label>
                 {{ form.instalacion }}
                 {% if form.instalacion.errors %}
                     <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.instalacion.errors }}</div>
                 {% endif %}
+                <small style="display: block; margin-top: 0.25rem; color: #6b7280; font-size: 0.8rem;">
+                    <i class="fas fa-info-circle"></i> Opcional: Si el cliente tiene múltiples instalaciones, selecciona la correspondiente.
+                </small>
+                
+                <!-- Información del PlanPago -->
+                <div id="planPagoInfo" style="display: none; margin-top: 0.75rem; padding: 1.25rem; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #86efac; border-radius: 12px; font-size: 0.875rem; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.1);">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                        <div style="background: #16a34a; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div>
+                            <strong style="color: #16a34a; font-size: 1rem; display: block;">Plan de Pago Activo</strong>
+                            <span style="color: #166534; font-size: 0.8rem;">Se detectó un plan de pago configurado</span>
+                        </div>
+                    </div>
+                    <div id="planPagoDetails" style="color: #166534; background: white; padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem;"></div>
+                    <button type="button" id="aplicarPlanPago" class="btn" style="width: 100%; padding: 0.75rem 1rem; font-size: 0.9rem; background: #16a34a; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s;">
+                        <i class="fas fa-magic"></i> Aplicar Valores del Plan Automáticamente
+                    </button>
+                    <small style="display: block; margin-top: 0.5rem; color: #166534; font-size: 0.75rem; text-align: center;">
+                        <i class="fas fa-lightbulb"></i> Esto llenará automáticamente: Monto, Fecha de Vencimiento y Concepto
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Sección: Información del Pago -->
+            <div style="grid-column: 1 / -1; border-bottom: 2px solid #e5e7eb; padding-bottom: 1rem; margin: 1.5rem 0 1rem 0;">
+                <h3 style="margin: 0; color: #667eea; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-dollar-sign"></i> Información del Pago
+                </h3>
             </div>
             
             <div class="form-group">
-                <label for="{{ form.monto.id_for_label }}">Monto *</label>
-                {{ form.monto }}
+                <label for="{{ form.monto.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-money-bill-wave"></i> 
+                    <span>Monto <span style="color: #ef4444;">*</span></span>
+                    <span style="font-size: 0.75rem; color: #6b7280; font-weight: normal; margin-left: auto;">
+                        <i class="fas fa-question-circle" title="El monto se sugerirá automáticamente si hay un Plan de Pago o precio de instalación."></i>
+                    </span>
+                </label>
+                <div style="position: relative; display: flex; align-items: center;">
+                    <span style="position: absolute; left: 0.75rem; color: #6b7280; font-weight: 600; z-index: 1; pointer-events: none;">$</span>
+                    {{ form.monto }}
+                </div>
                 {% if form.monto.errors %}
                     <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.monto.errors }}</div>
                 {% endif %}
+                <small style="display: block; margin-top: 0.25rem; color: #6b7280; font-size: 0.8rem;">
+                    <i class="fas fa-info-circle"></i> Se sugerirá automáticamente al seleccionar una instalación
+                </small>
             </div>
             
             <div class="form-group">
-                <label for="{{ form.concepto.id_for_label }}">Concepto *</label>
+                <label for="{{ form.concepto.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-file-invoice"></i> 
+                    <span>Concepto <span style="color: #ef4444;">*</span></span>
+                    <span style="font-size: 0.75rem; color: #6b7280; font-weight: normal; margin-left: auto;">
+                        <i class="fas fa-question-circle" title="Se generará automáticamente al seleccionar mes y año."></i>
+                    </span>
+                </label>
                 {{ form.concepto }}
                 {% if form.concepto.errors %}
                     <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.concepto.errors }}</div>
                 {% endif %}
+                <small style="display: block; margin-top: 0.25rem; color: #6b7280; font-size: 0.8rem;">
+                    <i class="fas fa-info-circle"></i> Se generará automáticamente al seleccionar mes y año
+                </small>
+            </div>
+            
+            <!-- Sección: Período y Fechas -->
+            <div style="grid-column: 1 / -1; border-bottom: 2px solid #e5e7eb; padding-bottom: 1rem; margin: 1.5rem 0 1rem 0;">
+                <h3 style="margin: 0; color: #667eea; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-calendar-alt"></i> Período y Fechas
+                </h3>
             </div>
             
             <div class="form-group">
-                <label for="{{ form.periodo_mes.id_for_label }}">Mes *</label>
+                <label for="{{ form.periodo_mes.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-calendar"></i> 
+                    <span>Mes del Período <span style="color: #ef4444;">*</span></span>
+                </label>
                 {{ form.periodo_mes }}
                 {% if form.periodo_mes.errors %}
                     <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.periodo_mes.errors }}</div>
@@ -277,39 +378,79 @@
             </div>
             
             <div class="form-group">
-                <label for="{{ form.periodo_anio.id_for_label }}">Año *</label>
+                <label for="{{ form.periodo_anio.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-calendar-year"></i> 
+                    <span>Año del Período <span style="color: #ef4444;">*</span></span>
+                </label>
                 {{ form.periodo_anio }}
                 {% if form.periodo_anio.errors %}
                     <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.periodo_anio.errors }}</div>
                 {% endif %}
+                <small style="display: block; margin-top: 0.25rem; color: #6b7280; font-size: 0.8rem;">
+                    <i class="fas fa-info-circle"></i> Año entre 2000 y 2100
+                </small>
             </div>
             
             <div class="form-group">
-                <label for="{{ form.fecha_vencimiento.id_for_label }}">Fecha de Vencimiento *</label>
+                <label for="{{ form.fecha_vencimiento.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-calendar-times"></i> 
+                    <span>Fecha de Vencimiento <span style="color: #ef4444;">*</span></span>
+                    <span style="font-size: 0.75rem; color: #6b7280; font-weight: normal; margin-left: auto;">
+                        <i class="fas fa-question-circle" title="Fecha límite hasta la cual el cliente debe pagar. Si pasa esta fecha y el pago no está pagado, se marcará como 'Vencido'."></i>
+                    </span>
+                </label>
                 {{ form.fecha_vencimiento }}
                 {% if form.fecha_vencimiento.errors %}
                     <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.fecha_vencimiento.errors }}</div>
                 {% endif %}
+                <small style="display: block; margin-top: 0.25rem; color: #6b7280; font-size: 0.8rem; line-height: 1.5;">
+                    <i class="fas fa-info-circle"></i> <strong>¿Qué es?</strong> Fecha límite hasta la cual el cliente debe realizar el pago.<br>
+                    <i class="fas fa-sync-alt" style="margin-left: 0.5rem;"></i> <strong>Actualización automática:</strong> Si pasa esta fecha y el pago está "Pendiente", el sistema lo marcará automáticamente como "Vencido" cuando se liste o edite el pago, o cuando se ejecute el comando de actualización.<br>
+                    <i class="fas fa-magic" style="margin-left: 0.5rem;"></i> Se calculará automáticamente si hay un Plan de Pago activo.
+                </small>
             </div>
             
             <div class="form-group">
-                <label for="{{ form.fecha_pago.id_for_label }}">Fecha de Pago</label>
+                <label for="{{ form.fecha_pago.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-calendar-check"></i> 
+                    <span>Fecha de Pago</span>
+                    <span style="font-size: 0.75rem; color: #6b7280; font-weight: normal; margin-left: auto;">
+                        <i class="fas fa-question-circle" title="Fecha exacta en que el cliente realizó el pago. Incluye fecha y hora."></i>
+                    </span>
+                </label>
                 {{ form.fecha_pago }}
                 {% if form.fecha_pago.errors %}
                     <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.fecha_pago.errors }}</div>
                 {% endif %}
+                <small style="display: block; margin-top: 0.25rem; color: #6b7280; font-size: 0.8rem; line-height: 1.5;">
+                    <i class="fas fa-info-circle"></i> <strong>¿Qué es?</strong> Fecha exacta (y hora) en que el cliente realizó el pago. Este campo es <strong>opcional</strong> y solo se debe llenar cuando el estado del pago es "Pagado".<br>
+                    <i class="fas fa-exclamation-triangle" style="margin-left: 0.5rem; color: #f59e0b;"></i> Si el estado es "Pagado", este campo se vuelve obligatorio.
+                </small>
             </div>
             
             <div class="form-group">
-                <label for="{{ form.estado.id_for_label }}">Estado *</label>
+                <label for="{{ form.estado.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-tasks"></i> 
+                    <span>Estado <span style="color: #ef4444;">*</span></span>
+                </label>
                 {{ form.estado }}
                 {% if form.estado.errors %}
                     <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.estado.errors }}</div>
                 {% endif %}
             </div>
             
+            <!-- Sección: Información Adicional -->
+            <div style="grid-column: 1 / -1; border-bottom: 2px solid #e5e7eb; padding-bottom: 1rem; margin: 1.5rem 0 1rem 0;">
+                <h3 style="margin: 0; color: #667eea; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-info-circle"></i> Información Adicional (Opcional)
+                </h3>
+            </div>
+            
             <div class="form-group">
-                <label for="{{ form.metodo_pago.id_for_label }}">Método de Pago</label>
+                <label for="{{ form.metodo_pago.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-credit-card"></i> 
+                    <span>Método de Pago</span>
+                </label>
                 {{ form.metodo_pago }}
                 {% if form.metodo_pago.errors %}
                     <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.metodo_pago.errors }}</div>
@@ -317,29 +458,63 @@
             </div>
             
             <div class="form-group" style="grid-column: 1 / -1;">
-                <label for="{{ form.referencia_pago.id_for_label }}">Referencia de Pago</label>
+                <label for="{{ form.referencia_pago.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-hashtag"></i> 
+                    <span>Referencia de Pago</span>
+                    <span style="font-size: 0.75rem; color: #6b7280; font-weight: normal; margin-left: auto;">
+                        <i class="fas fa-question-circle" title="Número de transacción, referencia bancaria, número de cheque, etc."></i>
+                    </span>
+                </label>
                 {{ form.referencia_pago }}
                 {% if form.referencia_pago.errors %}
                     <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.referencia_pago.errors }}</div>
                 {% endif %}
+                <small style="display: block; margin-top: 0.25rem; color: #6b7280; font-size: 0.8rem;">
+                    <i class="fas fa-info-circle"></i> Ej: Número de transacción bancaria, referencia de transferencia, etc.
+                </small>
             </div>
             
             <div class="form-group" style="grid-column: 1 / -1;">
-                <label for="{{ form.notas.id_for_label }}">Notas</label>
+                <label for="{{ form.notas.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-sticky-note"></i> 
+                    <span>Notas</span>
+                </label>
                 {{ form.notas }}
                 {% if form.notas.errors %}
                     <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.notas.errors }}</div>
                 {% endif %}
+                <small style="display: block; margin-top: 0.25rem; color: #6b7280; font-size: 0.8rem;">
+                    <i class="fas fa-info-circle"></i> Información adicional sobre este pago
+                </small>
             </div>
         </div>
         
-        <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: flex-end;">
-            <button type="submit" class="btn">
-                <i class="fas fa-save"></i> Guardar
-            </button>
-            <a href="{% url 'pagos:pago_list' %}" class="btn btn-secondary">
+        <!-- Resumen de campos requeridos -->
+        <div style="margin-top: 2rem; padding: 1rem; background: #f9fafb; border-radius: 8px; border-left: 4px solid #667eea;">
+            <div style="display: flex; align-items: start; gap: 0.75rem;">
+                <i class="fas fa-check-circle" style="color: #667eea; margin-top: 0.25rem;"></i>
+                <div>
+                    <strong style="color: #374151; display: block; margin-bottom: 0.5rem;">Campos requeridos:</strong>
+                    <div style="color: #6b7280; font-size: 0.875rem; line-height: 1.8;">
+                        <span style="color: #ef4444;">*</span> Cliente, <span style="color: #ef4444;">*</span> Monto, <span style="color: #ef4444;">*</span> Concepto, 
+                        <span style="color: #ef4444;">*</span> Mes, <span style="color: #ef4444;">*</span> Año, 
+                        <span style="color: #ef4444;">*</span> Fecha de Vencimiento, <span style="color: #ef4444;">*</span> Estado
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1.5rem; border-top: 2px solid #e5e7eb;">
+            <a href="{% url 'pagos:pago_list' %}" class="btn btn-secondary" id="cancelBtn" style="display: flex; align-items: center; gap: 0.5rem;">
                 <i class="fas fa-times"></i> Cancelar
             </a>
+            <button type="submit" id="submitBtn" class="btn" style="display: flex; align-items: center; gap: 0.5rem; min-width: 150px; justify-content: center;">
+                <i class="fas fa-save"></i> 
+                <span id="submitText">Guardar Pago</span>
+                <span id="submitSpinner" style="display: none; margin-left: 0.5rem;">
+                    <i class="fas fa-spinner fa-spin"></i> Guardando...
+                </span>
+            </button>
         </div>
     </form>
 </div>
@@ -358,6 +533,22 @@ const selectedCard = document.getElementById('clienteSelectedCard');
 const selectedName = document.getElementById('clienteSelectedName');
 const selectedDetails = document.getElementById('clienteSelectedDetails');
 const instalacionSelect = document.getElementById('id_instalacion');
+const montoInput = document.getElementById('id_monto');
+const conceptoInput = document.getElementById('id_concepto');
+const periodoMesSelect = document.getElementById('id_periodo_mes');
+const periodoAnioInput = document.getElementById('id_periodo_anio');
+const fechaVencimientoInput = document.getElementById('id_fecha_vencimiento');
+const planPagoInfo = document.getElementById('planPagoInfo');
+const planPagoDetails = document.getElementById('planPagoDetails');
+const aplicarPlanPagoBtn = document.getElementById('aplicarPlanPago');
+const submitBtn = document.getElementById('submitBtn');
+const submitText = document.getElementById('submitText');
+const submitSpinner = document.getElementById('submitSpinner');
+const form = document.querySelector('form');
+
+// Variables globales
+let instalacionActual = null;
+let planPagoActual = null;
 
 // Buscar clientes
 function buscarClientes(query) {
@@ -401,6 +592,7 @@ function buscarClientes(query) {
         })
         .catch(error => {
             console.error('Error:', error);
+            mostrarError('Error al buscar clientes. Por favor, intente nuevamente.');
             resultsContainer.innerHTML = '<div class="no-results"><i class="fas fa-exclamation-triangle"></i> Error al buscar</div>';
         });
 }
@@ -450,9 +642,17 @@ function cargarInstalaciones(clienteId) {
     if (!instalacionSelect) return;
     
     instalacionSelect.innerHTML = '<option value="">Cargando instalaciones...</option>';
+    planPagoInfo.style.display = 'none';
+    instalacionActual = null;
+    planPagoActual = null;
     
     fetch(`{% url 'pagos:api_instalaciones_cliente' cliente_id=0 %}`.replace('0', clienteId))
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error al cargar instalaciones');
+            }
+            return response.json();
+        })
         .then(data => {
             instalacionSelect.innerHTML = '<option value="">---------</option>';
             
@@ -460,18 +660,251 @@ function cargarInstalaciones(clienteId) {
                 data.instalaciones.forEach(inst => {
                     const option = document.createElement('option');
                     option.value = inst.id;
-                    option.textContent = `${inst.plan_nombre} - $${inst.precio_mensual}/mes`;
+                    option.textContent = `${inst.plan_nombre} - $${inst.precio_mensual || 0}/mes`;
                     if (inst.estado) {
                         option.textContent += ` (${inst.estado})`;
                     }
+                    // Guardar datos completos en el option
+                    option.dataset.precio = inst.precio_mensual || '';
+                    option.dataset.planPago = inst.plan_pago ? JSON.stringify(inst.plan_pago) : '';
                     instalacionSelect.appendChild(option);
                 });
+            } else {
+                mostrarError('Este cliente no tiene instalaciones registradas.');
             }
         })
         .catch(error => {
             console.error('Error:', error);
+            mostrarError('Error al cargar instalaciones. Por favor, intente nuevamente.');
             instalacionSelect.innerHTML = '<option value="">---------</option>';
         });
+}
+
+// Manejar cambio de instalación
+function manejarCambioInstalacion() {
+    if (!instalacionSelect) return;
+    
+    const selectedOption = instalacionSelect.options[instalacionSelect.selectedIndex];
+    if (!selectedOption || !selectedOption.value) {
+        planPagoInfo.style.display = 'none';
+        instalacionActual = null;
+        planPagoActual = null;
+        return;
+    }
+    
+    instalacionActual = {
+        id: selectedOption.value,
+        precio_mensual: parseFloat(selectedOption.dataset.precio) || null,
+    };
+    
+    // Verificar si hay PlanPago
+    const planPagoData = selectedOption.dataset.planPago;
+    if (planPagoData) {
+        try {
+            planPagoActual = JSON.parse(planPagoData);
+            mostrarPlanPagoInfo(planPagoActual, instalacionActual);
+        } catch (e) {
+            console.error('Error parsing plan_pago:', e);
+            planPagoActual = null;
+        }
+    } else {
+        planPagoActual = null;
+        planPagoInfo.style.display = 'none';
+    }
+    
+    // Sugerir monto si hay precio_mensual o plan_pago
+    if (planPagoActual && planPagoActual.monto_mensual) {
+        sugerirMonto(planPagoActual.monto_mensual, 'PlanPago');
+    } else if (instalacionActual.precio_mensual) {
+        sugerirMonto(instalacionActual.precio_mensual, 'Instalación');
+    }
+}
+
+// Mostrar información del PlanPago
+function mostrarPlanPagoInfo(planPago, instalacion) {
+    if (!planPagoInfo || !planPagoDetails) return;
+    
+    let html = `<div style="margin-bottom: 0.5rem;">`;
+    html += `<strong>Monto mensual:</strong> $${planPago.monto_mensual.toFixed(2)}<br>`;
+    html += `<strong>Día de vencimiento:</strong> ${planPago.dia_vencimiento} de cada mes`;
+    html += `</div>`;
+    
+    planPagoDetails.innerHTML = html;
+    planPagoInfo.style.display = 'block';
+}
+
+// Sugerir monto
+function sugerirMonto(monto, fuente) {
+    if (!montoInput) return;
+    
+    // Solo sugerir si el campo está vacío o tiene el mismo valor
+    const valorActual = parseFloat(montoInput.value) || 0;
+    if (valorActual === 0 || valorActual === monto) {
+        montoInput.value = monto.toFixed(2);
+        montoInput.style.borderColor = '#10b981';
+        montoInput.style.backgroundColor = '#f0fdf4';
+        montoInput.style.borderWidth = '2px';
+        
+        // Remover mensaje anterior si existe
+        const mensajeAnterior = document.getElementById('montoSugeridoMsg');
+        if (mensajeAnterior) {
+            mensajeAnterior.remove();
+        }
+        
+        // Mostrar mensaje temporal más visible
+        const mensaje = document.createElement('div');
+        mensaje.id = 'montoSugeridoMsg';
+        mensaje.style.cssText = 'color: #16a34a; font-size: 0.85rem; margin-top: 0.5rem; padding: 0.5rem; background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; display: flex; align-items: center; gap: 0.5rem;';
+        mensaje.innerHTML = `<i class="fas fa-check-circle"></i> <strong>Monto sugerido:</strong> $${monto.toFixed(2)} desde ${fuente}`;
+        montoInput.parentElement.appendChild(mensaje);
+        
+        setTimeout(() => {
+            montoInput.style.borderColor = '';
+            montoInput.style.backgroundColor = '';
+            montoInput.style.borderWidth = '';
+            if (mensaje.parentElement) {
+                mensaje.style.transition = 'opacity 0.3s';
+                mensaje.style.opacity = '0';
+                setTimeout(() => mensaje.remove(), 300);
+            }
+        }, 5000);
+    }
+}
+
+// Sugerir concepto automático
+function sugerirConcepto() {
+    if (!conceptoInput || !periodoMesSelect || !periodoAnioInput) return;
+    
+    const mes = periodoMesSelect.value;
+    const anio = periodoAnioInput.value;
+    
+    if (mes && anio) {
+        const meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        const concepto = `Pago mensual de servicio - ${meses[parseInt(mes)]} ${anio}`;
+        
+        // Solo sugerir si está vacío
+        if (!conceptoInput.value.trim()) {
+            conceptoInput.value = concepto;
+        }
+    }
+}
+
+// Calcular fecha de vencimiento desde PlanPago
+function calcularFechaVencimiento() {
+    if (!fechaVencimientoInput || !periodoMesSelect || !periodoAnioInput || !planPagoActual) return;
+    
+    const mes = parseInt(periodoMesSelect.value);
+    const anio = parseInt(periodoAnioInput.value);
+    const diaVencimiento = planPagoActual.dia_vencimiento;
+    
+    if (mes && anio && diaVencimiento) {
+        // Obtener días del mes
+        const diasEnMes = new Date(anio, mes, 0).getDate();
+        const diaFinal = Math.min(diaVencimiento, diasEnMes);
+        
+        // Crear fecha
+        const fecha = new Date(anio, mes - 1, diaFinal);
+        const fechaStr = fecha.toISOString().split('T')[0];
+        
+        // Solo sugerir si está vacío
+        if (!fechaVencimientoInput.value) {
+            fechaVencimientoInput.value = fechaStr;
+            fechaVencimientoInput.style.borderColor = '#10b981';
+            fechaVencimientoInput.style.backgroundColor = '#f0fdf4';
+            
+            setTimeout(() => {
+                fechaVencimientoInput.style.borderColor = '';
+                fechaVencimientoInput.style.backgroundColor = '';
+            }, 3000);
+        }
+    }
+}
+
+// Aplicar valores del PlanPago
+function aplicarValoresPlanPago() {
+    if (!planPagoActual) return;
+    
+    // Aplicar monto
+    if (planPagoActual.monto_mensual) {
+        sugerirMonto(planPagoActual.monto_mensual, 'PlanPago');
+    }
+    
+    // Aplicar fecha de vencimiento
+    calcularFechaVencimiento();
+    
+    // Aplicar concepto
+    sugerirConcepto();
+    
+    // Mostrar mensaje de confirmación
+    const mensaje = document.createElement('div');
+    mensaje.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 1rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000;';
+    mensaje.innerHTML = '<i class="fas fa-check-circle"></i> Valores del plan aplicados';
+    document.body.appendChild(mensaje);
+    
+    setTimeout(() => {
+        mensaje.remove();
+    }, 3000);
+}
+
+// Mostrar error visible
+function mostrarError(mensaje) {
+    const errorDiv = document.createElement('div');
+    errorDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ef4444; color: white; padding: 1rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000; max-width: 300px;';
+    errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${mensaje}`;
+    document.body.appendChild(errorDiv);
+    
+    setTimeout(() => {
+        errorDiv.remove();
+    }, 5000);
+}
+
+// Validar formulario antes de submit
+function validarFormulario() {
+    // Validar cliente
+    if (!clienteInput || !clienteInput.value) {
+        mostrarError('Debe seleccionar un cliente antes de guardar.');
+        if (searchInput) {
+            searchInput.focus();
+            searchInput.style.borderColor = '#ef4444';
+            setTimeout(() => {
+                searchInput.style.borderColor = '';
+            }, 3000);
+        }
+        return false;
+    }
+    
+    // Validar monto
+    if (montoInput) {
+        const monto = parseFloat(montoInput.value);
+        if (!monto || monto <= 0) {
+            mostrarError('El monto debe ser mayor a cero.');
+            montoInput.focus();
+            montoInput.style.borderColor = '#ef4444';
+            return false;
+        }
+        if (monto > 1000000) {
+            if (!confirm('El monto es muy alto ($' + monto.toLocaleString() + '). ¿Está seguro de continuar?')) {
+                return false;
+            }
+        }
+    }
+    
+    // Validar fecha de vencimiento vs fecha de pago
+    const fechaPagoInput = document.getElementById('id_fecha_pago');
+    if (fechaVencimientoInput && fechaVencimientoInput.value && fechaPagoInput && fechaPagoInput.value) {
+        const fechaVenc = new Date(fechaVencimientoInput.value);
+        const fechaPago = new Date(fechaPagoInput.value);
+        
+        if (fechaPago < fechaVenc) {
+            mostrarError('La fecha de pago no puede ser anterior a la fecha de vencimiento.');
+            fechaPagoInput.focus();
+            fechaPagoInput.style.borderColor = '#ef4444';
+            return false;
+        }
+    }
+    
+    return true;
 }
 
 // Navegar con teclado
@@ -534,11 +967,94 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Cambio de instalación
+    if (instalacionSelect) {
+        instalacionSelect.addEventListener('change', manejarCambioInstalacion);
+    }
+    
+    // Cambio de período para sugerir concepto
+    if (periodoMesSelect) {
+        periodoMesSelect.addEventListener('change', sugerirConcepto);
+    }
+    if (periodoAnioInput) {
+        periodoAnioInput.addEventListener('change', sugerirConcepto);
+        periodoAnioInput.addEventListener('blur', function() {
+            // Validar año en tiempo real
+            const anio = parseInt(this.value);
+            if (anio && (anio < 2000 || anio > 2100)) {
+                this.style.borderColor = '#ef4444';
+                mostrarError('El año debe estar entre 2000 y 2100.');
+            } else {
+                this.style.borderColor = '';
+            }
+        });
+    }
+    
+    // Botón aplicar PlanPago
+    if (aplicarPlanPagoBtn) {
+        aplicarPlanPagoBtn.addEventListener('click', aplicarValoresPlanPago);
+    }
+    
+    // Validar monto en tiempo real
+    if (montoInput) {
+        montoInput.addEventListener('blur', function() {
+            const monto = parseFloat(this.value);
+            if (monto && monto > 1000000) {
+                this.style.borderColor = '#f59e0b';
+            } else if (monto && monto <= 0) {
+                this.style.borderColor = '#ef4444';
+            } else {
+                this.style.borderColor = '';
+            }
+        });
+    }
+    
+    // Validar fecha de vencimiento vs fecha de pago
+    const fechaPagoInput = document.getElementById('id_fecha_pago');
+    if (fechaVencimientoInput && fechaPagoInput) {
+        fechaPagoInput.addEventListener('change', function() {
+            if (fechaVencimientoInput.value && this.value) {
+                const fechaVenc = new Date(fechaVencimientoInput.value);
+                const fechaPago = new Date(this.value);
+                if (fechaPago < fechaVenc) {
+                    this.style.borderColor = '#ef4444';
+                    mostrarError('La fecha de pago no puede ser anterior a la fecha de vencimiento.');
+                } else {
+                    this.style.borderColor = '';
+                }
+            }
+        });
+    }
+    
+    // Prevenir submit sin validación
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!validarFormulario()) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Mostrar loading state
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitText.style.display = 'none';
+                submitSpinner.style.display = 'inline';
+            }
+            if (document.getElementById('cancelBtn')) {
+                document.getElementById('cancelBtn').style.pointerEvents = 'none';
+                document.getElementById('cancelBtn').style.opacity = '0.5';
+            }
+        });
+    }
+    
     // Si ya hay un cliente seleccionado (edición), cargar sus instalaciones
     if (clienteInput && clienteInput.value && instalacionSelect) {
         // No cargar instalaciones si ya están cargadas (edición)
         if (instalacionSelect.options.length <= 1) {
             cargarInstalaciones(clienteInput.value);
+        } else {
+            // Si ya hay instalaciones cargadas, verificar si hay PlanPago
+            manejarCambioInstalacion();
         }
     }
 });

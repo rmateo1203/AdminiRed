@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+
+{% block title %}Calendario de Pagos - AdminiRed{% endblock %}
+
+{% block extra_css %}
+<style>
+    .calendar-container {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    
+    .calendar-nav {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+    
+    .calendar-month {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #667eea;
+    }
+    
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .calendar-day-header {
+        padding: 0.75rem;
+        text-align: center;
+        font-weight: 600;
+        color: #667eea;
+        background: #f0f4ff;
+        border-radius: 6px;
+    }
+    
+    .calendar-day {
+        min-height: 100px;
+        padding: 0.5rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        background: #fafafa;
+    }
+    
+    .calendar-day.other-month {
+        background: #f3f4f6;
+        color: #9ca3af;
+    }
+    
+    .calendar-day.today {
+        background: #fff7ed;
+        border: 2px solid #f59e0b;
+    }
+    
+    .day-number {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #374151;
+    }
+    
+    .pago-item {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        margin-bottom: 0.25rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    
+    .pago-item:hover {
+        transform: translateX(2px);
+    }
+    
+    .pago-pendiente {
+        background: #fef3c7;
+        color: #92400e;
+        border-left: 3px solid #f59e0b;
+    }
+    
+    .pago-vencido {
+        background: #fee2e2;
+        color: #991b1b;
+        border-left: 3px solid #ef4444;
+    }
+    
+    .pago-pagado {
+        background: #d1fae5;
+        color: #065f46;
+        border-left: 3px solid #10b981;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .stat-card.success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    
+    .stat-card.warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    
+    .stat-card.danger {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        opacity: 0.9;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="margin-bottom: 1.5rem;">
+        <h2><i class="fas fa-calendar"></i> Calendario de Pagos</h2>
+        <a href="{% url 'pagos:pago_list' %}" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">
+            <i class="fas fa-arrow-left"></i> Volver a Pagos
+        </a>
+    </div>
+    
+    <!-- Estadísticas del Mes -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_pagos }}</div>
+            <div class="stat-label"><i class="fas fa-list"></i> Total Pagos</div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-value">${{ total_monto|floatformat:2 }}</div>
+            <div class="stat-label"><i class="fas fa-dollar-sign"></i> Total Monto</div>
+        </div>
+        <div class="stat-card warning">
+            <div class="stat-value">{{ pagos_pendientes }}</div>
+            <div class="stat-label"><i class="fas fa-clock"></i> Pendientes</div>
+        </div>
+        <div class="stat-card danger">
+            <div class="stat-value">{{ pagos_vencidos }}</div>
+            <div class="stat-label"><i class="fas fa-exclamation-triangle"></i> Vencidos</div>
+        </div>
+    </div>
+    
+    <!-- Calendario -->
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <div class="calendar-nav">
+                <a href="?mes={{ mes_anterior }}&anio={{ anio_anterior }}" class="btn btn-secondary">
+                    <i class="fas fa-chevron-left"></i> Mes Anterior
+                </a>
+                <div class="calendar-month">{{ mes_nombre }} {{ anio }}</div>
+                <a href="?mes={{ mes_siguiente }}&anio={{ anio_siguiente }}" class="btn btn-secondary">
+                    Mes Siguiente <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+            <a href="?mes={{ hoy.month }}&anio={{ hoy.year }}" class="btn">
+                <i class="fas fa-calendar-day"></i> Hoy
+            </a>
+        </div>
+        
+        <div class="calendar-grid">
+            <!-- Días de la semana -->
+            <div class="calendar-day-header">Lun</div>
+            <div class="calendar-day-header">Mar</div>
+            <div class="calendar-day-header">Mié</div>
+            <div class="calendar-day-header">Jue</div>
+            <div class="calendar-day-header">Vie</div>
+            <div class="calendar-day-header">Sáb</div>
+            <div class="calendar-day-header">Dom</div>
+            
+            <!-- Días vacíos al inicio -->
+            {% for i in "0123456"|make_list %}
+                {% if forloop.counter0 < primer_dia_semana %}
+                    <div class="calendar-day other-month"></div>
+                {% endif %}
+            {% endfor %}
+            
+            <!-- Días del mes -->
+            {% for dia in "1234567890123456789012345678901234567890"|make_list %}
+                {% if forloop.counter <= dias_en_mes %}
+                    <div class="calendar-day">
+                        <div class="day-number">{{ forloop.counter }}</div>
+                        {% for dia_key, pagos_dia in pagos_por_dia.items %}
+                            {% if dia_key == forloop.parentloop.counter %}
+                                {% for pago in pagos_dia %}
+                                    <a href="{% url 'pagos:pago_detail' pago.pk %}" class="pago-item pago-{{ pago.estado }}" title="{{ pago.cliente.nombre_completo }} - ${{ pago.monto|floatformat:2 }}">
+                                        <strong>{{ pago.cliente.nombre_completo|truncatechars:15 }}</strong><br>
+                                        ${{ pago.monto|floatformat:2 }}
+                                    </a>
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Obtener fecha actual para el botón "Hoy"
+const today = new Date();
+</script>
+{% endblock %}
+

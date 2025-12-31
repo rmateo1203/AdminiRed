@@ -89,7 +89,13 @@
             </div>
             
             <div class="form-group">
-                <label for="{{ form.ciudad.id_for_label }}">{{ form.ciudad.label }}</label>
+                <label for="{{ form.ciudad.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-city"></i>
+                    <span>{{ form.ciudad.label }}</span>
+                    <span id="ciudad-auto-badge" style="display: none; font-size: 0.75rem; color: #10b981; font-weight: normal; margin-left: auto;">
+                        <i class="fas fa-magic"></i> Autocompletado
+                    </span>
+                </label>
                 {{ form.ciudad }}
                 {% if form.ciudad.errors %}
                     <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
@@ -99,7 +105,13 @@
             </div>
             
             <div class="form-group">
-                <label for="{{ form.estado.id_for_label }}">{{ form.estado.label }}</label>
+                <label for="{{ form.estado.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-map"></i>
+                    <span>{{ form.estado.label }}</span>
+                    <span id="estado-auto-badge" style="display: none; font-size: 0.75rem; color: #10b981; font-weight: normal; margin-left: auto;">
+                        <i class="fas fa-magic"></i> Autocompletado
+                    </span>
+                </label>
                 {{ form.estado }}
                 {% if form.estado.errors %}
                     <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
@@ -108,14 +120,40 @@
                 {% endif %}
             </div>
             
-            <div class="form-group">
-                <label for="{{ form.codigo_postal.id_for_label }}">{{ form.codigo_postal.label }} (opcional)</label>
-                {{ form.codigo_postal }}
+            <div class="form-group" style="position: relative;">
+                <label for="{{ form.codigo_postal.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>{{ form.codigo_postal.label }} (opcional)</span>
+                    <span style="font-size: 0.75rem; color: #6b7280; font-weight: normal; margin-left: auto;">
+                        <i class="fas fa-question-circle" title="Al ingresar un código postal, se autocompletará la ciudad y estado si hay datos disponibles."></i>
+                    </span>
+                </label>
+                <div style="position: relative;">
+                    {{ form.codigo_postal }}
+                    <span id="cp-loading" style="display: none; position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); color: #667eea;">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </span>
+                </div>
                 {% if form.codigo_postal.errors %}
                     <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
                         {{ form.codigo_postal.errors }}
                     </div>
                 {% endif %}
+                <small style="display: block; margin-top: 0.5rem; color: #6b7280; font-size: 0.875rem;">
+                    <i class="fas fa-info-circle"></i> Se autocompletará ciudad y estado si hay datos disponibles.
+                </small>
+                <div id="cp-suggestion" style="display: none; margin-top: 0.5rem; padding: 0.75rem; background: #f0f4ff; border-left: 3px solid #667eea; border-radius: 4px;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <i class="fas fa-lightbulb" style="color: #667eea;"></i>
+                        <strong style="color: #374151;">Sugerencia encontrada:</strong>
+                    </div>
+                    <div style="color: #6b7280; font-size: 0.875rem;">
+                        <span id="cp-suggestion-text"></span>
+                    </div>
+                    <button type="button" id="cp-apply-suggestion" class="btn" style="margin-top: 0.5rem; padding: 0.5rem 1rem; font-size: 0.875rem; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        <i class="fas fa-check"></i> Aplicar Sugerencia
+                    </button>
+                </div>
             </div>
             
             <div class="form-group" style="grid-column: 1 / -1;">
@@ -139,6 +177,196 @@
         </div>
     </form>
 </div>
+
+<script>
+(function() {
+    const codigoPostalInput = document.getElementById('id_codigo_postal');
+    const ciudadInput = document.getElementById('id_ciudad');
+    const estadoInput = document.getElementById('id_estado');
+    const loadingIndicator = document.getElementById('cp-loading');
+    const suggestionBox = document.getElementById('cp-suggestion');
+    const suggestionText = document.getElementById('cp-suggestion-text');
+    const applyButton = document.getElementById('cp-apply-suggestion');
+    const ciudadBadge = document.getElementById('ciudad-auto-badge');
+    const estadoBadge = document.getElementById('estado-auto-badge');
+    
+    let timeoutId = null;
+    let currentSuggestion = null;
+    
+    // Función para buscar por código postal
+    function buscarPorCodigoPostal(cp) {
+        if (!cp || cp.length < 3) {
+            ocultarSugerencia();
+            return;
+        }
+        
+        // Mostrar loading
+        loadingIndicator.style.display = 'block';
+        suggestionBox.style.display = 'none';
+        
+        // Hacer petición AJAX
+        fetch(`{% url 'clientes:api_buscar_por_codigo_postal' %}?cp=${encodeURIComponent(cp)}`)
+            .then(response => response.json())
+            .then(data => {
+                loadingIndicator.style.display = 'none';
+                
+                if (data.success && data.tiene_datos) {
+                    currentSuggestion = data;
+                    mostrarSugerencia(data);
+                } else {
+                    ocultarSugerencia();
+                }
+            })
+            .catch(error => {
+                console.error('Error al buscar código postal:', error);
+                loadingIndicator.style.display = 'none';
+                ocultarSugerencia();
+            });
+    }
+    
+    // Función para mostrar sugerencia
+    function mostrarSugerencia(data) {
+        const ciudad = data.ciudad_sugerida || (data.ciudades_disponibles && data.ciudades_disponibles[0]);
+        const estado = data.estado_sugerido || (data.estados_disponibles && data.estados_disponibles[0]);
+        
+        if (ciudad && estado) {
+            suggestionText.textContent = `Ciudad: ${ciudad} | Estado: ${estado}`;
+            suggestionBox.style.display = 'block';
+        } else if (ciudad) {
+            suggestionText.textContent = `Ciudad: ${ciudad}`;
+            suggestionBox.style.display = 'block';
+        } else if (estado) {
+            suggestionText.textContent = `Estado: ${estado}`;
+            suggestionBox.style.display = 'block';
+        } else {
+            ocultarSugerencia();
+        }
+    }
+    
+    // Función para ocultar sugerencia
+    function ocultarSugerencia() {
+        suggestionBox.style.display = 'none';
+        currentSuggestion = null;
+    }
+    
+    // Función para aplicar sugerencia
+    function aplicarSugerencia() {
+        if (!currentSuggestion) return;
+        
+        const ciudad = currentSuggestion.ciudad_sugerida || (currentSuggestion.ciudades_disponibles && currentSuggestion.ciudades_disponibles[0]);
+        const estado = currentSuggestion.estado_sugerido || (currentSuggestion.estados_disponibles && currentSuggestion.estados_disponibles[0]);
+        
+        if (ciudad && !ciudadInput.value.trim()) {
+            ciudadInput.value = ciudad;
+            ciudadInput.style.borderColor = '#10b981';
+            ciudadBadge.style.display = 'inline-flex';
+            setTimeout(() => {
+                ciudadInput.style.borderColor = '';
+            }, 2000);
+        }
+        
+        if (estado && !estadoInput.value.trim()) {
+            estadoInput.value = estado;
+            estadoInput.style.borderColor = '#10b981';
+            estadoBadge.style.display = 'inline-flex';
+            setTimeout(() => {
+                estadoInput.style.borderColor = '';
+            }, 2000);
+        }
+        
+        // Ocultar sugerencia después de aplicar
+        setTimeout(() => {
+            ocultarSugerencia();
+        }, 500);
+    }
+    
+    // Event listener para código postal
+    if (codigoPostalInput) {
+        codigoPostalInput.addEventListener('input', function(e) {
+            const cp = e.target.value.trim();
+            
+            // Limpiar timeout anterior
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+            
+            // Esperar 800ms después de que el usuario deje de escribir
+            timeoutId = setTimeout(() => {
+                buscarPorCodigoPostal(cp);
+            }, 800);
+        });
+        
+        // También buscar al perder el foco si hay valor
+        codigoPostalInput.addEventListener('blur', function(e) {
+            const cp = e.target.value.trim();
+            if (cp && cp.length >= 3) {
+                buscarPorCodigoPostal(cp);
+            }
+        });
+    }
+    
+    // Event listener para botón aplicar
+    if (applyButton) {
+        applyButton.addEventListener('click', aplicarSugerencia);
+    }
+    
+    // Ocultar badges cuando el usuario edite manualmente
+    if (ciudadInput) {
+        ciudadInput.addEventListener('input', function() {
+            ciudadBadge.style.display = 'none';
+        });
+    }
+    
+    if (estadoInput) {
+        estadoInput.addEventListener('input', function() {
+            estadoBadge.style.display = 'none';
+        });
+    }
+})();
+</script>
+
+<style>
+/* Estilos para el autocompletado */
+#id_codigo_postal:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+#cp-suggestion {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#cp-apply-suggestion:hover {
+    background: #5568d3 !important;
+}
+
+#ciudad-auto-badge, #estado-auto-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+</style>
 {% endblock %}
 
 

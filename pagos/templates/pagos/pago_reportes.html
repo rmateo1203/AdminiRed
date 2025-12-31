@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes Financieros - AdminiRed{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .report-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 1rem;
+    }
+    
+    .report-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #667eea;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .stat-card.success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    
+    .stat-card.warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        opacity: 0.9;
+        font-size: 0.9rem;
+    }
+    
+    .chart-container {
+        margin-top: 2rem;
+        padding: 1rem;
+        background: #f9fafb;
+        border-radius: 8px;
+    }
+    
+    .bar-chart {
+        display: flex;
+        align-items: flex-end;
+        height: 300px;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .bar-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .bar {
+        width: 100%;
+        background: linear-gradient(to top, #667eea, #764ba2);
+        border-radius: 4px 4px 0 0;
+        min-height: 20px;
+        position: relative;
+        transition: opacity 0.3s;
+    }
+    
+    .bar:hover {
+        opacity: 0.8;
+    }
+    
+    .bar-label {
+        font-size: 0.75rem;
+        color: #6b7280;
+        text-align: center;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+    }
+    
+    .bar-value {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin-top: 0.25rem;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+    
+    th, td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    tr:hover {
+        background: #f9fafb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="margin-bottom: 1.5rem;">
+        <h2><i class="fas fa-chart-bar"></i> Reportes Financieros</h2>
+        <a href="{% url 'pagos:pago_list' %}" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">
+            <i class="fas fa-arrow-left"></i> Volver a Pagos
+        </a>
+    </div>
+    
+    <!-- Selector de Año -->
+    <div class="report-section">
+        <form method="get" style="display: flex; gap: 1rem; align-items: center;">
+            <label for="anio" style="font-weight: 600;">Año:</label>
+            <select name="anio" id="anio" class="form-control" style="width: auto;" onchange="this.form.submit()">
+                {% for year in años_disponibles %}
+                    <option value="{{ year }}" {% if year == anio %}selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+    
+    <!-- Estadísticas Generales -->
+    <div class="report-section">
+        <div class="report-header">
+            <h3 class="report-title">Resumen del Año {{ anio }}</h3>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_pagos }}</div>
+                <div class="stat-label"><i class="fas fa-list"></i> Total Pagos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${{ total_monto|floatformat:2 }}</div>
+                <div class="stat-label"><i class="fas fa-dollar-sign"></i> Total Monto</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-value">${{ monto_pagado|floatformat:2 }}</div>
+                <div class="stat-label"><i class="fas fa-check-circle"></i> Monto Pagado</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-value">${{ monto_pendiente|floatformat:2 }}</div>
+                <div class="stat-label"><i class="fas fa-clock"></i> Monto Pendiente</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${{ promedio_pago|floatformat:2 }}</div>
+                <div class="stat-label"><i class="fas fa-chart-line"></i> Promedio por Pago</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ingresos por Mes -->
+    <div class="report-section">
+        <div class="report-header">
+            <h3 class="report-title">Ingresos por Mes</h3>
+        </div>
+        
+        <div class="chart-container">
+            <div class="bar-chart">
+                {% for item in ingresos_por_mes %}
+                    {% if item.monto > 0 %}
+                        {% widthratio item.monto monto_pagado 100 as percentage %}
+                    {% else %}
+                        {% with percentage=0 %}{% endwith %}
+                    {% endif %}
+                    <div class="bar-item">
+                        <div class="bar" style="height: {% if monto_pagado > 0 %}{% widthratio item.monto monto_pagado 100 %}{% else %}0{% endif %}%;" title="${{ item.monto|floatformat:2 }}"></div>
+                        <div class="bar-label">{{ item.mes_nombre|slice:":3" }}</div>
+                        <div class="bar-value">${{ item.monto|floatformat:0 }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Mes</th>
+                    <th>Cantidad de Pagos</th>
+                    <th>Monto Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in ingresos_por_mes %}
+                <tr>
+                    <td>{{ item.mes_nombre }}</td>
+                    <td>{{ item.cantidad }}</td>
+                    <td><strong>${{ item.monto|floatformat:2 }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Top 10 Clientes -->
+    <div class="report-section">
+        <div class="report-header">
+            <h3 class="report-title">Top 10 Clientes por Monto Pagado</h3>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Cliente</th>
+                    <th>Cantidad de Pagos</th>
+                    <th>Total Pagado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cliente in top_clientes %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ cliente.cliente__nombre }} {{ cliente.cliente__apellido1 }}</td>
+                    <td>{{ cliente.cantidad_pagos }}</td>
+                    <td><strong>${{ cliente.total_pagado|floatformat:2 }}</strong></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; color: #6b7280;">No hay datos disponibles</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Clientes Morosos -->
+    <div class="report-section">
+        <div class="report-header">
+            <h3 class="report-title">Clientes Morosos (Pagos Vencidos)</h3>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Cliente</th>
+                    <th>Cantidad de Pagos Vencidos</th>
+                    <th>Total Vencido</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cliente in clientes_morosos %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ cliente.cliente__nombre }} {{ cliente.cliente__apellido1 }}</td>
+                    <td>{{ cliente.cantidad_vencidos }}</td>
+                    <td><strong style="color: #ef4444;">${{ cliente.total_vencido|floatformat:2 }}</strong></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; color: #6b7280;">¡Excelente! No hay clientes morosos</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Métodos de Pago -->
+    <div class="report-section">
+        <div class="report-header">
+            <h3 class="report-title">Métodos de Pago Más Usados</h3>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Método de Pago</th>
+                    <th>Cantidad de Pagos</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for metodo in metodos_pago %}
+                <tr>
+                    <td>{{ metodo.metodo_pago|title }}</td>
+                    <td>{{ metodo.cantidad }}</td>
+                    <td><strong>${{ metodo.total|floatformat:2 }}</strong></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" style="text-align: center; color: #6b7280;">No hay datos disponibles</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+

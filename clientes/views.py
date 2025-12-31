@@ -135,3 +135,85 @@ def cliente_delete(request, pk):
     }
     
     return render(request, 'clientes/cliente_confirm_delete.html', context)
+
+
+@login_required
+def buscar_por_codigo_postal(request):
+    """API para buscar información de ciudad y estado por código postal."""
+    from django.http import JsonResponse
+    from django.db.models import Q, Count
+    
+    codigo_postal = request.GET.get('cp', '').strip()
+    
+    if not codigo_postal or len(codigo_postal) < 3:
+        return JsonResponse({
+            'success': False,
+            'message': 'Código postal muy corto',
+            'tiene_datos': False
+        })
+    
+    # Limpiar código postal (solo números)
+    codigo_postal_limpio = ''.join(filter(str.isdigit, codigo_postal))
+    
+    if not codigo_postal_limpio:
+        return JsonResponse({
+            'success': False,
+            'message': 'Código postal inválido',
+            'tiene_datos': False
+        })
+    
+    # Buscar clientes existentes con ese código postal (coincidencia exacta primero, luego parcial)
+    # Primero intentar coincidencia exacta
+    clientes_exactos = Cliente.objects.filter(
+        codigo_postal=codigo_postal_limpio
+    ).exclude(
+        Q(ciudad__isnull=True) | Q(ciudad='') |
+        Q(estado__isnull=True) | Q(estado='')
+    )
+    
+    # Si no hay coincidencias exactas, buscar parciales
+    if not clientes_exactos.exists():
+        clientes = Cliente.objects.filter(
+            codigo_postal__icontains=codigo_postal_limpio
+        ).exclude(
+            Q(ciudad__isnull=True) | Q(ciudad='') |
+            Q(estado__isnull=True) | Q(estado='')
+        )
+    else:
+        clientes = clientes_exactos
+    
+    # Obtener las ciudades y estados más comunes para ese código postal
+    ciudades = {}
+    estados = {}
+    
+    for cliente in clientes:
+        ciudad = cliente.ciudad.strip() if cliente.ciudad else ''
+        estado = cliente.estado.strip() if cliente.estado else ''
+        
+        if ciudad:
+            ciudades[ciudad] = ciudades.get(ciudad, 0) + 1
+        if estado:
+            estados[estado] = estados.get(estado, 0) + 1
+    
+    # Ordenar por frecuencia (más común primero)
+    ciudades_ordenadas = sorted(ciudades.items(), key=lambda x: x[1], reverse=True)
+    estados_ordenados = sorted(estados.items(), key=lambda x: x[1], reverse=True)
+    
+    # Obtener la ciudad y estado más comunes
+    ciudad_sugerida = ciudades_ordenadas[0][0] if ciudades_ordenadas else None
+    estado_sugerido = estados_ordenados[0][0] if estados_ordenados else None
+    
+    # Si hay múltiples opciones, devolver todas
+    todas_ciudades = [ciudad for ciudad, _ in ciudades_ordenadas[:5]]  # Top 5
+    todos_estados = [estado for estado, _ in estados_ordenados[:5]]  # Top 5
+    
+    return JsonResponse({
+        'success': True,
+        'codigo_postal': codigo_postal_limpio,
+        'ciudad_sugerida': ciudad_sugerida,
+        'estado_sugerido': estado_sugerido,
+        'ciudades_disponibles': todas_ciudades,
+        'estados_disponibles': todos_estados,
+        'total_resultados': clientes.count(),
+        'tiene_datos': clientes.exists()
+    })

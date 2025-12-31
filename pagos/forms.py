@@ -1,4 +1,7 @@
 from django import forms
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+from datetime import date, timedelta
 from .models import Pago, PlanPago
 from clientes.models import Cliente
 from instalaciones.models import Instalacion
@@ -32,7 +35,8 @@ class PagoForm(forms.ModelForm):
                 'class': 'form-control',
                 'step': '0.01',
                 'min': 0,
-                'placeholder': '0.00'
+                'placeholder': '0.00',
+                'style': 'padding-left: 1.75rem;'
             }),
             'concepto': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -95,6 +99,104 @@ class PagoForm(forms.ModelForm):
         self.fields['metodo_pago'].required = False
         self.fields['referencia_pago'].required = False
         self.fields['notas'].required = False
+        
+        # Si el estado es 'pagado', hacer fecha_pago requerida
+        if self.instance and self.instance.pk and self.instance.estado == 'pagado':
+            self.fields['fecha_pago'].required = True
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        cliente = cleaned_data.get('cliente')
+        instalacion = cleaned_data.get('instalacion')
+        periodo_mes = cleaned_data.get('periodo_mes')
+        periodo_anio = cleaned_data.get('periodo_anio')
+        fecha_vencimiento = cleaned_data.get('fecha_vencimiento')
+        fecha_pago = cleaned_data.get('fecha_pago')
+        estado = cleaned_data.get('estado')
+        monto = cleaned_data.get('monto')
+        
+        # Validación crítica: Instalación debe pertenecer al cliente
+        if instalacion and cliente:
+            if instalacion.cliente != cliente:
+                raise ValidationError({
+                    'instalacion': 'La instalación seleccionada no pertenece al cliente seleccionado.'
+                })
+        
+        # Validación de monto razonable
+        if monto is not None:
+            if monto <= 0:
+                raise ValidationError({
+                    'monto': 'El monto debe ser mayor a cero.'
+                })
+            if monto > 1000000:  # Límite máximo de $1,000,000
+                raise ValidationError({
+                    'monto': 'El monto no puede ser mayor a $1,000,000. Por favor, verifique el valor.'
+                })
+            if monto < 0.01:  # Mínimo $0.01
+                raise ValidationError({
+                    'monto': 'El monto debe ser al menos $0.01.'
+                })
+        
+        # Validación de duplicados (excluyendo cancelados)
+        if cliente and periodo_mes and periodo_anio:
+            existing = Pago.objects.filter(
+                cliente=cliente,
+                periodo_mes=periodo_mes,
+                periodo_anio=periodo_anio
+            ).exclude(estado='cancelado')  # Excluir pagos cancelados
+            
+            # Si hay instalación, también validar por instalación
+            if instalacion:
+                existing = existing.filter(instalacion=instalacion)
+            else:
+                # Si no hay instalación, validar que no haya otro sin instalación
+                existing = existing.filter(instalacion__isnull=True)
+            
+            # Excluir el pago actual si estamos editando
+            if self.instance and self.instance.pk:
+                existing = existing.exclude(pk=self.instance.pk)
+            
+            if existing.exists():
+                raise ValidationError({
+                    'periodo_mes': 'Ya existe un pago activo para este cliente, instalación y período.',
+                    'periodo_anio': 'Ya existe un pago activo para este cliente, instalación y período.'
+                })
+        
+        # Validación de fechas
+        if fecha_vencimiento:
+            # Validar que fecha_vencimiento no sea muy antigua (más de 10 años)
+            if fecha_vencimiento < (date.today() - timedelta(days=3650)):
+                raise ValidationError({
+                    'fecha_vencimiento': 'La fecha de vencimiento no puede ser anterior a hace 10 años.'
+                })
+            
+            # Validar que fecha_vencimiento no sea muy futura (más de 5 años)
+            if fecha_vencimiento > (date.today() + timedelta(days=1825)):
+                raise ValidationError({
+                    'fecha_vencimiento': 'La fecha de vencimiento no puede ser posterior a 5 años.'
+                })
+        
+        # Validar que fecha_pago >= fecha_vencimiento
+        if fecha_pago and fecha_vencimiento:
+            if fecha_pago.date() < fecha_vencimiento:
+                raise ValidationError({
+                    'fecha_pago': 'La fecha de pago no puede ser anterior a la fecha de vencimiento.'
+                })
+            
+            # Validar que fecha_pago no sea futura (más de 1 día)
+            if fecha_pago.date() > (timezone.now().date() + timedelta(days=1)):
+                raise ValidationError({
+                    'fecha_pago': 'La fecha de pago no puede ser futura.'
+                })
+        
+        # Validación de estado
+        if estado == 'pagado':
+            if not fecha_pago:
+                raise ValidationError({
+                    'fecha_pago': 'La fecha de pago es requerida cuando el estado es "Pagado".'
+                })
+        
+        return cleaned_data
 
 
 class PlanPagoForm(forms.ModelForm):

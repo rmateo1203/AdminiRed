@@ -23,13 +23,38 @@ class NotificationService:
                     'error': 'El cliente no tiene correo electrónico configurado'
                 }
             
-            send_mail(
-                subject=notificacion.asunto,
-                message=notificacion.mensaje,
-                from_email=config('DEFAULT_FROM_EMAIL', default='noreply@adminired.com'),
-                recipient_list=[notificacion.cliente.email],
-                fail_silently=False,
-            )
+            from_email = config('DEFAULT_FROM_EMAIL', default='noreply@adminired.com')
+            recipient_list = [notificacion.cliente.email]
+            
+            # Verificar si el mensaje es HTML
+            es_html = '<html' in notificacion.mensaje.lower() or '<!DOCTYPE' in notificacion.mensaje.upper()
+            
+            if es_html:
+                # Enviar email HTML
+                from django.core.mail import EmailMultiAlternatives
+                
+                # Extraer texto plano del HTML (simple)
+                import re
+                texto_plano = re.sub(r'<[^>]+>', '', notificacion.mensaje)
+                texto_plano = re.sub(r'\s+', ' ', texto_plano).strip()
+                
+                msg = EmailMultiAlternatives(
+                    subject=notificacion.asunto,
+                    body=texto_plano,
+                    from_email=from_email,
+                    to=recipient_list
+                )
+                msg.attach_alternative(notificacion.mensaje, "text/html")
+                msg.send()
+            else:
+                # Enviar email de texto plano
+                send_mail(
+                    subject=notificacion.asunto,
+                    message=notificacion.mensaje,
+                    from_email=from_email,
+                    recipient_list=recipient_list,
+                    fail_silently=False,
+                )
             
             return {
                 'success': True,

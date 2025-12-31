@@ -1,5 +1,5 @@
 from django.db import models
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from clientes.models import Cliente
 from instalaciones.models import Instalacion
@@ -47,8 +47,29 @@ class Pago(models.Model):
         verbose_name='Monto'
     )
     concepto = models.CharField(max_length=200, verbose_name='Concepto')
-    periodo_mes = models.IntegerField(verbose_name='Mes', choices=[(i, i) for i in range(1, 13)])
-    periodo_anio = models.IntegerField(verbose_name='Año')
+    PERIODO_MES_CHOICES = [
+        (1, 'Enero'),
+        (2, 'Febrero'),
+        (3, 'Marzo'),
+        (4, 'Abril'),
+        (5, 'Mayo'),
+        (6, 'Junio'),
+        (7, 'Julio'),
+        (8, 'Agosto'),
+        (9, 'Septiembre'),
+        (10, 'Octubre'),
+        (11, 'Noviembre'),
+        (12, 'Diciembre'),
+    ]
+    
+    periodo_mes = models.IntegerField(
+        verbose_name='Mes',
+        choices=PERIODO_MES_CHOICES
+    )
+    periodo_anio = models.IntegerField(
+        verbose_name='Año',
+        validators=[MinValueValidator(2000), MaxValueValidator(2100)]
+    )
     
     # Fechas
     fecha_vencimiento = models.DateField(verbose_name='Fecha de vencimiento')
@@ -91,7 +112,7 @@ class Pago(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.cliente.nombre} - ${self.monto} - {self.get_estado_display()}"
+        return f"{self.cliente.nombre_completo} - ${self.monto} - {self.get_estado_display()}"
     
     @property
     def esta_vencido(self):
@@ -122,6 +143,17 @@ class Pago(models.Model):
         if self.estado == 'pendiente' and self.fecha_vencimiento < timezone.now().date():
             self.estado = 'vencido'
         super().save(*args, **kwargs)
+    
+    @classmethod
+    def actualizar_pagos_vencidos(cls):
+        """Marca automáticamente como vencidos todos los pagos pendientes cuya fecha de vencimiento ya pasó."""
+        hoy = timezone.now().date()
+        pagos_vencidos = cls.objects.filter(
+            estado='pendiente',
+            fecha_vencimiento__lt=hoy
+        )
+        cantidad = pagos_vencidos.update(estado='vencido')
+        return cantidad
 
 
 class PlanPago(models.Model):
@@ -142,7 +174,7 @@ class PlanPago(models.Model):
     dia_vencimiento = models.IntegerField(
         verbose_name='Día de vencimiento',
         help_text='Día del mes en que vence el pago (1-31)',
-        validators=[MinValueValidator(1)]
+        validators=[MinValueValidator(1), MaxValueValidator(31)]
     )
     activo = models.BooleanField(default=True, verbose_name='Activo')
     

@@ -9,6 +9,9 @@ urlpatterns = [
     path('<int:pk>/', views.cliente_detail, name='cliente_detail'),
     path('<int:pk>/editar/', views.cliente_update, name='cliente_update'),
     path('<int:pk>/eliminar/', views.cliente_delete, name='cliente_delete'),
+    
+    # API para autocompletado
+    path('api/buscar-por-codigo-postal/', views.buscar_por_codigo_postal, name='api_buscar_por_codigo_postal'),
 ]
 
 
