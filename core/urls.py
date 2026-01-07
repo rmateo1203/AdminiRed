@@ -31,5 +31,8 @@ urlpatterns = [
     path('catalogos/tipos-notificacion/crear/', catalogos_views.catalogo_tipo_notificacion_create, name='catalogo_tipo_notificacion_create'),
     path('catalogos/tipos-notificacion/<int:pk>/editar/', catalogos_views.catalogo_tipo_notificacion_update, name='catalogo_tipo_notificacion_update'),
     path('catalogos/tipos-notificacion/<int:pk>/eliminar/', catalogos_views.catalogo_tipo_notificacion_delete, name='catalogo_tipo_notificacion_delete'),
+    
+    # Configuración del Sistema
+    path('configurar-sistema/', views.configurar_sistema, name='configurar_sistema'),
 ]
 

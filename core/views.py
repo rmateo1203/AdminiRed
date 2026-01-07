@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import logout
+from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LoginView
 from django.contrib import messages
 from django.db.models import Count, Q, F
 from django.utils import timezone
@@ -12,14 +13,50 @@ from inventario.models import Material
 from notificaciones.models import Notificacion
 
 
+class CustomLoginView(LoginView):
+    """Vista personalizada de login que redirige a clientes al portal."""
+    
+    def form_valid(self, form):
+        """Redirige según el tipo de usuario después del login."""
+        # Autenticar al usuario
+        username = form.cleaned_data.get('username')
+        password = form.cleaned_data.get('password')
+        user = authenticate(self.request, username=username, password=password)
+        
+        if user is not None:
+            login(self.request, user)
+            
+            # Verificar si es un cliente
+            try:
+                cliente = user.cliente_perfil
+                if cliente and not cliente.is_deleted and cliente.estado_cliente == 'activo':
+                    # Redirigir al portal de clientes
+                    messages.success(self.request, f'¡Bienvenido, {cliente.nombre_completo}!')
+                    return redirect('clientes:portal_mis_pagos')
+            except:
+                pass  # No es un cliente, continuar con redirección normal
+        
+        # Para usuarios normales (staff), usar la redirección por defecto
+        return super().form_valid(form)
+
+
 def home(request):
     """Vista para la página de inicio con estadísticas del sistema."""
+    
+    # Si el usuario es un cliente, redirigir al portal de clientes
+    if request.user.is_authenticated:
+        try:
+            cliente = request.user.cliente_perfil
+            if cliente and not cliente.is_deleted and cliente.estado_cliente == 'activo':
+                return redirect('clientes:portal_mis_pagos')
+        except:
+            pass  # No es un cliente, continuar normalmente
     
     # Estadísticas de clientes
     total_clientes = Cliente.objects.count()
     clientes_activos = Cliente.objects.filter(estado_cliente='activo').count()
     clientes_nuevos_mes = Cliente.objects.filter(
-        fecha_registro__gte=timezone.now() - timedelta(days=30)
+        created_at__gte=timezone.now() - timedelta(days=30)
     ).count()
     
     # Estadísticas de instalaciones
@@ -122,3 +159,28 @@ def config_sidebar(request):
         'current_position': current_position,
     }
     return render(request, 'core/config_sidebar.html', context)
+
+
+@login_required
+def configurar_sistema(request):
+    """Vista para configurar el sistema (logo, colores, nombre de empresa)."""
+    from .models import ConfiguracionSistema
+    from .forms import ConfiguracionSistemaForm
+    
+    config = ConfiguracionSistema.get_activa()
+    
+    if request.method == 'POST':
+        form = ConfiguracionSistemaForm(request.POST, request.FILES, instance=config)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Configuración del sistema actualizada exitosamente.')
+            return redirect('core:configurar_sistema')
+    else:
+        form = ConfiguracionSistemaForm(instance=config)
+    
+    context = {
+        'form': form,
+        'config': config,
+    }
+    
+    return render(request, 'core/configurar_sistema.html', context)

@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}Reembolsar Transacción - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="margin-bottom: 1.5rem;">
+        <h2><i class="fas fa-undo"></i> Reembolsar Transacción</h2>
+        <a href="{% url 'pagos:pago_detail' pago.pk %}" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">
+            <i class="fas fa-arrow-left"></i> Volver al Detalle del Pago
+        </a>
+    </div>
+    
+    <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto;">
+        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 4px; margin-bottom: 2rem;">
+            <strong style="color: #92400e;">⚠️ Advertencia</strong>
+            <p style="margin: 0.5rem 0 0 0; color: #78350f;">
+                Esta acción procesará un reembolso a través de {{ transaccion.get_pasarela_display }}. 
+                El pago será marcado como cancelado y el cliente recibirá el reembolso según las políticas de la pasarela.
+            </p>
+        </div>
+        
+        <h3 style="color: #667eea; margin-bottom: 1.5rem;">Información de la Transacción</h3>
+        
+        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+            <div style="display: grid; gap: 1rem;">
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Pasarela</strong>
+                    <div style="margin-top: 0.5rem;">{{ transaccion.get_pasarela_display }}</div>
+                </div>
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Monto Original</strong>
+                    <div style="margin-top: 0.5rem; font-size: 1.25rem; font-weight: 600; color: #10b981;">
+                        ${{ transaccion.monto|floatformat:2 }} {{ transaccion.moneda }}
+                    </div>
+                </div>
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">ID de Transacción</strong>
+                    <div style="margin-top: 0.5rem; font-family: monospace; font-size: 0.875rem; color: #6b7280;">
+                        {{ transaccion.id_transaccion_pasarela }}
+                    </div>
+                </div>
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Fecha de Pago</strong>
+                    <div style="margin-top: 0.5rem;">{{ transaccion.fecha_completada|date:"d/m/Y H:i"|default:"N/A" }}</div>
+                </div>
+                <div>
+                    <strong style="color: #6b7280; font-size: 0.875rem;">Cliente</strong>
+                    <div style="margin-top: 0.5rem;">{{ pago.cliente.nombre_completo }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label for="tipo_reembolso" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                    Tipo de Reembolso
+                </label>
+                <select id="tipo_reembolso" name="tipo_reembolso" class="form-control" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem;" onchange="toggleMontoParcial()">
+                    <option value="total">Reembolso Total</option>
+                    <option value="parcial">Reembolso Parcial</option>
+                </select>
+            </div>
+            
+            <div id="monto_parcial_container" style="margin-bottom: 1.5rem; display: none;">
+                <label for="monto_parcial" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                    Monto del Reembolso
+                </label>
+                <div style="position: relative;">
+                    <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #6b7280; font-weight: 600;">$</span>
+                    <input type="number" id="monto_parcial" name="monto_parcial" step="0.01" min="0.01" max="{{ transaccion.monto }}" 
+                           class="form-control" style="width: 100%; padding: 0.75rem 0.75rem 0.75rem 2rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem;"
+                           placeholder="0.00">
+                </div>
+                <small style="color: #6b7280; font-size: 0.875rem;">
+                    Máximo: ${{ transaccion.monto|floatformat:2 }}
+                </small>
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label for="motivo" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                    Motivo del Reembolso (Opcional)
+                </label>
+                <textarea id="motivo" name="motivo" rows="3" class="form-control" 
+                          style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; resize: vertical;"
+                          placeholder="Describe el motivo del reembolso..."></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn" style="flex: 1; background: #ef4444; color: white; padding: 1rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer;">
+                    <i class="fas fa-undo"></i> Procesar Reembolso
+                </button>
+                <a href="{% url 'pagos:pago_detail' pago.pk %}" class="btn" style="padding: 1rem; background: #6b7280; color: white; text-decoration: none; border-radius: 8px; font-size: 1rem; font-weight: 600; text-align: center;">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function toggleMontoParcial() {
+    const tipoReembolso = document.getElementById('tipo_reembolso').value;
+    const montoParcialContainer = document.getElementById('monto_parcial_container');
+    const montoParcialInput = document.getElementById('monto_parcial');
+    
+    if (tipoReembolso === 'parcial') {
+        montoParcialContainer.style.display = 'block';
+        montoParcialInput.required = true;
+    } else {
+        montoParcialContainer.style.display = 'none';
+        montoParcialInput.required = false;
+        montoParcialInput.value = '';
+    }
+}
+</script>
+{% endblock %}
+
+
+

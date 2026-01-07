@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import TipoInstalacion, PlanInternet, Instalacion, ConfiguracionNumeroContrato
+from simple_history.admin import SimpleHistoryAdmin
+from .models import TipoInstalacion, PlanInternet, Instalacion, MaterialInstalacion, CambioEstadoInstalacion
 
 
 @admin.register(TipoInstalacion)
@@ -16,27 +17,8 @@ class PlanInternetAdmin(admin.ModelAdmin):
     ordering = ['precio_mensual', 'velocidad_descarga']
 
 
-@admin.register(ConfiguracionNumeroContrato)
-class ConfiguracionNumeroContratoAdmin(admin.ModelAdmin):
-    list_display = ['formato', 'prefijo', 'numero_inicial', 'digitos_secuencia', 'reiniciar_diario', 'activa', 'fecha_actualizacion']
-    list_filter = ['activa', 'reiniciar_diario']
-    readonly_fields = ['fecha_creacion', 'fecha_actualizacion']
-    fieldsets = (
-        ('Configuración General', {
-            'fields': ('activa', 'formato', 'prefijo')
-        }),
-        ('Secuencia', {
-            'fields': ('numero_inicial', 'digitos_secuencia', 'reiniciar_diario')
-        }),
-        ('Información', {
-            'fields': ('fecha_creacion', 'fecha_actualizacion'),
-            'classes': ('collapse',)
-        }),
-    )
-
-
 @admin.register(Instalacion)
-class InstalacionAdmin(admin.ModelAdmin):
+class InstalacionAdmin(SimpleHistoryAdmin):
     list_display = [
         'numero_contrato',
         'cliente',
@@ -84,3 +66,28 @@ class InstalacionAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+
+@admin.register(MaterialInstalacion)
+class MaterialInstalacionAdmin(admin.ModelAdmin):
+    list_display = ['instalacion', 'material', 'cantidad', 'material_stock']
+    list_filter = ['instalacion__estado', 'material__categoria']
+    search_fields = ['instalacion__numero_contrato', 'material__nombre', 'material__codigo']
+    readonly_fields = ['material_stock']
+    
+    def material_stock(self, obj):
+        """Muestra el stock disponible del material."""
+        if obj.material:
+            return f"{obj.material.stock_actual} {obj.material.get_unidad_medida_display()}"
+        return '-'
+    material_stock.short_description = 'Stock Disponible'
+
+
+@admin.register(CambioEstadoInstalacion)
+class CambioEstadoInstalacionAdmin(admin.ModelAdmin):
+    list_display = ['instalacion', 'estado_anterior', 'estado_nuevo', 'fecha_cambio', 'usuario']
+    list_filter = ['estado_anterior', 'estado_nuevo', 'fecha_cambio']
+    search_fields = ['instalacion__numero_contrato', 'instalacion__cliente__nombre', 'notas']
+    readonly_fields = ['fecha_cambio']
+    date_hierarchy = 'fecha_cambio'
+    ordering = ['-fecha_cambio']

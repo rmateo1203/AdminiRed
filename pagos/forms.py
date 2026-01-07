@@ -103,6 +103,12 @@ class PagoForm(forms.ModelForm):
         # Si el estado es 'pagado', hacer fecha_pago requerida
         if self.instance and self.instance.pk and self.instance.estado == 'pagado':
             self.fields['fecha_pago'].required = True
+        
+        # Establecer valor máximo para fecha_pago (hasta 1 hora en el futuro para ajustes de zona horaria)
+        if 'fecha_pago' in self.fields:
+            ahora = timezone.now()
+            max_datetime = ahora + timedelta(hours=1)
+            self.fields['fecha_pago'].widget.attrs['max'] = max_datetime.strftime('%Y-%m-%dT%H:%M')
     
     def clean(self):
         cleaned_data = super().clean()
@@ -137,7 +143,7 @@ class PagoForm(forms.ModelForm):
                     'monto': 'El monto debe ser al menos $0.01.'
                 })
         
-        # Validación de duplicados (excluyendo cancelados)
+        # Validación de períodos duplicados (excluyendo cancelados)
         if cliente and periodo_mes and periodo_anio:
             existing = Pago.objects.filter(
                 cliente=cliente,
@@ -157,9 +163,17 @@ class PagoForm(forms.ModelForm):
                 existing = existing.exclude(pk=self.instance.pk)
             
             if existing.exists():
+                pago_duplicado = existing.first()
+                mensaje = f'Ya existe un pago activo para este cliente'
+                if instalacion:
+                    mensaje += f' e instalación ({instalacion.numero_contrato})'
+                mensaje += f' en el período {dict(Pago.PERIODO_MES_CHOICES).get(periodo_mes, periodo_mes)} {periodo_anio}.'
+                if pago_duplicado:
+                    mensaje += f' Pago existente: {pago_duplicado.concepto} (${pago_duplicado.monto}) - Estado: {pago_duplicado.get_estado_display()}'
+                
                 raise ValidationError({
-                    'periodo_mes': 'Ya existe un pago activo para este cliente, instalación y período.',
-                    'periodo_anio': 'Ya existe un pago activo para este cliente, instalación y período.'
+                    'periodo_mes': mensaje,
+                    'periodo_anio': mensaje,
                 })
         
         # Validación de fechas
@@ -182,11 +196,15 @@ class PagoForm(forms.ModelForm):
                 raise ValidationError({
                     'fecha_pago': 'La fecha de pago no puede ser anterior a la fecha de vencimiento.'
                 })
-            
-            # Validar que fecha_pago no sea futura (más de 1 día)
-            if fecha_pago.date() > (timezone.now().date() + timedelta(days=1)):
+        
+        # Validar que fecha_pago no sea futura
+        # Permitir hasta el final del día actual (considerando la hora)
+        if fecha_pago:
+            ahora = timezone.now()
+            # Permitir hasta 1 hora en el futuro para ajustes de zona horaria
+            if fecha_pago > (ahora + timedelta(hours=1)):
                 raise ValidationError({
-                    'fecha_pago': 'La fecha de pago no puede ser futura.'
+                    'fecha_pago': f'La fecha de pago no puede ser futura. La fecha/hora actual es {ahora.strftime("%d/%m/%Y %H:%M")}.'
                 })
         
         # Validación de estado

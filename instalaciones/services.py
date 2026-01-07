@@ -1,155 +1,134 @@
 """
-Servicios para el módulo de instalaciones.
+Servicio para generar números de contrato automáticamente.
 """
-from django.core.cache import cache
 from django.utils import timezone
 from datetime import datetime
-from .models import ConfiguracionNumeroContrato, Instalacion
-import re
+from .models import Instalacion, ConfiguracionNumeroContrato
 
 
 class NumeroContratoService:
     """Servicio para generar números de contrato dinámicamente."""
     
     @staticmethod
-    def generar_numero_contrato():
+    def generar_numero_contrato(instalacion):
         """
-        Genera un número de contrato único basado en la configuración activa.
+        Genera un número de contrato automático basado en la configuración activa.
+        
+        Args:
+            instalacion: Instancia de Instalacion (puede no estar guardada aún)
         
         Returns:
             str: Número de contrato generado
         """
         config = ConfiguracionNumeroContrato.get_activa()
         
-        # Obtener fecha actual
-        ahora = timezone.now()
-        fecha = ahora.date()
+        if not config or not config.activa:
+            # Si no hay configuración, usar formato por defecto
+            return NumeroContratoService._generar_formato_default(instalacion)
         
-        # Reemplazar variables de fecha
-        formato = config.formato
-        formato = formato.replace('{YYYY}', str(ahora.year))
-        formato = formato.replace('{YY}', str(ahora.year)[-2:])
-        formato = formato.replace('{MM}', f"{ahora.month:02d}")
-        formato = formato.replace('{DD}', f"{ahora.day:02d}")
-        formato = formato.replace('{PREFIJO}', config.prefijo or 'INST')
+        # Construir el número según el formato configurado
+        partes = []
         
-        # Generar número secuencial
-        if config.reiniciar_diario:
-            # Buscar el último número del día
-            # Crear patrón base sin el número secuencial
-            patron_base = formato.replace('{####}', '')
-            # Reemplazar variables de fecha en el patrón base
-            patron_base = patron_base.replace('{YYYY}', str(ahora.year))
-            patron_base = patron_base.replace('{YY}', str(ahora.year)[-2:])
-            patron_base = patron_base.replace('{MM}', f"{ahora.month:02d}")
-            patron_base = patron_base.replace('{DD}', f"{ahora.day:02d}")
-            patron_base = patron_base.replace('{PREFIJO}', config.prefijo or 'INST')
-            
-            # Buscar instalaciones que empiecen con el patrón base del día
-            instalaciones_del_dia = Instalacion.objects.filter(
-                numero_contrato__startswith=patron_base
-            )
-            
-            # Extraer números secuenciales (últimos N dígitos según config.digitos_secuencia)
-            numeros_usados = []
-            for inst in instalaciones_del_dia:
-                # Extraer los últimos N dígitos (donde N = digitos_secuencia)
-                match = re.search(r'(\d{' + str(config.digitos_secuencia) + r'})$', inst.numero_contrato)
-                if match:
-                    try:
-                        numero = int(match.group(1))
-                        numeros_usados.append(numero)
-                    except ValueError:
-                        pass
-            
-            # Encontrar el siguiente número disponible
-            if numeros_usados:
-                siguiente_numero = max(numeros_usados) + 1
-            else:
-                siguiente_numero = config.numero_inicial
-        else:
-            # Secuencia global (no se reinicia diariamente)
-            # Buscar todas las instalaciones que coincidan con el patrón base
-            # Crear patrón base sin el número secuencial
-            patron_base = formato.replace('{####}', '')
-            patron_base = patron_base.replace('{YYYY}', '')
-            patron_base = patron_base.replace('{YY}', '')
-            patron_base = patron_base.replace('{MM}', '')
-            patron_base = patron_base.replace('{DD}', '')
-            patron_base = patron_base.replace('{PREFIJO}', config.prefijo or 'INST')
-            
-            # Obtener todas las instalaciones y filtrar las que coincidan con el patrón
-            todas_instalaciones = Instalacion.objects.all()
-            instalaciones_coincidentes = []
-            
-            for inst in todas_instalaciones:
-                # Verificar si el número de contrato empieza con el patrón base
-                if inst.numero_contrato.startswith(patron_base):
-                    instalaciones_coincidentes.append(inst)
-            
-            # Extraer números secuenciales
-            numeros_usados = []
-            for inst in instalaciones_coincidentes:
-                # Extraer los últimos N dígitos
-                match = re.search(r'(\d{' + str(config.digitos_secuencia) + r'})$', inst.numero_contrato)
-                if match:
-                    try:
-                        numero = int(match.group(1))
-                        numeros_usados.append(numero)
-                    except ValueError:
-                        pass
-            
-            if numeros_usados:
-                siguiente_numero = max(numeros_usados) + 1
-            else:
-                siguiente_numero = config.numero_inicial
+        # Prefijo
+        if config.prefijo:
+            partes.append(config.prefijo)
         
-        # Formatear número con la cantidad de dígitos especificada
-        numero_formateado = f"{siguiente_numero:0{config.digitos_secuencia}d}"
+        # Año
+        if config.incluir_anio:
+            anio = timezone.now().year
+            if config.formato_anio == 'completo':
+                partes.append(str(anio))
+            elif config.formato_anio == 'corto':
+                partes.append(str(anio)[-2:])
         
-        # Reemplazar {####} con el número formateado
-        numero_contrato = formato.replace('{####}', numero_formateado)
+        # Mes
+        if config.incluir_mes:
+            mes = timezone.now().month
+            partes.append(f"{mes:02d}")
         
-        # Verificar unicidad y ajustar si es necesario
-        intentos = 0
-        while Instalacion.objects.filter(numero_contrato=numero_contrato).exists():
-            siguiente_numero += 1
-            numero_formateado = f"{siguiente_numero:0{config.digitos_secuencia}d}"
-            numero_contrato = formato.replace('{####}', numero_formateado)
-            intentos += 1
-            if intentos > 1000:  # Prevenir loops infinitos
-                raise ValueError('No se pudo generar un número de contrato único después de 1000 intentos')
+        # Secuencia
+        if config.incluir_secuencia:
+            secuencia = NumeroContratoService._obtener_siguiente_secuencia(config)
+            partes.append(f"{secuencia:0{config.longitud_secuencia}d}")
+        
+        # Sufijo
+        if config.sufijo:
+            partes.append(config.sufijo)
+        
+        numero_contrato = config.separador.join(partes)
+        
+        # Verificar unicidad
+        if Instalacion.objects.filter(numero_contrato=numero_contrato).exists():
+            # Si ya existe, agregar un sufijo único
+            contador = 1
+            while Instalacion.objects.filter(numero_contrato=f"{numero_contrato}-{contador}").exists():
+                contador += 1
+            numero_contrato = f"{numero_contrato}-{contador}"
         
         return numero_contrato
     
     @staticmethod
-    def obtener_preview(formato, prefijo='INST', numero_inicial=1, digitos_secuencia=4, reiniciar_diario=True):
+    def _generar_formato_default(instalacion):
+        """Genera un número de contrato con formato por defecto."""
+        anio = timezone.now().year
+        mes = timezone.now().month
+        
+        # Contar instalaciones del mes actual
+        inicio_mes = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        cantidad = Instalacion.objects.filter(fecha_solicitud__gte=inicio_mes).count()
+        
+        # Formato: CONT-YYYYMM-XXXX
+        numero = f"CONT-{anio}{mes:02d}-{cantidad + 1:04d}"
+        
+        # Verificar unicidad
+        if Instalacion.objects.filter(numero_contrato=numero).exists():
+            contador = 1
+            while Instalacion.objects.filter(numero_contrato=f"{numero}-{contador}").exists():
+                contador += 1
+            numero = f"{numero}-{contador}"
+        
+        return numero
+    
+    @staticmethod
+    def _obtener_siguiente_secuencia(config):
+        """Obtiene el siguiente número de secuencia según la configuración."""
+        if config.resetear_secuencia == 'nunca':
+            # Secuencia continua sin reset - contar todas las instalaciones
+            cantidad = Instalacion.objects.count()
+            return cantidad + 1
+        elif config.resetear_secuencia == 'mensual':
+            # Reset mensual
+            inicio_mes = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            cantidad = Instalacion.objects.filter(fecha_solicitud__gte=inicio_mes).count()
+            return cantidad + 1
+        elif config.resetear_secuencia == 'anual':
+            # Reset anual
+            inicio_anio = timezone.now().replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            cantidad = Instalacion.objects.filter(fecha_solicitud__gte=inicio_anio).count()
+            return cantidad + 1
+        else:
+            return 1
+    
+    @staticmethod
+    def obtener_preview(config=None):
         """
-        Genera un preview del formato de número de contrato.
+        Obtiene un preview del número de contrato que se generaría.
         
         Args:
-            formato: Formato del número de contrato
-            prefijo: Prefijo personalizado
-            numero_inicial: Número inicial
-            digitos_secuencia: Dígitos de secuencia
-            reiniciar_diario: Si reinicia diariamente
+            config: ConfiguracionNumeroContrato (opcional, si no se proporciona usa la activa)
         
         Returns:
             str: Preview del número de contrato
         """
-        ahora = timezone.now()
+        if config is None:
+            config = ConfiguracionNumeroContrato.get_activa()
         
-        # Reemplazar variables
-        preview = formato
-        preview = preview.replace('{YYYY}', str(ahora.year))
-        preview = preview.replace('{YY}', str(ahora.year)[-2:])
-        preview = preview.replace('{MM}', f"{ahora.month:02d}")
-        preview = preview.replace('{DD}', f"{ahora.day:02d}")
-        preview = preview.replace('{PREFIJO}', prefijo or 'INST')
+        if not config or not config.activa:
+            return NumeroContratoService._generar_formato_default(None)
         
-        # Reemplazar número secuencial
-        numero_formateado = f"{numero_inicial:0{digitos_secuencia}d}"
-        preview = preview.replace('{####}', numero_formateado)
+        # Crear una instalación temporal para el preview
+        class InstalacionPreview:
+            pass
         
-        return preview
-
+        instalacion_preview = InstalacionPreview()
+        return NumeroContratoService.generar_numero_contrato(instalacion_preview)

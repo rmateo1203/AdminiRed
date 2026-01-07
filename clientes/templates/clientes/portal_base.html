@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Portal de Cliente{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Ocultar el sidebar del sistema cuando estamos en el portal de clientes */
+    body.sidebar-left-active .sidebar-left,
+    body.sidebar-top-active .sidebar-top {
+        display: none !important;
+    }
+    
+    /* Ocultar el botón de configuración del sidebar */
+    .sidebar-toggle {
+        display: none !important;
+    }
+    
+    /* Layout personalizado para portal de clientes */
+    .portal-wrapper {
+        display: flex;
+        min-height: calc(100vh - 200px);
+        width: 100%;
+        max-width: 100%;
+        position: relative;
+    }
+    
+    .portal-sidebar {
+        width: 280px;
+        min-width: 280px;
+        background: white;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+        position: sticky;
+        top: 0;
+        height: fit-content;
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+        flex-shrink: 0;
+    }
+    
+    .portal-sidebar-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .portal-sidebar-header h3 {
+        color: var(--color-primario);
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .portal-sidebar-header p {
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin: 0;
+    }
+    
+    .portal-sidebar-menu {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .portal-sidebar-menu li {
+        margin-bottom: 0.5rem;
+    }
+    
+    .portal-sidebar-menu a {
+        display: block;
+        padding: 0.75rem 1rem;
+        color: #374151;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.3s;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .portal-sidebar-menu a:hover {
+        background-color: #f3f4f6;
+    }
+    
+    .portal-sidebar-menu a i {
+        margin-right: 0.5rem;
+        width: 20px;
+        text-align: center;
+    }
+    
+    .portal-sidebar-section-title {
+        padding: 0.5rem 1rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .portal-sidebar-instalacion {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .portal-sidebar-instalacion-info {
+        flex: 1;
+    }
+    
+    .portal-sidebar-instalacion-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #374151;
+    }
+    
+    .portal-sidebar-instalacion-status {
+        font-size: 0.75rem;
+        color: #6b7280;
+    }
+    
+    .portal-content-area {
+        flex: 1;
+        padding: 2rem;
+        min-width: 0; /* Permite que el contenido se ajuste */
+        overflow-x: hidden; /* Evita scroll horizontal */
+    }
+    
+    /* Asegurar que el contenido sea visible */
+    .portal-content-area > * {
+        max-width: 100%;
+        width: 100%;
+    }
+    
+    /* Sidebar móvil - botón toggle */
+    .portal-sidebar-toggle {
+        display: none;
+        position: fixed;
+        top: 80px;
+        left: 1rem;
+        z-index: 1000;
+        background: var(--color-primario);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        font-size: 1rem;
+    }
+    
+    .portal-sidebar-toggle:hover {
+        background: var(--color-secundario);
+    }
+    
+    /* Media queries para responsividad */
+    @media (max-width: 991px) {
+        .portal-wrapper {
+            flex-direction: column;
+        }
+        
+        .portal-sidebar {
+            width: 100%;
+            min-width: 100%;
+            position: fixed;
+            top: 0;
+            left: -100%;
+            height: 100vh;
+            z-index: 999;
+            max-height: 100vh;
+            transition: left 0.3s ease;
+            box-shadow: 2px 0 20px rgba(0,0,0,0.2);
+        }
+        
+        .portal-sidebar.active {
+            left: 0;
+        }
+        
+        .portal-sidebar-toggle {
+            display: block;
+        }
+        
+        .portal-close-btn {
+            display: block !important;
+        }
+        
+        .portal-close-btn:hover {
+            background: #f3f4f6;
+            color: #111827;
+        }
+        
+        .portal-content-area {
+            padding: 1rem;
+            width: 100%;
+        }
+        
+        /* Overlay cuando el sidebar está abierto */
+        .portal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 998;
+        }
+        
+        .portal-overlay.active {
+            display: block;
+        }
+        
+        .portal-content-area h2 {
+            font-size: 1.25rem !important;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .portal-content-area {
+            padding: 0.75rem;
+        }
+        
+        .portal-sidebar {
+            padding: 1rem;
+        }
+        
+        .portal-sidebar-header h3 {
+            font-size: 1rem;
+        }
+        
+        .portal-sidebar-header p {
+            font-size: 0.8rem;
+        }
+        
+        .portal-sidebar-menu a {
+            padding: 0.625rem 0.875rem;
+            font-size: 0.9rem;
+        }
+    }
+</style>
+{% block portal_extra_css %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+<button class="portal-sidebar-toggle" onclick="toggleSidebar()">
+    <i class="fas fa-bars"></i> Menú
+</button>
+<div class="portal-overlay" onclick="toggleSidebar()"></div>
+<div class="portal-wrapper">
+    <!-- Sidebar personalizado para portal de clientes -->
+    <aside class="portal-sidebar" id="portalSidebar">
+        <div class="portal-sidebar-header">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h3 style="margin: 0;">Mis Servicios</h3>
+                <button onclick="toggleSidebar()" style="display: none; background: none; border: none; color: #6b7280; font-size: 1.25rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 4px; transition: all 0.2s;" id="closeSidebarBtn" class="portal-close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <p>{{ cliente.nombre_completo }}</p>
+        </div>
+        <ul class="portal-sidebar-menu">
+            <li>
+                <a href="{% url 'clientes:portal_mis_pagos' %}">
+                    <i class="fas fa-money-bill-wave"></i> Mis Pagos
+                </a>
+            </li>
+            {% if instalaciones %}
+                <li>
+                    <div class="portal-sidebar-section-title">Mis Instalaciones</div>
+                </li>
+                {% for instalacion in instalaciones %}
+                <li>
+                    <a href="{% url 'clientes:portal_mis_pagos' %}">
+                        <div class="portal-sidebar-instalacion">
+                            <i class="fas fa-wifi" style="color: {% if instalacion.estado == 'activa' %}#10b981{% elif instalacion.estado == 'suspendida' %}#f59e0b{% else %}#6b7280{% endif %};"></i>
+                            <div class="portal-sidebar-instalacion-info">
+                                <div class="portal-sidebar-instalacion-name">{{ instalacion.plan_nombre }}</div>
+                                <div class="portal-sidebar-instalacion-status">
+                                    {% if instalacion.estado == 'activa' %}
+                                        <span style="color: #10b981;">●</span> Activa
+                                    {% elif instalacion.estado == 'suspendida' %}
+                                        <span style="color: #f59e0b;">●</span> Suspendida
+                                    {% else %}
+                                        <span style="color: #6b7280;">●</span> {{ instalacion.get_estado_display }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </li>
+                {% endfor %}
+            {% else %}
+                <li>
+                    <div style="padding: 0.75rem 1rem; color: #6b7280; font-size: 0.875rem; text-align: center;">
+                        No tienes instalaciones
+                    </div>
+                </li>
+            {% endif %}
+        </ul>
+    </aside>
+    
+    <!-- Área de contenido -->
+    <div class="portal-content-area">
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #e5e7eb;">
+            <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700; color: #111827;">{% block page_title %}Portal de Cliente{% endblock %}</h2>
+            <div style="margin-top: 0.5rem;">
+                <span style="color: #6b7280; font-size: 0.9rem;">Bienvenido, <strong>{{ cliente.nombre_completo }}</strong></span>
+            </div>
+        </div>
+        {% block portal_content %}{% endblock %}
+    </div>
+</div>
+<script>
+    function toggleSidebar() {
+        const sidebar = document.getElementById('portalSidebar');
+        const overlay = document.querySelector('.portal-overlay');
+        if (sidebar) {
+            sidebar.classList.toggle('active');
+            if (overlay) {
+                overlay.classList.toggle('active');
+            }
+        }
+    }
+    
+    // Cerrar sidebar al hacer clic en un enlace (en móviles)
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebarLinks = document.querySelectorAll('.portal-sidebar-menu a');
+        const sidebar = document.getElementById('portalSidebar');
+        const overlay = document.querySelector('.portal-overlay');
+        
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                if (window.innerWidth <= 991) {
+                    if (sidebar) sidebar.classList.remove('active');
+                    if (overlay) overlay.classList.remove('active');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+

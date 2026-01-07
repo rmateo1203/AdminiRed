@@ -8,9 +8,19 @@ from decouple import config
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=False, cast=bool)
+# Forzar DEBUG=False en producción (no permitir override por seguridad)
+DEBUG = False
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
+# ALLOWED_HOSTS - Lista de dominios permitidos
+# En producción, DEBE estar configurado en .env
+# Ejemplo: ALLOWED_HOSTS=adminired.com,www.adminired.com
+allowed_hosts_str = config('ALLOWED_HOSTS', default='')
+if not allowed_hosts_str:
+    raise ValueError(
+        "ALLOWED_HOSTS debe estar configurado en producción. "
+        "Agrega ALLOWED_HOSTS=tu-dominio.com en tu archivo .env"
+    )
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',') if host.strip()]
 
 # Database
 # PostgreSQL configuration for production (required)
@@ -30,12 +40,30 @@ DATABASES = {
 }
 
 # Security settings for production
-SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
+# HTTPS Configuration
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# HSTS (HTTP Strict Transport Security)
+# Solo habilitar si todo el sitio se sirve por HTTPS
+SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=31536000, cast=int)  # 1 año
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+# Secure Cookies
 SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=True, cast=bool)
 CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=True, cast=bool)
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+
+# Security Headers
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# Additional Security
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
 
 # Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

@@ -320,3 +320,4 @@ python manage.py enviar_recordatorios_pagos --solo-vencidos
 *Sistema implementado: Diciembre 2024*  
 *Versión: 1.0*
 
+

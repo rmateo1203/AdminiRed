@@ -14,6 +14,17 @@
         {% endfor %}
     {% endif %}
     
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            <strong>Errores en el formulario:</strong>
+            <ul style="margin: 0.5rem 0 0 1.5rem;">
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    
     <form method="post">
         {% csrf_token %}
         
@@ -50,7 +61,11 @@
             
             <div class="form-group">
                 <label for="{{ form.telefono.id_for_label }}">{{ form.telefono.label }}</label>
-                {{ form.telefono }}
+                <div style="position: relative;">
+                    {{ form.telefono }}
+                    <span id="telefono-status" class="validation-status" style="display: none;"></span>
+                </div>
+                <div id="telefono-feedback" class="validation-feedback" style="display: none;"></div>
                 {% if form.telefono.errors %}
                     <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
                         {{ form.telefono.errors }}
@@ -59,8 +74,20 @@
             </div>
             
             <div class="form-group">
-                <label for="{{ form.email.id_for_label }}">{{ form.email.label }} (opcional)</label>
-                {{ form.email }}
+                <label for="{{ form.email.id_for_label }}">
+                    {{ form.email.label }}
+                    {% if form.email.field.required %}<span style="color: #ef4444;">*</span>{% endif %}
+                </label>
+                <div style="position: relative;">
+                    {{ form.email }}
+                    <span id="email-status" class="validation-status" style="display: none;"></span>
+                </div>
+                <div id="email-feedback" class="validation-feedback" style="display: none;"></div>
+                {% if form.email.help_text %}
+                    <small style="color: #6b7280; font-size: 0.875rem; display: block; margin-top: 0.25rem;">
+                        {{ form.email.help_text }}
+                    </small>
+                {% endif %}
                 {% if form.email.errors %}
                     <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
                         {{ form.email.errors }}
@@ -89,13 +116,7 @@
             </div>
             
             <div class="form-group">
-                <label for="{{ form.ciudad.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fas fa-city"></i>
-                    <span>{{ form.ciudad.label }}</span>
-                    <span id="ciudad-auto-badge" style="display: none; font-size: 0.75rem; color: #10b981; font-weight: normal; margin-left: auto;">
-                        <i class="fas fa-magic"></i> Autocompletado
-                    </span>
-                </label>
+                <label for="{{ form.ciudad.id_for_label }}">{{ form.ciudad.label }}</label>
                 {{ form.ciudad }}
                 {% if form.ciudad.errors %}
                     <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
@@ -105,13 +126,7 @@
             </div>
             
             <div class="form-group">
-                <label for="{{ form.estado.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fas fa-map"></i>
-                    <span>{{ form.estado.label }}</span>
-                    <span id="estado-auto-badge" style="display: none; font-size: 0.75rem; color: #10b981; font-weight: normal; margin-left: auto;">
-                        <i class="fas fa-magic"></i> Autocompletado
-                    </span>
-                </label>
+                <label for="{{ form.estado.id_for_label }}">{{ form.estado.label }}</label>
                 {{ form.estado }}
                 {% if form.estado.errors %}
                     <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
@@ -120,40 +135,14 @@
                 {% endif %}
             </div>
             
-            <div class="form-group" style="position: relative;">
-                <label for="{{ form.codigo_postal.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <span>{{ form.codigo_postal.label }} (opcional)</span>
-                    <span style="font-size: 0.75rem; color: #6b7280; font-weight: normal; margin-left: auto;">
-                        <i class="fas fa-question-circle" title="Al ingresar un código postal, se autocompletará la ciudad y estado si hay datos disponibles."></i>
-                    </span>
-                </label>
-                <div style="position: relative;">
-                    {{ form.codigo_postal }}
-                    <span id="cp-loading" style="display: none; position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); color: #667eea;">
-                        <i class="fas fa-spinner fa-spin"></i>
-                    </span>
-                </div>
+            <div class="form-group">
+                <label for="{{ form.codigo_postal.id_for_label }}">{{ form.codigo_postal.label }} (opcional)</label>
+                {{ form.codigo_postal }}
                 {% if form.codigo_postal.errors %}
                     <div style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
                         {{ form.codigo_postal.errors }}
                     </div>
                 {% endif %}
-                <small style="display: block; margin-top: 0.5rem; color: #6b7280; font-size: 0.875rem;">
-                    <i class="fas fa-info-circle"></i> Se autocompletará ciudad y estado si hay datos disponibles.
-                </small>
-                <div id="cp-suggestion" style="display: none; margin-top: 0.5rem; padding: 0.75rem; background: #f0f4ff; border-left: 3px solid #667eea; border-radius: 4px;">
-                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                        <i class="fas fa-lightbulb" style="color: #667eea;"></i>
-                        <strong style="color: #374151;">Sugerencia encontrada:</strong>
-                    </div>
-                    <div style="color: #6b7280; font-size: 0.875rem;">
-                        <span id="cp-suggestion-text"></span>
-                    </div>
-                    <button type="button" id="cp-apply-suggestion" class="btn" style="margin-top: 0.5rem; padding: 0.5rem 1rem; font-size: 0.875rem; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                        <i class="fas fa-check"></i> Aplicar Sugerencia
-                    </button>
-                </div>
             </div>
             
             <div class="form-group" style="grid-column: 1 / -1;">
@@ -178,195 +167,290 @@
     </form>
 </div>
 
+<style>
+.validation-status {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    pointer-events: none;
+}
+
+.validation-status.valid {
+    color: #10b981;
+}
+
+.validation-status.invalid {
+    color: #ef4444;
+}
+
+.validation-status.checking {
+    color: #6b7280;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: translateY(-50%) rotate(0deg); }
+    to { transform: translateY(-50%) rotate(360deg); }
+}
+
+.validation-feedback {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+.validation-feedback.valid {
+    color: #10b981;
+    background-color: #d1fae5;
+}
+
+.validation-feedback.invalid {
+    color: #ef4444;
+    background-color: #fee2e2;
+}
+
+.validation-feedback.checking {
+    color: #6b7280;
+    background-color: #f3f4f6;
+}
+
+.form-group input:focus + .validation-status {
+    display: inline-block;
+}
+</style>
+
 <script>
 (function() {
-    const codigoPostalInput = document.getElementById('id_codigo_postal');
-    const ciudadInput = document.getElementById('id_ciudad');
-    const estadoInput = document.getElementById('id_estado');
-    const loadingIndicator = document.getElementById('cp-loading');
-    const suggestionBox = document.getElementById('cp-suggestion');
-    const suggestionText = document.getElementById('cp-suggestion-text');
-    const applyButton = document.getElementById('cp-apply-suggestion');
-    const ciudadBadge = document.getElementById('ciudad-auto-badge');
-    const estadoBadge = document.getElementById('estado-auto-badge');
+    'use strict';
     
-    let timeoutId = null;
-    let currentSuggestion = null;
+    // Obtener el ID del cliente si estamos editando
+    const clienteId = {% if cliente %}{{ cliente.pk }}{% else %}null{% endif %};
     
-    // Función para buscar por código postal
-    function buscarPorCodigoPostal(cp) {
-        if (!cp || cp.length < 3) {
-            ocultarSugerencia();
+    // Configuración de validación
+    const validationConfig = {
+        email: {
+            field: document.getElementById('{{ form.email.id_for_label }}'),
+            status: document.getElementById('email-status'),
+            feedback: document.getElementById('email-feedback'),
+            minLength: 5,
+            debounceTime: 500
+        },
+        telefono: {
+            field: document.getElementById('{{ form.telefono.id_for_label }}'),
+            status: document.getElementById('telefono-status'),
+            feedback: document.getElementById('telefono-feedback'),
+            minLength: 9,
+            debounceTime: 500
+        }
+    };
+    
+    // Timeouts para debounce
+    const timeouts = {};
+    
+    // Función para validar un campo
+    function validateField(campo, config) {
+        const valor = config.field.value.trim();
+        
+        // Si el campo está vacío, ocultar feedback
+        if (!valor) {
+            config.status.style.display = 'none';
+            config.feedback.style.display = 'none';
             return;
         }
         
-        // Mostrar loading
-        loadingIndicator.style.display = 'block';
-        suggestionBox.style.display = 'none';
+        // Validación de longitud mínima
+        if (valor.length < config.minLength) {
+            config.status.style.display = 'none';
+            config.feedback.style.display = 'none';
+            return;
+        }
+        
+        // Mostrar estado de carga
+        config.status.style.display = 'inline-block';
+        config.status.className = 'validation-status checking';
+        config.status.textContent = '⟳';
+        config.feedback.style.display = 'block';
+        config.feedback.className = 'validation-feedback checking';
+        config.feedback.textContent = 'Verificando...';
+        
+        // Construir URL
+        const url = `{% url 'clientes:cliente_verificar_duplicado' %}?campo=${campo}&valor=${encodeURIComponent(valor)}${clienteId ? '&cliente_id=' + clienteId : ''}`;
         
         // Hacer petición AJAX
-        fetch(`{% url 'clientes:api_buscar_por_codigo_postal' %}?cp=${encodeURIComponent(cp)}`)
-            .then(response => response.json())
-            .then(data => {
-                loadingIndicator.style.display = 'none';
-                
-                if (data.success && data.tiene_datos) {
-                    currentSuggestion = data;
-                    mostrarSugerencia(data);
-                } else {
-                    ocultarSugerencia();
-                }
-            })
-            .catch(error => {
-                console.error('Error al buscar código postal:', error);
-                loadingIndicator.style.display = 'none';
-                ocultarSugerencia();
-            });
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.valido) {
+                // Campo válido
+                config.status.className = 'validation-status valid';
+                config.status.textContent = '✓';
+                config.feedback.className = 'validation-feedback valid';
+                config.feedback.textContent = data.mensaje;
+                config.field.style.borderColor = '#10b981';
+            } else {
+                // Campo inválido
+                config.status.className = 'validation-status invalid';
+                config.status.textContent = '✗';
+                config.feedback.className = 'validation-feedback invalid';
+                config.feedback.textContent = data.mensaje;
+                config.field.style.borderColor = '#ef4444';
+            }
+        })
+        .catch(error => {
+            console.error('Error en validación:', error);
+            config.status.style.display = 'none';
+            config.feedback.style.display = 'none';
+            config.field.style.borderColor = '';
+            // No bloquear el envío si hay error en la validación AJAX
+            // El servidor validará de todas formas
+        });
     }
     
-    // Función para mostrar sugerencia
-    function mostrarSugerencia(data) {
-        const ciudad = data.ciudad_sugerida || (data.ciudades_disponibles && data.ciudades_disponibles[0]);
-        const estado = data.estado_sugerido || (data.estados_disponibles && data.estados_disponibles[0]);
+    // Inicializar validación para cada campo
+    Object.keys(validationConfig).forEach(campo => {
+        const config = validationConfig[campo];
         
-        if (ciudad && estado) {
-            suggestionText.textContent = `Ciudad: ${ciudad} | Estado: ${estado}`;
-            suggestionBox.style.display = 'block';
-        } else if (ciudad) {
-            suggestionText.textContent = `Ciudad: ${ciudad}`;
-            suggestionBox.style.display = 'block';
-        } else if (estado) {
-            suggestionText.textContent = `Estado: ${estado}`;
-            suggestionBox.style.display = 'block';
-        } else {
-            ocultarSugerencia();
-        }
-    }
-    
-    // Función para ocultar sugerencia
-    function ocultarSugerencia() {
-        suggestionBox.style.display = 'none';
-        currentSuggestion = null;
-    }
-    
-    // Función para aplicar sugerencia
-    function aplicarSugerencia() {
-        if (!currentSuggestion) return;
+        if (!config.field) return;
         
-        const ciudad = currentSuggestion.ciudad_sugerida || (currentSuggestion.ciudades_disponibles && currentSuggestion.ciudades_disponibles[0]);
-        const estado = currentSuggestion.estado_sugerido || (currentSuggestion.estados_disponibles && currentSuggestion.estados_disponibles[0]);
+        // Validar al perder el foco
+        config.field.addEventListener('blur', function() {
+            validateField(campo, config);
+        });
         
-        if (ciudad && !ciudadInput.value.trim()) {
-            ciudadInput.value = ciudad;
-            ciudadInput.style.borderColor = '#10b981';
-            ciudadBadge.style.display = 'inline-flex';
-            setTimeout(() => {
-                ciudadInput.style.borderColor = '';
-            }, 2000);
-        }
-        
-        if (estado && !estadoInput.value.trim()) {
-            estadoInput.value = estado;
-            estadoInput.style.borderColor = '#10b981';
-            estadoBadge.style.display = 'inline-flex';
-            setTimeout(() => {
-                estadoInput.style.borderColor = '';
-            }, 2000);
-        }
-        
-        // Ocultar sugerencia después de aplicar
-        setTimeout(() => {
-            ocultarSugerencia();
-        }, 500);
-    }
-    
-    // Event listener para código postal
-    if (codigoPostalInput) {
-        codigoPostalInput.addEventListener('input', function(e) {
-            const cp = e.target.value.trim();
-            
+        // Validar mientras escribe (con debounce)
+        config.field.addEventListener('input', function() {
             // Limpiar timeout anterior
-            if (timeoutId) {
-                clearTimeout(timeoutId);
+            if (timeouts[campo]) {
+                clearTimeout(timeouts[campo]);
             }
             
-            // Esperar 800ms después de que el usuario deje de escribir
-            timeoutId = setTimeout(() => {
-                buscarPorCodigoPostal(cp);
-            }, 800);
+            // Establecer nuevo timeout
+            timeouts[campo] = setTimeout(() => {
+                validateField(campo, config);
+            }, config.debounceTime);
         });
         
-        // También buscar al perder el foco si hay valor
-        codigoPostalInput.addEventListener('blur', function(e) {
-            const cp = e.target.value.trim();
-            if (cp && cp.length >= 3) {
-                buscarPorCodigoPostal(cp);
+        // Limpiar validación al enfocar
+        config.field.addEventListener('focus', function() {
+            if (timeouts[campo]) {
+                clearTimeout(timeouts[campo]);
             }
         });
-    }
+    });
     
-    // Event listener para botón aplicar
-    if (applyButton) {
-        applyButton.addEventListener('click', aplicarSugerencia);
-    }
-    
-    // Ocultar badges cuando el usuario edite manualmente
-    if (ciudadInput) {
-        ciudadInput.addEventListener('input', function() {
-            ciudadBadge.style.display = 'none';
-        });
-    }
-    
-    if (estadoInput) {
-        estadoInput.addEventListener('input', function() {
-            estadoBadge.style.display = 'none';
+    // Validar antes de enviar el formulario
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let hasErrors = false;
+            let errorMessages = [];
+            
+            // Validar campos requeridos
+            const emailField = document.getElementById('{{ form.email.id_for_label }}');
+            if (emailField && !emailField.value.trim()) {
+                hasErrors = true;
+                errorMessages.push('El correo electrónico es requerido.');
+                emailField.style.borderColor = '#ef4444';
+                if (!emailField.nextElementSibling || !emailField.nextElementSibling.classList.contains('validation-status')) {
+                    // Mostrar error visual
+                    emailField.style.borderWidth = '2px';
+                }
+            } else if (emailField && emailField.value.trim()) {
+                // Si tiene valor, verificar que no tenga error de validación
+                const emailFeedback = document.getElementById('email-feedback');
+                if (emailFeedback && emailFeedback.classList.contains('invalid')) {
+                    hasErrors = true;
+                    errorMessages.push(emailFeedback.textContent || 'El correo electrónico tiene errores.');
+                }
+            }
+            
+            const telefonoField = document.getElementById('{{ form.telefono.id_for_label }}');
+            if (telefonoField && !telefonoField.value.trim()) {
+                hasErrors = true;
+                errorMessages.push('El teléfono es requerido.');
+                telefonoField.style.borderColor = '#ef4444';
+                telefonoField.style.borderWidth = '2px';
+            } else if (telefonoField && telefonoField.value.trim()) {
+                // Si tiene valor, verificar que no tenga error de validación
+                const telefonoFeedback = document.getElementById('telefono-feedback');
+                if (telefonoFeedback && telefonoFeedback.classList.contains('invalid')) {
+                    hasErrors = true;
+                    errorMessages.push(telefonoFeedback.textContent || 'El teléfono tiene errores.');
+                }
+            }
+            
+            // Validar otros campos requeridos
+            const nombreField = document.getElementById('{{ form.nombre.id_for_label }}');
+            if (nombreField && !nombreField.value.trim()) {
+                hasErrors = true;
+                errorMessages.push('El nombre es requerido.');
+                nombreField.style.borderColor = '#ef4444';
+                nombreField.style.borderWidth = '2px';
+            }
+            
+            const apellido1Field = document.getElementById('{{ form.apellido1.id_for_label }}');
+            if (apellido1Field && !apellido1Field.value.trim()) {
+                hasErrors = true;
+                errorMessages.push('El primer apellido es requerido.');
+                apellido1Field.style.borderColor = '#ef4444';
+                apellido1Field.style.borderWidth = '2px';
+            }
+            
+            const direccionField = document.getElementById('{{ form.direccion.id_for_label }}');
+            if (direccionField && !direccionField.value.trim()) {
+                hasErrors = true;
+                errorMessages.push('La dirección es requerida.');
+                direccionField.style.borderColor = '#ef4444';
+                direccionField.style.borderWidth = '2px';
+            }
+            
+            const ciudadField = document.getElementById('{{ form.ciudad.id_for_label }}');
+            if (ciudadField && !ciudadField.value.trim()) {
+                hasErrors = true;
+                errorMessages.push('La ciudad es requerida.');
+                ciudadField.style.borderColor = '#ef4444';
+                ciudadField.style.borderWidth = '2px';
+            }
+            
+            const estadoField = document.getElementById('{{ form.estado.id_for_label }}');
+            if (estadoField && !estadoField.value.trim()) {
+                hasErrors = true;
+                errorMessages.push('El estado es requerido.');
+                estadoField.style.borderColor = '#ef4444';
+                estadoField.style.borderWidth = '2px';
+            }
+            
+            if (hasErrors) {
+                e.preventDefault();
+                // Mostrar mensaje con errores específicos
+                const errorMsg = errorMessages.length > 0 
+                    ? 'Por favor, corrige los siguientes errores:\n\n' + errorMessages.join('\n')
+                    : 'Por favor, corrige los errores antes de enviar el formulario.';
+                alert(errorMsg);
+                // Scroll al primer campo con error
+                const firstErrorField = document.querySelector('input[style*="border-color: rgb(239, 68, 68)"], textarea[style*="border-color: rgb(239, 68, 68)"]');
+                if (firstErrorField) {
+                    firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => firstErrorField.focus(), 300);
+                }
+                return false;
+            }
+            
+            // Si no hay errores, permitir el envío (el servidor validará de todas formas)
+            return true;
         });
     }
 })();
 </script>
-
-<style>
-/* Estilos para el autocompletado */
-#id_codigo_postal:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-#cp-suggestion {
-    animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-#cp-apply-suggestion:hover {
-    background: #5568d3 !important;
-}
-
-#ciudad-auto-badge, #estado-auto-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-</style>
 {% endblock %}
 
 

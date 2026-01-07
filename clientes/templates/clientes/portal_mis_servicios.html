@@ -1,0 +1,112 @@
+{% extends 'clientes/portal_base.html' %}
+{% load static %}
+
+{% block page_title %}Mis Servicios{% endblock %}
+
+{% block portal_content %}
+<div class="card">
+    <div class="card-header" style="background-color: var(--primary-color); color: white;">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-wifi"></i> Mis Servicios</h5>
+            <div>
+                <form method="get" class="d-inline-flex">
+                    <select name="estado" class="form-select form-select-sm me-2">
+                        <option value="">Todos los estados</option>
+                        {% for estado_val, estado_label in estados %}
+                            <option value="{{ estado_val }}" {% if estado_filter == estado_val %}selected{% endif %}>
+                                {{ estado_label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-light btn-sm">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="row">
+                {% for instalacion in page_obj %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header {% if instalacion.estado == 'activa' %}bg-success{% elif instalacion.estado == 'suspendida' %}bg-warning{% else %}bg-secondary{% endif %} text-white">
+                            <h6 class="mb-0">{{ instalacion.plan_nombre }}</h6>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5">Estado:</dt>
+                                <dd class="col-sm-7">
+                                    <span class="badge bg-{% if instalacion.estado == 'activa' %}success{% elif instalacion.estado == 'suspendida' %}warning{% else %}secondary{% endif %}">
+                                        {{ instalacion.get_estado_display }}
+                                    </span>
+                                </dd>
+                                
+                                <dt class="col-sm-5">Velocidad:</dt>
+                                <dd class="col-sm-7">{{ instalacion.velocidad_descarga }} Mbps</dd>
+                                
+                                <dt class="col-sm-5">Precio Mensual:</dt>
+                                <dd class="col-sm-7"><strong>${{ instalacion.precio_mensual|floatformat:2 }}</strong></dd>
+                                
+                                <dt class="col-sm-5">Dirección:</dt>
+                                <dd class="col-sm-7">{{ instalacion.direccion_instalacion|truncatewords:10 }}</dd>
+                                
+                                {% if instalacion.ip_asignada %}
+                                <dt class="col-sm-5">IP Asignada:</dt>
+                                <dd class="col-sm-7"><code>{{ instalacion.ip_asignada }}</code></dd>
+                                {% endif %}
+                                
+                                {% if instalacion.numero_contrato %}
+                                <dt class="col-sm-5">Contrato:</dt>
+                                <dd class="col-sm-7">{{ instalacion.numero_contrato }}</dd>
+                                {% endif %}
+                                
+                                {% if instalacion.fecha_activacion %}
+                                <dt class="col-sm-5">Fecha Activación:</dt>
+                                <dd class="col-sm-7">{{ instalacion.fecha_activacion|date:"d/m/Y" }}</dd>
+                                {% endif %}
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Paginación -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Paginación">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">Primera</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">Anterior</a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">Siguiente</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">Última</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        {% else %}
+            <p class="text-muted text-center">No se encontraron servicios.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+
+

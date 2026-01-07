@@ -3,9 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}AdminiRed - Sistema de Gestión{% endblock %}</title>
+    <title>{% block title %}{{ sistema_config.nombre_empresa|default:"AdminiRed" }} - Sistema de Gestión{% endblock %}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
+        :root {
+            --color-primario: {{ sistema_config.color_primario|default:"#667eea" }};
+            --color-secundario: {{ sistema_config.color_secundario|default:"#764ba2" }};
+            --color-exito: {{ sistema_config.color_exito|default:"#10b981" }};
+            --color-advertencia: {{ sistema_config.color_advertencia|default:"#f59e0b" }};
+            --color-peligro: {{ sistema_config.color_peligro|default:"#ef4444" }};
+            --color-info: {{ sistema_config.color_info|default:"#3b82f6" }};
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -20,7 +29,7 @@
         }
         
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-secundario) 100%);
             color: white;
             padding: 1.5rem 0;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -257,7 +266,7 @@
         }
         
         .stat-card h3 {
-            color: #667eea;
+            color: var(--color-primario);
             font-size: 0.9rem;
             text-transform: uppercase;
             margin-bottom: 0.5rem;
@@ -285,7 +294,7 @@
         }
         
         .section h2 {
-            color: #667eea;
+            color: var(--color-primario);
             margin-bottom: 1rem;
             padding-bottom: 0.5rem;
             border-bottom: 2px solid #f0f0f0;
@@ -322,22 +331,22 @@
         }
         
         .badge-success {
-            background-color: #10b981;
+            background-color: var(--color-exito);
             color: white;
         }
         
         .badge-warning {
-            background-color: #f59e0b;
+            background-color: var(--color-advertencia);
             color: white;
         }
         
         .badge-danger {
-            background-color: #ef4444;
+            background-color: var(--color-peligro);
             color: white;
         }
         
         .badge-info {
-            background-color: #3b82f6;
+            background-color: var(--color-info);
             color: white;
         }
         
@@ -346,7 +355,7 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.75rem 1.5rem;
-            background-color: #667eea;
+            background-color: var(--color-primario);
             color: white;
             text-decoration: none;
             border-radius: 5px;
@@ -357,15 +366,17 @@
         }
         
         .btn:hover {
-            background-color: #5568d3;
+            opacity: 0.9;
+            filter: brightness(0.95);
         }
         
         .btn-admin {
-            background-color: #764ba2;
+            background-color: var(--color-secundario);
         }
         
         .btn-admin:hover {
-            background-color: #5d3a7e;
+            opacity: 0.9;
+            filter: brightness(0.95);
         }
         
         /* Botones de acción en tablas */
@@ -379,11 +390,12 @@
         }
         
         .btn-success {
-            background-color: #10b981;
+            background-color: var(--color-exito);
         }
         
         .btn-success:hover {
-            background-color: #059669;
+            opacity: 0.9;
+            filter: brightness(0.95);
         }
         
         .alert {
@@ -857,7 +869,14 @@
 <body class="{% if user.is_authenticated %}{% if sidebar_position == 'left' %}sidebar-left-active{% elif sidebar_position == 'top' %}sidebar-top-active{% endif %}{% endif %}">
     <header class="header">
         <div class="header-content">
-            <div class="logo"><i class="fas fa-globe-americas"></i> AdminiRed</div>
+            <div class="logo">
+                {% if sistema_config.logo %}
+                    <img src="{{ sistema_config.logo.url }}" alt="{{ sistema_config.nombre_empresa }}" style="max-height: 40px; margin-right: 0.5rem; vertical-align: middle;">
+                {% else %}
+                    <i class="fas fa-globe-americas"></i>
+                {% endif %}
+                {{ sistema_config.nombre_empresa|default:"AdminiRed" }}
+            </div>
             {% if user.is_authenticated %}
             <button class="menu-toggle" onclick="toggleMobileMenu()" aria-label="Abrir menú">
                 <i class="fas fa-bars" id="menuIcon"></i>
@@ -878,13 +897,13 @@
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
     
     <main>
-        {% if user.is_authenticated and sidebar_position == 'left' %}
+        {% if user.is_authenticated and not 'portal' in request.path and sidebar_position == 'left' and not es_cliente %}
             <div class="app-wrapper">
                 <aside class="sidebar-left" id="sidebarLeft">
                     <button class="close-sidebar" onclick="closeMobileSidebar()" aria-label="Cerrar menú">
                         <i class="fas fa-times"></i>
                     </button>
-                    <h3 style="color: #667eea; margin-bottom: 1rem; font-size: 1.1rem;">Menú</h3>
+                    <h3 style="color: var(--color-primario); margin-bottom: 1rem; font-size: 1.1rem;">Menú</h3>
                     <ul class="sidebar-menu">
                         <li><a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}"><i class="fas fa-home"></i> Inicio</a></li>
                         <li><a href="{% url 'clientes:cliente_list' %}" class="{% if 'clientes' in request.path %}active{% endif %}"><i class="fas fa-users"></i> Clientes</a></li>
@@ -893,12 +912,13 @@
                         <li><a href="{% url 'pagos:pago_list' %}" class="{% if 'pagos' in request.path %}active{% endif %}"><i class="fas fa-dollar-sign"></i> Pagos</a></li>
                         <li><a href="{% url 'inventario:material_list' %}" class="{% if 'inventario' in request.path %}active{% endif %}"><i class="fas fa-boxes"></i> Inventario</a></li>
                         <li><a href="{% url 'notificaciones:notificacion_list' %}" class="{% if 'notificaciones' in request.path %}active{% endif %}"><i class="fas fa-bell"></i> Notificaciones</a></li>
+                        <li><a href="{% url 'core:configurar_sistema' %}" class="{% if 'configurar-sistema' in request.path %}active{% endif %}"><i class="fas fa-palette"></i> Configuración</a></li>
                         <li><a href="/admin/" class="{% if '/admin/' in request.path and 'instalaciones' not in request.path and 'pagos' not in request.path and 'inventario' not in request.path and 'notificaciones' not in request.path %}active{% endif %}"><i class="fas fa-cog"></i> Administración</a></li>
                     </ul>
                 </aside>
                 <div class="main-content">
                     <div class="container">
-        {% elif user.is_authenticated and sidebar_position == 'top' %}
+        {% elif user.is_authenticated and not 'portal' in request.path and sidebar_position == 'top' and not es_cliente %}
             <div class="sidebar-top">
                 <ul class="sidebar-menu">
                     <li><a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}"><i class="fas fa-home"></i> Inicio</a></li>
@@ -908,6 +928,7 @@
                     <li><a href="{% url 'pagos:pago_list' %}" class="{% if 'pagos' in request.path %}active{% endif %}"><i class="fas fa-dollar-sign"></i> Pagos</a></li>
                     <li><a href="{% url 'inventario:material_list' %}" class="{% if 'inventario' in request.path %}active{% endif %}"><i class="fas fa-boxes"></i> Inventario</a></li>
                     <li><a href="{% url 'notificaciones:notificacion_list' %}" class="{% if 'notificaciones' in request.path %}active{% endif %}"><i class="fas fa-bell"></i> Notificaciones</a></li>
+                    <li><a href="{% url 'core:configurar_sistema' %}" class="{% if 'configurar-sistema' in request.path %}active{% endif %}"><i class="fas fa-palette"></i> Configuración</a></li>
                     <li><a href="/admin/" class="{% if '/admin/' in request.path and 'instalaciones' not in request.path and 'pagos' not in request.path and 'inventario' not in request.path and 'notificaciones' not in request.path %}active{% endif %}"><i class="fas fa-cog"></i> Administración</a></li>
                 </ul>
             </div>
@@ -926,25 +947,25 @@
         
         {% block content %}{% endblock %}
         
-        {% if user.is_authenticated and sidebar_position == 'left' %}
+        {% if user.is_authenticated and not 'portal' in request.path and sidebar_position == 'left' and not es_cliente %}
                     </div>
                 </div>
             </div>
-        {% elif user.is_authenticated and sidebar_position == 'top' %}
+        {% elif user.is_authenticated and not 'portal' in request.path and sidebar_position == 'top' and not es_cliente %}
             </div>
         {% else %}
             </div>
         {% endif %}
     </main>
     
-    {% if user.is_authenticated %}
+    {% if user.is_authenticated and not 'portal' in request.path and not es_cliente %}
     <button class="sidebar-toggle" onclick="goToSidebarConfig()" title="Configurar posición del menú">
         <i class="fas fa-cog"></i>
     </button>
     {% endif %}
     
     <footer class="footer">
-        <p>&copy; {% now "Y" %} AdminiRed - Sistema para el control total de instalaciones de internet.</p>
+        <p>&copy; {% now "Y" %} {{ sistema_config.nombre_empresa|default:"AdminiRed" }} - Sistema para el control total de instalaciones de internet.</p>
     </footer>
     
     {% block extra_js %}{% endblock %}

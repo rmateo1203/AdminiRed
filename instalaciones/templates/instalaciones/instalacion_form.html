@@ -319,12 +319,9 @@
             </div>
             
             <div class="form-group">
-                <label for="{{ form.numero_contrato.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fas fa-hashtag"></i>
-                    <span>{{ form.numero_contrato.label }}</span>
-                    <span style="font-size: 0.75rem; color: #6b7280; font-weight: normal; margin-left: auto;">
-                        <i class="fas fa-question-circle" title="Se generará automáticamente si se deja vacío según la configuración establecida."></i>
-                    </span>
+                <label for="{{ form.numero_contrato.id_for_label }}">
+                    {{ form.numero_contrato.label }}
+                    <small style="color: #6b7280; font-weight: normal;">(Se genera automáticamente si se deja vacío)</small>
                 </label>
                 {{ form.numero_contrato }}
                 {% if form.numero_contrato.errors %}
@@ -332,12 +329,6 @@
                         {{ form.numero_contrato.errors }}
                     </div>
                 {% endif %}
-                <small style="display: block; margin-top: 0.5rem; color: #6b7280; font-size: 0.875rem; line-height: 1.5;">
-                    <i class="fas fa-info-circle"></i> <strong>Opcional:</strong> Si se deja vacío, se generará automáticamente según la configuración establecida.
-                    <a href="{% url 'instalaciones:configurar_numero_contrato' %}" style="color: #667eea; text-decoration: none; margin-left: 0.5rem;">
-                        <i class="fas fa-cog"></i> Configurar formato
-                    </a>
-                </small>
             </div>
             
             <div class="form-group">

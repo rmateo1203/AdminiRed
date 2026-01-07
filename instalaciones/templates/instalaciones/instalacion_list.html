@@ -6,12 +6,7 @@
 <div class="section">
     <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <h2><i class="fas fa-wifi"></i> Lista de Instalaciones</h2>
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <a href="{% url 'instalaciones:configurar_numero_contrato' %}" class="btn btn-secondary" title="Configurar formato de número de contrato">
-                <i class="fas fa-cog"></i> <span class="desktop-only">Configurar </span>Número Contrato
-            </a>
-            <a href="{% url 'instalaciones:instalacion_create' %}" class="btn"><i class="fas fa-plus"></i> <span class="desktop-only">Nueva </span>Instalación</a>
-        </div>
+        <a href="{% url 'instalaciones:instalacion_create' %}" class="btn"><i class="fas fa-plus"></i> <span class="desktop-only">Nueva </span>Instalación</a>
     </div>
     
     <!-- Búsqueda y Filtros -->
@@ -60,12 +55,6 @@
             <div style="font-size: 2rem; font-weight: bold;">{{ pendientes }}</div>
             <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-clock"></i> Pendientes</div>
         </div>
-        {% if programadas %}
-        <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            <div style="font-size: 2rem; font-weight: bold;">{{ programadas }}</div>
-            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-calendar-check"></i> Programadas</div>
-        </div>
-        {% endif %}
     </div>
     {% endif %}
     
@@ -131,7 +120,7 @@
                     </td>
                     <td class="hide-mobile" style="padding: 1rem;">
                         <code style="background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; color: #667eea; font-weight: 600;">
-                            {{ instalacion.numero_contrato }}
+                            {{ instalacion.numero_contrato|default:"Sin número" }}
                         </code>
                     </td>
                     <td class="hide-mobile" style="padding: 1rem; color: #374151;">
@@ -155,12 +144,12 @@
     
     <!-- Paginación -->
     {% if page_obj.has_other_pages %}
-    <div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 2rem; flex-wrap: wrap;">
+    <div class="pagination" style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 2rem; flex-wrap: wrap;">
         {% if page_obj.has_previous %}
-            <a href="?page=1{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-secondary" style="padding: 0.5rem 1rem;">
+            <a href="?page=1{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-action" title="Primera página">
                 <i class="fas fa-angle-double-left"></i>
             </a>
-            <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-secondary" style="padding: 0.5rem 1rem;">
+            <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-action" title="Página anterior">
                 <i class="fas fa-angle-left"></i>
             </a>
         {% endif %}
@@ -170,10 +159,10 @@
         </span>
         
         {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-secondary" style="padding: 0.5rem 1rem;">
+            <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-action" title="Página siguiente">
                 <i class="fas fa-angle-right"></i>
             </a>
-            <a href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-secondary" style="padding: 0.5rem 1rem;">
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-action" title="Última página">
                 <i class="fas fa-angle-double-right"></i>
             </a>
         {% endif %}

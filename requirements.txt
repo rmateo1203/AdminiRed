@@ -6,3 +6,15 @@ sqlparse==0.5.3
 twilio==9.2.3
 openpyxl==3.1.2
 reportlab==4.0.7
+
+# Testing
+pytest==7.4.3
+pytest-django
+stripe>=7.0.0==4.7.0
+mercadopago>=2.2.0
+requests>=2.31.0
+pytest-cov==4.1.0
+coverage==7.3.2
+
+# History and Audit
+django-simple-history==3.4.0

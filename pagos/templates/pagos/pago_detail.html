@@ -126,6 +126,11 @@
                         <i class="fas fa-edit"></i> Editar Pago
                     </a>
                     {% if pago.estado != 'pagado' %}
+                        {% if tiene_pasarela and pago.estado != 'pagado' %}
+                        <a href="{% url 'pagos:pago_procesar_online' pago.pk %}" class="btn" style="text-decoration: none; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin-bottom: 0.5rem;">
+                            <i class="fas fa-credit-card"></i> Pagar en Línea
+                        </a>
+                        {% endif %}
                         <a href="{% url 'pagos:pago_marcar_pagado' pago.pk %}" class="btn" style="text-decoration: none; text-align: center; background: #10b981;">
                             <i class="fas fa-check"></i> Marcar como Pagado
                         </a>
@@ -153,6 +158,54 @@
             {% endif %}
         </div>
     </div>
+    
+    <!-- Historial de Transacciones -->
+    {% if transacciones %}
+    <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 2rem;">
+        <h3 style="color: #667eea; margin-bottom: 1.5rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem;">
+            <i class="fas fa-history"></i> Historial de Transacciones
+        </h3>
+        
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8f9fa; border-bottom: 2px solid #e5e7eb;">
+                        <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #374151;">Pasarela</th>
+                        <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #374151;">Estado</th>
+                        <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #374151;">Monto</th>
+                        <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #374151;">ID Transacción</th>
+                        <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #374151;">Fecha</th>
+                        <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #374151;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaccion in transacciones %}
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 0.75rem;">{{ transaccion.get_pasarela_display }}</td>
+                        <td style="padding: 0.75rem;">
+                            <span class="badge {% if transaccion.estado == 'completada' %}badge-success{% elif transaccion.estado == 'fallida' %}badge-danger{% elif transaccion.estado == 'reembolsada' %}badge-secondary{% else %}badge-warning{% endif %}">
+                                {{ transaccion.get_estado_display }}
+                            </span>
+                        </td>
+                        <td style="padding: 0.75rem; font-weight: 600;">${{ transaccion.monto|floatformat:2 }} {{ transaccion.moneda }}</td>
+                        <td style="padding: 0.75rem; font-family: monospace; font-size: 0.875rem; color: #6b7280;">{{ transaccion.id_transaccion_pasarela|truncatechars:30 }}</td>
+                        <td style="padding: 0.75rem; color: #6b7280;">{{ transaccion.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                        <td style="padding: 0.75rem;">
+                            {% if transaccion.estado == 'completada' and transaccion.estado != 'reembolsada' %}
+                                <a href="{% url 'pagos:pago_reembolsar' transaccion.id %}" class="btn btn-sm" style="background: #ef4444; color: white; text-decoration: none; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.875rem;">
+                                    <i class="fas fa-undo"></i> Reembolsar
+                                </a>
+                            {% elif transaccion.estado == 'reembolsada' %}
+                                <span style="color: #6b7280; font-size: 0.875rem;">Reembolsado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
 

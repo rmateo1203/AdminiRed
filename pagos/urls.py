@@ -23,6 +23,16 @@ urlpatterns = [
     # API para búsqueda de clientes
     path('api/buscar-clientes/', views.buscar_clientes, name='api_buscar_clientes'),
     path('api/cliente/<int:cliente_id>/instalaciones/', views.obtener_instalaciones_cliente, name='api_instalaciones_cliente'),
+    
+    # Pasarela de pago
+    path('<int:pk>/pagar-online/', views.pago_procesar_online, name='pago_procesar_online'),
+    path('<int:pk>/pago-exitoso/', views.pago_exitoso, name='pago_exitoso'),
+    path('<int:pk>/pago-cancelado/', views.pago_cancelado, name='pago_cancelado'),
+    path('webhook/stripe/', views.stripe_webhook, name='stripe_webhook'),
+    path('webhook/mercadopago/', views.mercadopago_webhook, name='mercadopago_webhook'),
+    
+    # Reembolsos
+    path('transaccion/<int:transaccion_id>/reembolsar/', views.pago_reembolsar, name='pago_reembolsar'),
 ]
 
 

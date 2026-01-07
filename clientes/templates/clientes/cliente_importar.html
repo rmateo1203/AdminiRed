@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Importar Clientes - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h2><i class="fas fa-upload"></i> Importar Clientes desde Excel</h2>
+    
+    <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+        <h3 style="margin-top: 0; color: #0369a1;">📋 Formato del Archivo Excel</h3>
+        <p>El archivo Excel debe contener las siguientes columnas (la primera fila debe ser encabezados):</p>
+        <ul style="margin: 1rem 0; padding-left: 1.5rem;">
+            <li><strong>nombre</strong> (requerido) - Nombre del cliente</li>
+            <li><strong>apellido1</strong> (requerido) - Primer apellido</li>
+            <li><strong>apellido2</strong> (opcional) - Segundo apellido</li>
+            <li><strong>telefono</strong> (requerido) - Teléfono del cliente</li>
+            <li><strong>email</strong> (opcional) - Correo electrónico</li>
+            <li><strong>direccion</strong> (opcional) - Dirección completa</li>
+            <li><strong>ciudad</strong> (opcional) - Ciudad</li>
+            <li><strong>estado</strong> (opcional) - Estado o provincia</li>
+            <li><strong>codigo_postal</strong> (opcional) - Código postal</li>
+            <li><strong>estado_cliente</strong> (opcional) - Estado del cliente (activo, inactivo, suspendido, cancelado). Por defecto: activo</li>
+        </ul>
+        <p style="margin-top: 1rem;"><strong>Nota:</strong> Los nombres de las columnas pueden variar (ej: "Nombre", "NOMBRE", "nombre completo"). El sistema detectará automáticamente las columnas.</p>
+    </div>
+    
+    <form method="post" enctype="multipart/form-data" style="max-width: 600px;">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="archivo">Seleccionar archivo Excel (.xlsx o .xls)</label>
+            <input type="file" name="archivo" id="archivo" accept=".xlsx,.xls" required class="form-control" style="padding: 0.5rem;">
+            <small style="color: #6b7280; display: block; margin-top: 0.5rem;">Formatos soportados: .xlsx, .xls</small>
+        </div>
+        
+        <div class="form-actions" style="margin-top: 1.5rem;">
+            <button type="submit" class="btn"><i class="fas fa-upload"></i> Importar Clientes</button>
+            <a href="{% url 'clientes:cliente_list' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+    
+    <div style="margin-top: 2rem; padding: 1rem; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px;">
+        <h4 style="margin-top: 0; color: #92400e;">⚠️ Importante</h4>
+        <ul style="margin: 0.5rem 0; padding-left: 1.5rem; color: #78350f;">
+            <li>El teléfono debe ser único. Si ya existe un cliente con el mismo teléfono, se omitirá esa fila.</li>
+            <li>Se validarán los datos antes de crear los clientes.</li>
+            <li>Los errores se mostrarán al finalizar la importación.</li>
+            <li>Se recomienda hacer una copia de seguridad antes de importar grandes cantidades de datos.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+
+

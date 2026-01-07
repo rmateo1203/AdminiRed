@@ -6,97 +6,191 @@
 <div class="section">
     <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <h2><i class="fas fa-users"></i> Lista de Clientes</h2>
-        <a href="{% url 'clientes:cliente_create' %}" class="btn"><i class="fas fa-plus"></i> Nuevo Cliente</a>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <div style="position: relative; display: inline-block;">
+                <button class="btn btn-secondary" onclick="toggleExportMenu()" style="position: relative;">
+                    <i class="fas fa-download"></i> <span class="desktop-only">Exportar</span> <i class="fas fa-chevron-down" style="font-size: 0.7rem; margin-left: 0.25rem;"></i>
+                </button>
+                <div id="exportMenu" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 0.25rem; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 150px;">
+                    <a href="{% url 'clientes:cliente_exportar_excel' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn" style="display: block; text-align: left; border: none; border-radius: 0; background: none; color: #374151; padding: 0.75rem 1rem; text-decoration: none; width: 100%;">
+                        <i class="fas fa-file-excel" style="color: #10b981;"></i> Exportar a Excel
+                    </a>
+                    <a href="{% url 'clientes:cliente_exportar_pdf' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn" style="display: block; text-align: left; border: none; border-radius: 0; background: none; color: #374151; padding: 0.75rem 1rem; text-decoration: none; width: 100%; border-top: 1px solid #e5e7eb;">
+                        <i class="fas fa-file-pdf" style="color: #ef4444;"></i> Exportar a PDF
+                    </a>
+                </div>
+            </div>
+            <a href="{% url 'clientes:cliente_importar_excel' %}" class="btn btn-secondary"><i class="fas fa-upload"></i> <span class="desktop-only">Importar</span></a>
+            <a href="{% url 'clientes:cliente_create' %}" class="btn"><i class="fas fa-plus"></i> Nuevo Cliente</a>
+        </div>
     </div>
     
-    <!-- Búsqueda y Filtros -->
+    <!-- Búsqueda Simple y Avanzada -->
     <div class="search-filters">
-        <form method="get" class="search-form">
-            <input 
-                type="text" 
-                name="q" 
-                value="{{ query }}" 
-                placeholder="Buscar por nombre, teléfono, email o ciudad..."
-                class="form-control"
-            >
-            <select name="estado" class="form-control">
-                <option value="">Todos los estados</option>
-                {% for estado_code, estado_name in estados %}
-                    <option value="{{ estado_code }}" {% if estado_filter == estado_code %}selected{% endif %}>
-                        {{ estado_name }}
-                    </option>
-                {% endfor %}
-            </select>
-            <select name="orden" class="form-control">
-                <option value="-fecha_registro" {% if orden == '-fecha_registro' %}selected{% endif %}>Más recientes</option>
-                <option value="fecha_registro" {% if orden == 'fecha_registro' %}selected{% endif %}>Más antiguos</option>
-                <option value="nombre" {% if orden == 'nombre' %}selected{% endif %}>Apellido A-Z</option>
-                <option value="-nombre" {% if orden == '-nombre' %}selected{% endif %}>Apellido Z-A</option>
-            </select>
-            <button type="submit" class="btn">🔍 Buscar</button>
-            {% if query or estado_filter %}
-                <a href="{% url 'clientes:cliente_list' %}" class="btn btn-secondary">Limpiar</a>
-            {% endif %}
+        <form method="get" class="search-form" id="searchForm">
+            <!-- Búsqueda Simple -->
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; margin-bottom: 1rem;">
+                <input 
+                    type="text" 
+                    name="q" 
+                    value="{{ query }}" 
+                    placeholder="Buscar por nombre, teléfono, email o ciudad..."
+                    class="form-control"
+                >
+                <button type="button" class="btn btn-secondary" onclick="toggleAdvancedSearch()">
+                    <i class="fas fa-filter"></i> <span class="desktop-only">Búsqueda Avanzada</span>
+                </button>
+            </div>
+            
+            <!-- Búsqueda Avanzada (oculta por defecto) -->
+            <div id="advancedSearch" style="display: none; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem; margin-bottom: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.25rem; font-size: 0.875rem; font-weight: 500;">Nombre</label>
+                    <input type="text" name="nombre" value="{{ nombre }}" placeholder="Nombre o apellidos" class="form-control">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.25rem; font-size: 0.875rem; font-weight: 500;">Teléfono</label>
+                    <input type="text" name="telefono" value="{{ telefono }}" placeholder="Teléfono" class="form-control">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.25rem; font-size: 0.875rem; font-weight: 500;">Email</label>
+                    <input type="text" name="email" value="{{ email }}" placeholder="Email" class="form-control">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.25rem; font-size: 0.875rem; font-weight: 500;">Ciudad</label>
+                    <input type="text" name="ciudad" value="{{ ciudad }}" placeholder="Ciudad" class="form-control">
+                </div>
+            </div>
+            
+            <!-- Filtros y Ordenamiento -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem; margin-bottom: 1rem;">
+                <select name="estado" class="form-control">
+                    <option value="">Todos los estados</option>
+                    {% for estado_code, estado_name in estados %}
+                        <option value="{{ estado_code }}" {% if estado_filter == estado_code %}selected{% endif %}>
+                            {{ estado_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <select name="orden" class="form-control">
+                    <option value="-created_at" {% if orden == '-created_at' %}selected{% endif %}>Más recientes</option>
+                    <option value="created_at" {% if orden == 'created_at' %}selected{% endif %}>Más antiguos</option>
+                    <option value="nombre" {% if orden == 'nombre' %}selected{% endif %}>Apellido A-Z</option>
+                    <option value="-nombre" {% if orden == '-nombre' %}selected{% endif %}>Apellido Z-A</option>
+                </select>
+                <label style="display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; padding: 0.5rem;">
+                    <input 
+                        type="checkbox" 
+                        name="mostrar_eliminados" 
+                        value="1" 
+                        {% if mostrar_eliminados %}checked{% endif %}
+                        style="width: auto;"
+                    >
+                    <span>Mostrar eliminados</span>
+                </label>
+            </div>
+            
+            <!-- Botones -->
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button type="submit" class="btn">🔍 Buscar</button>
+                {% if query or nombre or telefono or email or ciudad or estado_filter or mostrar_eliminados %}
+                    <a href="{% url 'clientes:cliente_list' %}" class="btn btn-secondary">Limpiar</a>
+                {% endif %}
+            </div>
         </form>
     </div>
     
+    <!-- Bulk Actions Form -->
+    <form method="post" action="{% url 'clientes:cliente_bulk_action' %}" id="bulkActionForm" style="display: none; margin-bottom: 1rem; padding: 1rem; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;" onsubmit="return prepareBulkAction()">
+        {% csrf_token %}
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <span id="selectedCount" style="font-weight: 500;">0 clientes seleccionados</span>
+            <select name="action" class="form-control" style="max-width: 200px;" onchange="updateBulkActionForm()">
+                <option value="">Seleccionar acción...</option>
+                <option value="cambiar_estado">Cambiar estado</option>
+                <option value="eliminar">Eliminar</option>
+                <option value="restaurar">Restaurar</option>
+            </select>
+            <div id="estadoSelector" style="display: none;">
+                <select name="nuevo_estado" class="form-control" style="max-width: 150px;">
+                    {% for estado_code, estado_name in estados %}
+                        <option value="{{ estado_code }}">{{ estado_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn" id="bulkActionBtn" disabled>Aplicar</button>
+            <button type="button" class="btn btn-secondary" onclick="clearSelection()">Cancelar</button>
+        </div>
+    </form>
+    
     <!-- Tabla de Clientes -->
     {% if page_obj %}
-    <div class="table-responsive">
-        <table class="table data-table">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Teléfono</th>
-                    <th class="hide-mobile">Email</th>
-                    <th class="hide-mobile">Ciudad</th>
-                    <th>Estado</th>
-                    <th class="hide-mobile">Fecha</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for cliente in page_obj %}
-                <tr>
-                    <td>
-                        <strong>{{ cliente.nombre_completo }}</strong>
-                        <span class="mobile-only" style="display: block; font-size: 0.8rem; color: #666;">{{ cliente.ciudad }}</span>
-                    </td>
-                    <td>
-                        <a href="tel:{{ cliente.telefono }}" style="color: #667eea; text-decoration: none;">{{ cliente.telefono }}</a>
-                    </td>
-                    <td class="hide-mobile">{{ cliente.email|default:"—" }}</td>
-                    <td class="hide-mobile">{{ cliente.ciudad }}</td>
-                    <td>
-                        {% if cliente.estado_cliente == 'activo' %}
-                            <span class="badge badge-success">{{ cliente.get_estado_cliente_display }}</span>
-                        {% elif cliente.estado_cliente == 'inactivo' %}
-                            <span class="badge badge-info">{{ cliente.get_estado_cliente_display }}</span>
-                        {% elif cliente.estado_cliente == 'suspendido' %}
-                            <span class="badge badge-warning">{{ cliente.get_estado_cliente_display }}</span>
-                        {% else %}
-                            <span class="badge badge-danger">{{ cliente.get_estado_cliente_display }}</span>
-                        {% endif %}
-                    </td>
-                    <td class="hide-mobile">{{ cliente.fecha_registro|date:"d/m/Y" }}</td>
-                    <td>
-                        <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
-                            <a href="{% url 'clientes:cliente_detail' cliente.pk %}" class="btn btn-action" title="Ver"><i class="fas fa-eye"></i></a>
-                            <a href="{% url 'clientes:cliente_update' cliente.pk %}" class="btn btn-secondary btn-action" title="Editar"><i class="fas fa-edit"></i></a>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <form id="mainForm">
+        <div class="table-responsive">
+            <table class="table data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">
+                            <input type="checkbox" id="selectAll" onchange="toggleAllSelection()">
+                        </th>
+                        <th>Nombre</th>
+                        <th>Teléfono</th>
+                        <th class="hide-mobile">Email</th>
+                        <th class="hide-mobile">Ciudad</th>
+                        <th>Estado</th>
+                        <th class="hide-mobile">Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in page_obj %}
+                    <tr {% if cliente.is_deleted %}style="opacity: 0.6; background-color: #f8f9fa;"{% endif %}>
+                        <td>
+                            <input type="checkbox" name="cliente_ids" value="{{ cliente.pk }}" class="cliente-checkbox" onchange="updateSelection()">
+                        </td>
+                        <td>
+                            <strong>{{ cliente.nombre_completo }}</strong>
+                            {% if cliente.is_deleted %}
+                                <span class="badge badge-danger" style="margin-left: 0.5rem; font-size: 0.7rem;">Eliminado</span>
+                            {% endif %}
+                            <span class="mobile-only" style="display: block; font-size: 0.8rem; color: #666;">{{ cliente.ciudad }}</span>
+                        </td>
+                        <td>
+                            <a href="tel:{{ cliente.telefono }}" style="color: #667eea; text-decoration: none;">{{ cliente.telefono }}</a>
+                        </td>
+                        <td class="hide-mobile">{{ cliente.email|default:"—" }}</td>
+                        <td class="hide-mobile">{{ cliente.ciudad }}</td>
+                        <td>
+                            {% if cliente.estado_cliente == 'activo' %}
+                                <span class="badge badge-success">{{ cliente.get_estado_cliente_display }}</span>
+                            {% elif cliente.estado_cliente == 'inactivo' %}
+                                <span class="badge badge-info">{{ cliente.get_estado_cliente_display }}</span>
+                            {% elif cliente.estado_cliente == 'suspendido' %}
+                                <span class="badge badge-warning">{{ cliente.get_estado_cliente_display }}</span>
+                            {% else %}
+                                <span class="badge badge-danger">{{ cliente.get_estado_cliente_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="hide-mobile">{{ cliente.created_at|date:"d/m/Y" }}</td>
+                        <td>
+                            <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                                <a href="{% url 'clientes:cliente_detail' cliente.pk %}" class="btn btn-action" title="Ver"><i class="fas fa-eye"></i></a>
+                                <a href="{% url 'clientes:cliente_update' cliente.pk %}" class="btn btn-secondary btn-action" title="Editar"><i class="fas fa-edit"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
     
     <!-- Paginación -->
     {% if page_obj.has_other_pages %}
     <div class="pagination">
         {% if page_obj.has_previous %}
-            <a href="?page=1{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">« Primera</a>
-            <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">‹ Anterior</a>
+            <a href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">« Primera</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">‹ Anterior</a>
         {% endif %}
         
         <span class="current">
@@ -104,8 +198,8 @@
         </span>
         
         {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">Siguiente ›</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">Última »</a>
+            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">Siguiente ›</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">Última »</a>
         {% endif %}
     </div>
     {% endif %}
@@ -117,6 +211,95 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+function toggleExportMenu() {
+    const menu = document.getElementById('exportMenu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleAdvancedSearch() {
+    const advanced = document.getElementById('advancedSearch');
+    advanced.style.display = advanced.style.display === 'none' ? 'grid' : 'none';
+}
+
+// Mostrar búsqueda avanzada si hay valores
+{% if nombre or telefono or email or ciudad %}
+document.getElementById('advancedSearch').style.display = 'grid';
+{% endif %}
+
+function toggleAllSelection() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.cliente-checkbox');
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    updateSelection();
+}
+
+function updateSelection() {
+    const checkboxes = document.querySelectorAll('.cliente-checkbox:checked');
+    const count = checkboxes.length;
+    const form = document.getElementById('bulkActionForm');
+    const countSpan = document.getElementById('selectedCount');
+    
+    if (count > 0) {
+        form.style.display = 'block';
+        countSpan.textContent = count + ' cliente(s) seleccionado(s)';
+    } else {
+        form.style.display = 'none';
+    }
+    
+    updateBulkActionForm();
+}
+
+function updateBulkActionForm() {
+    const action = document.querySelector('#bulkActionForm [name="action"]').value;
+    const estadoSelector = document.getElementById('estadoSelector');
+    const btn = document.getElementById('bulkActionBtn');
+    
+    if (action === 'cambiar_estado') {
+        estadoSelector.style.display = 'block';
+        btn.disabled = false;
+    } else if (action) {
+        estadoSelector.style.display = 'none';
+        btn.disabled = false;
+    } else {
+        estadoSelector.style.display = 'none';
+        btn.disabled = true;
+    }
+}
+
+function clearSelection() {
+    document.querySelectorAll('.cliente-checkbox').forEach(cb => cb.checked = false);
+    document.getElementById('selectAll').checked = false;
+    document.getElementById('bulkActionForm').style.display = 'none';
+}
+
+function prepareBulkAction() {
+    const checkboxes = document.querySelectorAll('.cliente-checkbox:checked');
+    const form = document.getElementById('bulkActionForm');
+    
+    // Limpiar inputs anteriores
+    form.querySelectorAll('input[name="cliente_ids"]').forEach(input => input.remove());
+    
+    // Agregar IDs seleccionados
+    checkboxes.forEach(cb => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'cliente_ids';
+        input.value = cb.value;
+        form.appendChild(input);
+    });
+    
+    return true;
+}
+
+// Cerrar menú de exportación al hacer clic fuera
+document.addEventListener('click', function(event) {
+    const exportMenu = document.getElementById('exportMenu');
+    const exportBtn = event.target.closest('button[onclick="toggleExportMenu()"]');
+    if (!exportMenu.contains(event.target) && !exportBtn) {
+        exportMenu.style.display = 'none';
+    }
+});
+</script>
 {% endblock %}
-
-

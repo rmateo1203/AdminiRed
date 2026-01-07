@@ -25,6 +25,49 @@
         </div>
     </div>
     
+    <!-- Acciones Rápidas de Estado -->
+    {% if instalacion.estado == 'programada' or instalacion.estado == 'en_proceso' or instalacion.estado == 'pendiente' %}
+    <div style="background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h3 style="color: #667eea; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-bolt"></i> Acciones Rápidas
+        </h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+            {% if instalacion.estado == 'programada' %}
+                <form method="post" action="{% url 'instalaciones:instalacion_cambiar_estado' instalacion.pk %}" style="display: inline;" onsubmit="return confirmarCambioEstado('En Proceso', '¿Deseas marcar esta instalación como "En Proceso"? Esto actualizará la fecha de instalación.')">
+                    {% csrf_token %}
+                    <input type="hidden" name="nuevo_estado" value="en_proceso">
+                    <button type="submit" class="btn" style="background: #f59e0b; color: white; border: none;">
+                        <i class="fas fa-play-circle"></i> Marcar como En Proceso
+                    </button>
+                </form>
+                <form method="post" action="{% url 'instalaciones:instalacion_cambiar_estado' instalacion.pk %}" style="display: inline;" onsubmit="return confirmarCambioEstado('Activa', '¿Deseas marcar esta instalación como "Activa"? Esto actualizará las fechas de instalación y activación.')">
+                    {% csrf_token %}
+                    <input type="hidden" name="nuevo_estado" value="activa">
+                    <button type="submit" class="btn" style="background: #10b981; color: white; border: none;">
+                        <i class="fas fa-check-circle"></i> Marcar como Instalada/Activa
+                    </button>
+                </form>
+            {% elif instalacion.estado == 'en_proceso' %}
+                <form method="post" action="{% url 'instalaciones:instalacion_cambiar_estado' instalacion.pk %}" style="display: inline;" onsubmit="return confirmarCambioEstado('Activa', '¿Deseas marcar esta instalación como "Activa"? Esto actualizará la fecha de activación.')">
+                    {% csrf_token %}
+                    <input type="hidden" name="nuevo_estado" value="activa">
+                    <button type="submit" class="btn" style="background: #10b981; color: white; border: none;">
+                        <i class="fas fa-check-circle"></i> Marcar como Instalada/Activa
+                    </button>
+                </form>
+            {% elif instalacion.estado == 'pendiente' %}
+                <form method="post" action="{% url 'instalaciones:instalacion_cambiar_estado' instalacion.pk %}" style="display: inline;" onsubmit="return confirmarCambioEstado('Programada', '¿Deseas marcar esta instalación como "Programada"?')">
+                    {% csrf_token %}
+                    <input type="hidden" name="nuevo_estado" value="programada">
+                    <button type="submit" class="btn" style="background: #3b82f6; color: white; border: none;">
+                        <i class="fas fa-calendar-check"></i> Marcar como Programada
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
     <!-- Información de la Instalación -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
         <div>
@@ -92,6 +135,82 @@
     </div>
     {% endif %}
     
+    <!-- Materiales de la Instalación -->
+    <div style="margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="color: #667eea; margin: 0;">
+                <i class="fas fa-boxes"></i> Materiales Necesarios
+            </h3>
+            <a href="{% url 'instalaciones:gestionar_materiales' instalacion.pk %}" class="btn">
+                <i class="fas fa-edit"></i> Gestionar Materiales
+            </a>
+        </div>
+        
+        {% with materiales=instalacion.materiales.all %}
+        {% if materiales %}
+        <table class="table" style="background: white; border-radius: 8px; overflow: hidden;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #e5e7eb;">Material</th>
+                    <th style="padding: 1rem; text-align: center; border-bottom: 2px solid #e5e7eb;">Cantidad</th>
+                    <th style="padding: 1rem; text-align: center; border-bottom: 2px solid #e5e7eb;">Stock Disponible</th>
+                    <th style="padding: 1rem; text-align: center; border-bottom: 2px solid #e5e7eb;">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for material_inst in materiales %}
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 1rem;">
+                        <strong>{{ material_inst.material.nombre }}</strong>
+                        <br>
+                        <small style="color: #6b7280;">Código: {{ material_inst.material.codigo }}</small>
+                    </td>
+                    <td style="padding: 1rem; text-align: center;">
+                        <span style="font-size: 1.25rem; font-weight: bold; color: #667eea;">
+                            {{ material_inst.cantidad }}
+                        </span>
+                        <br>
+                        <small style="color: #6b7280;">{{ material_inst.material.get_unidad_medida_display }}</small>
+                    </td>
+                    <td style="padding: 1rem; text-align: center;">
+                        {% if material_inst.material.stock_actual >= material_inst.cantidad %}
+                            <span style="color: #10b981; font-weight: bold;">
+                                <i class="fas fa-check-circle"></i> {{ material_inst.material.stock_actual }}
+                            </span>
+                        {% elif material_inst.material.stock_actual > 0 %}
+                            <span style="color: #f59e0b; font-weight: bold;">
+                                <i class="fas fa-exclamation-triangle"></i> {{ material_inst.material.stock_actual }}
+                            </span>
+                        {% else %}
+                            <span style="color: #ef4444; font-weight: bold;">
+                                <i class="fas fa-times-circle"></i> {{ material_inst.material.stock_actual }}
+                            </span>
+                        {% endif %}
+                        <br>
+                        <small style="color: #6b7280;">{{ material_inst.material.get_unidad_medida_display }}</small>
+                    </td>
+                    <td style="padding: 1rem; text-align: center;">
+                        {% if material_inst.material.estado == 'disponible' %}
+                            <span class="badge badge-success">{{ material_inst.material.get_estado_display }}</span>
+                        {% elif material_inst.material.estado == 'bajo_stock' %}
+                            <span class="badge badge-warning">{{ material_inst.material.get_estado_display }}</span>
+                        {% else %}
+                            <span class="badge badge-danger">{{ material_inst.material.get_estado_display }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="background: #f8f9fa; padding: 2rem; border-radius: 8px; text-align: center; color: #6b7280;">
+            <i class="fas fa-box-open" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+            <p style="margin: 0;">No se han asignado materiales a esta instalación.</p>
+        </div>
+        {% endif %}
+        {% endwith %}
+    </div>
+    
     <!-- Pagos Relacionados -->
     {% if pagos %}
     <div style="margin-top: 2rem;">
@@ -127,10 +246,104 @@
     </div>
     {% endif %}
     
+    <!-- Historial de Cambios de Estado -->
+    {% if cambios_estado %}
+    <div style="margin-top: 2rem;">
+        <h3 style="color: #667eea; margin-bottom: 1rem;">
+            <i class="fas fa-history"></i> Historial de Cambios de Estado
+        </h3>
+        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; max-height: 400px; overflow-y: auto;">
+            <table class="table" style="margin: 0;">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Estado Anterior</th>
+                        <th>Estado Nuevo</th>
+                        <th>Usuario</th>
+                        <th>Notas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cambio in cambios_estado %}
+                    <tr>
+                        <td>{{ cambio.fecha_cambio|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            <span class="badge badge-secondary">{% if cambio.estado_anterior %}{{ cambio.get_estado_anterior_display }}{% else %}N/A{% endif %}</span>
+                        </td>
+                        <td>
+                            <span class="badge badge-primary">{{ cambio.get_estado_nuevo_display }}</span>
+                        </td>
+                        <td>{{ cambio.usuario.get_full_name|default:cambio.usuario.username|default:"Sistema" }}</td>
+                        <td>{{ cambio.notas|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Historial Completo (Simple History) -->
+    {% if historial %}
+    <div style="margin-top: 2rem;">
+        <h3 style="color: #667eea; margin-bottom: 1rem;">
+            <i class="fas fa-clock"></i> Historial Completo de Cambios
+        </h3>
+        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; max-height: 400px; overflow-y: auto;">
+            <table class="table" style="margin: 0;">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Usuario</th>
+                        <th>Tipo</th>
+                        <th>Cambios</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in historial %}
+                    <tr>
+                        <td>{{ h.history_date|date:"d/m/Y H:i" }}</td>
+                        <td>{{ h.history_user.get_full_name|default:h.history_user.username|default:"Sistema" }}</td>
+                        <td>
+                            {% if h.history_type == '+' %}
+                                <span class="badge badge-success">Creado</span>
+                            {% elif h.history_type == '~' %}
+                                <span class="badge badge-info">Modificado</span>
+                            {% elif h.history_type == '-' %}
+                                <span class="badge badge-danger">Eliminado</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if h.prev_record %}
+                                <ul style="margin: 0; padding-left: 1.5rem; font-size: 0.875rem;">
+                                    {% for field in h.diff_against|default:"" %}
+                                        <li><strong>{{ field }}:</strong> Cambio detectado</li>
+                                    {% empty %}
+                                        <li>Cambios en múltiples campos</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <span style="color: #6b7280;">Creación inicial</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    
     <!-- Acciones -->
     <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #f0f0f0;">
         <a href="{% url 'instalaciones:instalacion_delete' instalacion.pk %}" class="btn btn-danger"><i class="fas fa-trash"></i> Eliminar Instalación</a>
     </div>
 </div>
+
+<script>
+function confirmarCambioEstado(estado, mensaje) {
+    return confirm(mensaje || `¿Deseas cambiar el estado a "${estado}"?`);
+}
+</script>
 {% endblock %}
 

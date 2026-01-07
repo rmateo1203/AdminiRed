@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, views_materiales
 
 app_name = 'instalaciones'
 
@@ -10,14 +10,15 @@ urlpatterns = [
     path('<int:pk>/', views.instalacion_detail, name='instalacion_detail'),
     path('<int:pk>/editar/', views.instalacion_update, name='instalacion_update'),
     path('<int:pk>/eliminar/', views.instalacion_delete, name='instalacion_delete'),
+    path('<int:pk>/cambiar-estado/', views.instalacion_cambiar_estado, name='instalacion_cambiar_estado'),
     path('api/plan/<int:plan_id>/', views.get_plan_data, name='get_plan_data'),
     
     # API para búsqueda de clientes
     path('api/buscar-clientes/', views.buscar_clientes_api, name='api_buscar_clientes'),
     path('api/cliente/<int:cliente_id>/instalaciones/', views.get_cliente_instalaciones_api, name='api_instalaciones_cliente'),
     
-    # Configuración de número de contrato
-    path('configurar-numero-contrato/', views.configurar_numero_contrato, name='configurar_numero_contrato'),
-    path('api/preview-numero-contrato/', views.preview_numero_contrato, name='api_preview_numero_contrato'),
+    # Gestión de materiales
+    path('<int:instalacion_id>/materiales/', views_materiales.gestionar_materiales, name='gestionar_materiales'),
+    path('api/material-info/<int:material_id>/', views_materiales.get_material_info, name='get_material_info'),
 ]
 

@@ -1,0 +1,116 @@
+{% extends 'clientes/portal_base.html' %}
+{% load static %}
+
+{% block page_title %}Mi Perfil{% endblock %}
+
+{% block portal_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header" style="background-color: var(--primary-color); color: white;">
+                <h5 class="mb-0"><i class="fas fa-user"></i> Mi Perfil</h5>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post" action="{% url 'clientes:portal_perfil' %}">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" class="form-control" value="{{ cliente.nombre }}" disabled>
+                            <small class="form-text text-muted">No se puede modificar</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Apellidos</label>
+                            <input type="text" class="form-control" value="{{ cliente.apellido1 }} {{ cliente.apellido2|default:'' }}" disabled>
+                            <small class="form-text text-muted">No se puede modificar</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Correo Electrónico</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ cliente.email }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="telefono" class="form-label">Teléfono</label>
+                        <input type="tel" class="form-control" id="telefono" name="telefono" value="{{ cliente.telefono }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="direccion" class="form-label">Dirección</label>
+                        <textarea class="form-control" id="direccion" name="direccion" rows="2" required>{{ cliente.direccion }}</textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ciudad" class="form-label">Ciudad</label>
+                            <input type="text" class="form-control" id="ciudad" name="ciudad" value="{{ cliente.ciudad }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="estado" class="form-label">Estado</label>
+                            <input type="text" class="form-control" id="estado" name="estado" value="{{ cliente.estado }}" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="codigo_postal" class="form-label">Código Postal</label>
+                        <input type="text" class="form-control" id="codigo_postal" name="codigo_postal" value="{{ cliente.codigo_postal|default:'' }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar Cambios
+                    </button>
+                    <a href="{% url 'clientes:portal_dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Acciones</h5>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'clientes:portal_cambiar_password' %}" class="btn btn-outline-primary w-100 mb-2">
+                    <i class="fas fa-key"></i> Cambiar Contraseña
+                </a>
+                <a href="{% url 'clientes:portal_dashboard' %}" class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                </a>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">Información de Cuenta</h5>
+            </div>
+            <div class="card-body">
+                <dl class="mb-0">
+                    <dt>Usuario:</dt>
+                    <dd>{{ cliente.usuario.username|default:"No asignado" }}</dd>
+                    
+                    <dt>Estado:</dt>
+                    <dd>
+                        {% if cliente.estado_cliente == 'activo' %}
+                            <span class="badge bg-success">{{ cliente.get_estado_cliente_display }}</span>
+                        {% else %}
+                            <span class="badge bg-warning">{{ cliente.get_estado_cliente_display }}</span>
+                        {% endif %}
+                    </dd>
+                    
+                    <dt>Fecha de Registro:</dt>
+                    <dd>{{ cliente.created_at|date:"d/m/Y" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+

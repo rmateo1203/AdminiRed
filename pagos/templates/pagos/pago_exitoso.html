@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Pago Exitoso - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section" style="max-width: 600px; margin: 2rem auto;">
+    <div style="text-align: center; background: white; padding: 3rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <div style="font-size: 4rem; color: #10b981; margin-bottom: 1rem;">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        
+        <h2 style="color: #10b981; margin-bottom: 1rem;">¡Pago Procesado Exitosamente!</h2>
+        
+        <p style="color: #6b7280; margin-bottom: 2rem;">
+            Tu pago ha sido procesado correctamente. Recibirás una confirmación por correo electrónico.
+        </p>
+        
+        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; text-align: left;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <strong style="color: #374151;">Cliente:</strong>
+                <span style="color: #6b7280;">{{ pago.cliente.nombre_completo }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <strong style="color: #374151;">Concepto:</strong>
+                <span style="color: #6b7280;">{{ pago.concepto }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <strong style="color: #374151;">Monto:</strong>
+                <span style="color: #10b981; font-weight: bold; font-size: 1.2rem;">${{ pago.monto|floatformat:2 }}</span>
+            </div>
+            {% if pago.referencia_pago %}
+            <div style="display: flex; justify-content: space-between;">
+                <strong style="color: #374151;">Referencia:</strong>
+                <span style="color: #6b7280; font-family: monospace;">{{ pago.referencia_pago }}</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <a href="{% url 'pagos:pago_detail' pago.pk %}" class="btn">
+                <i class="fas fa-eye"></i> Ver Detalle del Pago
+            </a>
+            <a href="{% url 'pagos:pago_list' %}" class="btn btn-secondary">
+                <i class="fas fa-list"></i> Volver a Pagos
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+

@@ -5,9 +5,28 @@ These settings are shared across all environments.
 """
 from pathlib import Path
 from decouple import config
+import secrets
+import string
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# SECRET_KEY
+# Generar uno seguro si no existe (solo para desarrollo)
+# En producción, DEBE estar en .env con al menos 50 caracteres
+SECRET_KEY = config('SECRET_KEY', default=None)
+if SECRET_KEY is None:
+    # Generar clave temporal para desarrollo (NO usar en producción)
+    alphabet = string.ascii_letters + string.digits + string.punctuation
+    SECRET_KEY = ''.join(secrets.choice(alphabet) for i in range(50))
+    print("⚠️  ADVERTENCIA: SECRET_KEY generado automáticamente. NO usar en producción!")
+else:
+    # Validar que la clave tenga al menos 50 caracteres
+    if len(SECRET_KEY) < 50:
+        raise ValueError(
+            "SECRET_KEY debe tener al menos 50 caracteres. "
+            "Ejecuta: python generate_secret_key.py para generar uno seguro."
+        )
 
 
 # Application definition
@@ -18,6 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Third party apps
+    'simple_history',
     # Aplicaciones locales
     'core',
     'clientes',
@@ -35,6 +56,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
 ROOT_URLCONF = 'adminired.urls'
@@ -51,6 +73,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.sidebar_config',
+                'core.context_processors.sistema_config',
             ],
         },
     },
@@ -116,6 +139,23 @@ USE_I18N = True
 
 USE_TZ = True
 
+
+# Pasarela de Pago - Stripe
+STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
+STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')
+STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
+
+# Pasarela de Pago - Mercado Pago
+MERCADOPAGO_ACCESS_TOKEN = config('MERCADOPAGO_ACCESS_TOKEN', default='')
+MERCADOPAGO_PUBLIC_KEY = config('MERCADOPAGO_PUBLIC_KEY', default='')
+
+# Pasarela de Pago - PayPal
+PAYPAL_CLIENT_ID = config('PAYPAL_CLIENT_ID', default='')
+PAYPAL_SECRET = config('PAYPAL_SECRET', default='')
+PAYPAL_MODE = config('PAYPAL_MODE', default='sandbox')  # sandbox o live
+
+# URL del sitio (para webhooks y redirects)
+SITE_URL = config('SITE_URL', default='http://localhost:8000')
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/

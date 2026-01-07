@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Pago, PlanPago
+from .models import Pago, PlanPago, TransaccionPago
 
 
 @admin.register(Pago)
@@ -50,3 +50,38 @@ class PlanPagoAdmin(admin.ModelAdmin):
     list_display = ['instalacion', 'monto_mensual', 'dia_vencimiento', 'activo']
     list_filter = ['activo', 'dia_vencimiento']
     search_fields = ['instalacion__cliente__nombre', 'instalacion__numero_contrato']
+
+
+@admin.register(TransaccionPago)
+class TransaccionPagoAdmin(admin.ModelAdmin):
+    list_display = [
+        'pago',
+        'pasarela',
+        'estado',
+        'monto',
+        'moneda',
+        'fecha_creacion',
+        'fecha_completada',
+    ]
+    list_filter = ['pasarela', 'estado', 'fecha_creacion']
+    search_fields = ['pago__cliente__nombre', 'id_transaccion_pasarela', 'id_pago_intento']
+    readonly_fields = ['fecha_creacion', 'fecha_actualizacion', 'fecha_completada', 'datos_respuesta']
+    date_hierarchy = 'fecha_creacion'
+    
+    fieldsets = (
+        ('Información de la Transacción', {
+            'fields': ('pago', 'pasarela', 'estado', 'monto', 'moneda')
+        }),
+        ('IDs de la Pasarela', {
+            'fields': ('id_transaccion_pasarela', 'id_pago_intento')
+        }),
+        ('Información del Método de Pago', {
+            'fields': ('metodo_pago_tipo', 'ultimos_digitos')
+        }),
+        ('Información Adicional', {
+            'fields': ('mensaje_error', 'datos_respuesta')
+        }),
+        ('Fechas', {
+            'fields': ('fecha_creacion', 'fecha_actualizacion', 'fecha_completada')
+        }),
+    )

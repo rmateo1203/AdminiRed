@@ -1,0 +1,165 @@
+{% extends 'clientes/portal_base.html' %}
+{% load static %}
+
+{% block page_title %}Mis Pagos{% endblock %}
+
+{% block portal_content %}
+<div class="row">
+    <!-- Estadísticas -->
+    <div class="col-md-3 mb-4">
+        <div class="card text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Pagos Pendientes</h6>
+                        <h2 class="mb-0">{{ pagos_pendientes }}</h2>
+                    </div>
+                    <i class="fas fa-clock fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Pagos Vencidos</h6>
+                        <h2 class="mb-0">{{ pagos_vencidos }}</h2>
+                    </div>
+                    <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card text-white" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Pagos Completados</h6>
+                        <h2 class="mb-0">{{ pagos_pagados }}</h2>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card text-white" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Monto Pendiente</h6>
+                        <h2 class="mb-0">${{ monto_pendiente|floatformat:2 }}</h2>
+                    </div>
+                    <i class="fas fa-dollar-sign fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Pagos -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header" style="background-color: var(--primary-color); color: white;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-money-bill-wave"></i> Mis Pagos</h5>
+                    <div>
+                        <form method="get" class="d-inline-flex">
+                            <select name="estado" class="form-select form-select-sm me-2">
+                                <option value="">Todos los estados</option>
+                                {% for estado_val, estado_label in estados %}
+                                    <option value="{{ estado_val }}" {% if estado_filter == estado_val %}selected{% endif %}>
+                                        {{ estado_label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <input type="text" name="q" class="form-control form-control-sm me-2" placeholder="Buscar..." value="{{ query }}">
+                            <button type="submit" class="btn btn-light btn-sm">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if page_obj %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Concepto</th>
+                                    <th>Monto</th>
+                                    <th>Fecha Vencimiento</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pago in page_obj %}
+                                <tr>
+                                    <td>{{ pago.concepto }}</td>
+                                    <td><strong>${{ pago.monto|floatformat:2 }}</strong></td>
+                                    <td>{{ pago.fecha_vencimiento|date:"d/m/Y" }}</td>
+                                    <td>
+                                        {% if pago.estado == 'pagado' %}
+                                            <span class="badge bg-success">{{ pago.get_estado_display }}</span>
+                                        {% elif pago.estado == 'vencido' %}
+                                            <span class="badge bg-danger">{{ pago.get_estado_display }}</span>
+                                        {% elif pago.estado == 'pendiente' %}
+                                            <span class="badge bg-warning">{{ pago.get_estado_display }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ pago.get_estado_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'clientes:portal_detalle_pago' pago_id=pago.pk %}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Ver
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Paginación -->
+                    {% if page_obj.has_other_pages %}
+                    <nav aria-label="Paginación">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">Primera</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">Anterior</a>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                            </li>
+                            
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">Siguiente</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">Última</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted text-center">No se encontraron pagos.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

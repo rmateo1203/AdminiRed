@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión - AdminiRed</title>
+    <title>Iniciar Sesión - {{ sistema_config.nombre_empresa|default:"AdminiRed" }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         * {
@@ -34,7 +34,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.85) 0%, rgba(118, 75, 162, 0.85) 100%);
+            background: linear-gradient(135deg, 
+                {{ sistema_config.color_primario|default:"#667eea" }}CC 0%, 
+                {{ sistema_config.color_secundario|default:"#764ba2" }}CC 100%);
             z-index: 0;
         }
         
@@ -77,7 +79,7 @@
         }
         
         .login-header h1 {
-            color: #667eea;
+            color: {{ sistema_config.color_primario|default:"#667eea" }};
             font-size: 2rem;
             margin-bottom: 0.5rem;
             font-weight: 700;
@@ -112,9 +114,9 @@
         
         .form-group input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: {{ sistema_config.color_primario|default:"#667eea" }};
             background-color: white;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            box-shadow: 0 0 0 3px {{ sistema_config.color_primario|default:"#667eea" }}1A;
         }
         
         .form-group input::placeholder {
@@ -158,27 +160,27 @@
         }
         
         .messages .success {
-            background-color: #d1fae5;
+            background-color: {{ sistema_config.color_exito|default:"#10b981" }}33;
             color: #065f46;
-            border-left: 4px solid #10b981;
+            border-left: 4px solid {{ sistema_config.color_exito|default:"#10b981" }};
         }
         
         .messages .error {
-            background-color: #fee2e2;
+            background-color: {{ sistema_config.color_peligro|default:"#ef4444" }}33;
             color: #991b1b;
-            border-left: 4px solid #ef4444;
+            border-left: 4px solid {{ sistema_config.color_peligro|default:"#ef4444" }};
         }
         
         .messages .info {
-            background-color: #dbeafe;
+            background-color: {{ sistema_config.color_info|default:"#3b82f6" }}33;
             color: #1e40af;
-            border-left: 4px solid #3b82f6;
+            border-left: 4px solid {{ sistema_config.color_info|default:"#3b82f6" }};
         }
         
         .btn-login {
             width: 100%;
             padding: 1rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, {{ sistema_config.color_primario|default:"#667eea" }} 0%, {{ sistema_config.color_secundario|default:"#764ba2" }} 100%);
             color: white;
             border: none;
             border-radius: 10px;
@@ -186,12 +188,12 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 4px 15px {{ sistema_config.color_primario|default:"#667eea" }}66;
         }
         
         .btn-login:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+            box-shadow: 0 6px 20px {{ sistema_config.color_primario|default:"#667eea" }}80;
         }
         
         .btn-login:active {
@@ -211,7 +213,7 @@
         }
         
         .login-footer a {
-            color: #667eea;
+            color: {{ sistema_config.color_primario|default:"#667eea" }};
             text-decoration: none;
             font-weight: 600;
         }
@@ -288,8 +290,14 @@
     {% endcomment %}
     <div class="login-container">
         <div class="login-header">
-            <div class="logo"><i class="fas fa-globe-americas"></i></div>
-            <h1>AdminiRed</h1>
+            <div class="logo">
+                {% if sistema_config.logo %}
+                    <img src="{{ sistema_config.logo.url }}" alt="{{ sistema_config.nombre_empresa }}" style="max-height: 60px; margin-bottom: 0.5rem;">
+                {% else %}
+                    <i class="fas fa-globe-americas"></i>
+                {% endif %}
+            </div>
+            <h1>{{ sistema_config.nombre_empresa|default:"AdminiRed" }}</h1>
             <p>Sistema de Gestión de Instalaciones</p>
         </div>
         
@@ -356,7 +364,7 @@
         </form>
         
         <div style="text-align: center; margin-top: 1.5rem;">
-            <a href="{% url 'password_reset' %}" style="color: #667eea; text-decoration: none; font-size: 0.9rem; font-weight: 600;">
+            <a href="{% url 'password_reset' %}" style="color: {{ sistema_config.color_primario|default:"#667eea" }}; text-decoration: none; font-size: 0.9rem; font-weight: 600;">
                 <i class="fas fa-key"></i> ¿Olvidaste tu contraseña?
             </a>
         </div>

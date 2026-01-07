@@ -19,11 +19,11 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from core.views import home, logout_view, toggle_sidebar, config_sidebar
+from core.views import home, logout_view, toggle_sidebar, config_sidebar, CustomLoginView
 
 urlpatterns = [
     path('', home, name='home'),
-    path('login/', auth_views.LoginView.as_view(template_name='core/login.html'), name='login'),
+    path('login/', CustomLoginView.as_view(template_name='core/login.html'), name='login'),
     path('logout/', logout_view, name='logout'),
     
     # Recuperación de contraseña

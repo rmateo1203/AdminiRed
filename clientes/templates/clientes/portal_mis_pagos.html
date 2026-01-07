@@ -1,0 +1,770 @@
+{% extends 'clientes/portal_base.html' %}
+{% load static %}
+
+{% block page_title %}Mis Pagos{% endblock %}
+
+{% block portal_extra_css %}
+<style>
+    .mp-wrap {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    .mp-layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+        width: 100%;
+    }
+
+    .mp-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        width: 100%;
+        display: block;
+        visibility: visible;
+        opacity: 1;
+    }
+
+    .mp-card-header {
+        padding: 1rem 1rem 0.75rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+
+    .mp-card-title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #111827;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .mp-card-body {
+        padding: 1rem;
+    }
+
+    .mp-kpis {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .mp-kpi {
+        border: 1px solid #eef2f7;
+        border-radius: 10px;
+        padding: 0.875rem;
+        background: #fafafa;
+        transition: all 0.2s ease;
+    }
+
+    .mp-kpi:hover {
+        background: #f3f4f6;
+        border-color: #e5e7eb;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .mp-kpi-label {
+        font-size: 0.8rem;
+        color: #64748b;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .mp-kpi-value {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.1;
+    }
+
+    .mp-kpi-sub {
+        margin-top: 0.35rem;
+        font-size: 0.8rem;
+        color: #64748b;
+    }
+
+    .mp-pill-row {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .mp-pill {
+        padding: 0.5rem 0.75rem;
+        border-radius: 999px;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        color: #334155;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .mp-pill.active {
+        background: #111827;
+        border-color: #111827;
+        color: #fff;
+    }
+
+    .mp-search {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .mp-search input {
+        width: 100%;
+        padding: 0.7rem 0.9rem;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        font-size: 0.95rem;
+    }
+
+    .mp-search button {
+        padding: 0.7rem 1rem;
+        border-radius: 10px;
+        border: 1px solid #111827;
+        background: #111827;
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .mp-table-wrap {
+        overflow-x: auto;
+        width: 100%;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .mp-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 720px;
+        display: table;
+        table-layout: auto;
+    }
+
+    .mp-table th {
+        text-align: left;
+        font-size: 0.75rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #64748b;
+        padding: 0.9rem 0.75rem;
+        border-bottom: 1px solid #e5e7eb;
+        background: #fafafa;
+    }
+
+    .mp-table td {
+        padding: 0.9rem 0.75rem;
+        border-bottom: 1px solid #f1f5f9;
+        color: #0f172a;
+        font-size: 0.95rem;
+        vertical-align: top;
+    }
+
+    .mp-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.75rem;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        border: 1px solid transparent;
+        background: #f3f4f6;
+        color: #334155;
+        white-space: nowrap;
+    }
+
+    .mp-badge.pendiente { 
+        background: #fff7ed; 
+        color: #9a3412; 
+        border-color: #fed7aa; 
+    }
+    .mp-badge.vencido { 
+        background: #fef2f2; 
+        color: #991b1b; 
+        border-color: #fecaca;
+    }
+    .mp-badge.pagado { 
+        background: #f0fdf4; 
+        color: #065f46; 
+        border-color: #bbf7d0; 
+    }
+    .mp-badge.cancelado { 
+        background: #f1f5f9; 
+        color: #334155; 
+        border-color: #e2e8f0; 
+    }
+
+    .mp-muted {
+        color: #64748b;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+
+    .mp-action a {
+        display: inline-block;
+        padding: 0.55rem 1rem;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        text-decoration: none;
+        font-weight: 700;
+        color: #111827;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .mp-action a:hover {
+        background: #f9fafb;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .mp-action a.primary {
+        border-color: #10b981;
+        background: #10b981;
+        color: #fff;
+    }
+
+    .mp-action a.primary:hover {
+        background: #059669;
+        border-color: #059669;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .mp-empty {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: #64748b;
+    }
+
+    .mp-empty h3 {
+        margin: 0.75rem 0 0.25rem 0;
+        color: #111827;
+        font-size: 1.1rem;
+    }
+
+    .mp-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .mp-list li {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.9rem;
+        color: #0f172a;
+    }
+
+    .mp-list li:last-child { border-bottom: none; }
+
+    /* Tabla responsive - convertir a cards en móviles */
+    .mp-table-mobile {
+        display: none;
+    }
+    
+    .mp-payment-card {
+        display: none;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    
+    .mp-payment-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .mp-payment-card-title {
+        font-weight: 700;
+        color: #111827;
+        font-size: 0.95rem;
+        flex: 1;
+    }
+    
+    .mp-payment-card-badge {
+        margin-left: 0.5rem;
+    }
+    
+    .mp-payment-card-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        font-size: 0.85rem;
+    }
+    
+    .mp-payment-card-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .mp-payment-card-label {
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .mp-payment-card-value {
+        color: #111827;
+        font-weight: 600;
+    }
+    
+    .mp-payment-card-actions {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        justify-content: flex-end;
+    }
+    
+    /* Media queries */
+    @media (min-width: 992px) {
+        .mp-layout {
+            grid-template-columns: 1fr 360px;
+            align-items: start;
+        }
+        .mp-aside {
+            position: sticky;
+            top: 1rem;
+        }
+    }
+    
+    @media (max-width: 991px) {
+        .mp-layout {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .mp-aside {
+            order: -1; /* Mover el aside arriba en móviles */
+        }
+        
+        .mp-kpis {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+        
+        .mp-kpi {
+            padding: 0.75rem 0.5rem;
+        }
+        
+        .mp-kpi-value {
+            font-size: 1.1rem;
+        }
+        
+        .mp-kpi-label {
+            font-size: 0.7rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .mp-card-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+            padding: 0.875rem;
+        }
+        
+        .mp-card-title {
+            font-size: 0.95rem;
+        }
+        
+        .mp-card-body {
+            padding: 0.875rem;
+        }
+        
+        .mp-table th,
+        .mp-table td {
+            padding: 0.75rem 0.5rem;
+            font-size: 0.85rem;
+        }
+        
+        .mp-table-wrap {
+            display: none;
+        }
+        
+        .mp-table-mobile {
+            display: block;
+        }
+        
+        .mp-payment-card {
+            display: block;
+        }
+        
+        .mp-search {
+            grid-template-columns: 1fr;
+        }
+        
+        .mp-search button {
+            width: 100%;
+        }
+        
+        .mp-pill-row {
+            gap: 0.375rem;
+        }
+        
+        .mp-pill {
+            padding: 0.45rem 0.625rem;
+            font-size: 0.8rem;
+        }
+        
+        .mp-payment-card-body {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .mp-wrap {
+            padding: 0;
+        }
+        
+        .mp-card {
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+        }
+        
+        .mp-card-header,
+        .mp-card-body {
+            padding: 0.875rem;
+        }
+        
+        .mp-kpis {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+        
+        .mp-kpi-value {
+            font-size: 1rem;
+        }
+        
+        .mp-payment-card {
+            border-radius: 8px;
+            padding: 0.875rem;
+        }
+        
+        .mp-payment-card-header {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .mp-payment-card-badge {
+            margin-left: 0;
+            align-self: flex-start;
+        }
+    }
+    
+    @media (max-width: 400px) {
+        .mp-kpis {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block portal_content %}
+<div class="mp-wrap">
+    <div class="mp-layout">
+        <!-- PRINCIPAL: tabla -->
+        <section class="mp-main">
+            <div class="mp-card">
+                <div class="mp-card-header">
+                    <h3 class="mp-card-title"><i class="fas fa-money-bill-wave"></i> Pagos</h3>
+                    <span class="mp-muted">Mostrando {{ page_obj.paginator.count|default:0 }} pago{{ page_obj.paginator.count|default:0|pluralize }}</span>
+                </div>
+                <div class="mp-card-body">
+                    {% if page_obj %}
+                    <!-- Vista de tabla (desktop) -->
+                    <div class="mp-table-wrap">
+                        <table class="mp-table">
+                            <thead>
+                                <tr>
+                                    <th>Concepto</th>
+                                    <th>Vence</th>
+                                    <th>Estado</th>
+                                    <th>Período</th>
+                                    <th>Importe</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in pagos_con_dias %}
+                                    {% with pago=item.pago dias_restantes=item.dias_restantes dias_vencido=item.dias_vencido %}
+                                <tr>
+                                    <td>
+                                        <div style="font-weight: 700;">{{ pago.concepto }}</div>
+                                        {% if pago.instalacion %}
+                                        <div class="mp-muted"><i class="fas fa-wifi"></i> {{ pago.instalacion.plan_nombre }}</div>
+                                        {% endif %}
+                                        {% if pago.referencia_pago %}
+                                        <div class="mp-muted">Ref: <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;">{{ pago.referencia_pago }}</span></div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div style="font-weight: 700;">{{ pago.fecha_vencimiento|date:"d/m/Y" }}</div>
+                                        {% if pago.estado == 'vencido' or dias_vencido %}
+                                            <div class="mp-muted" style="color:#991b1b; font-weight: 600; margin-top: 0.25rem;">
+                                                <i class="fas fa-exclamation-circle"></i> Vencido hace {{ dias_vencido|default:0 }} día{{ dias_vencido|default:0|pluralize }}
+                                            </div>
+                                        {% elif pago.estado == 'pendiente' %}
+                                            {% if dias_restantes == 0 %}
+                                                <div class="mp-muted" style="color:#991b1b; font-weight: 600; margin-top: 0.25rem;">
+                                                    <i class="fas fa-exclamation-circle"></i> Vence hoy
+                                                </div>
+                                            {% elif dias_restantes is not None and dias_restantes <= 3 %}
+                                                <div class="mp-muted" style="color:#dc2626; font-weight: 600; margin-top: 0.25rem;">
+                                                    <i class="fas fa-clock"></i> Vence en {{ dias_restantes }} día{{ dias_restantes|pluralize }}
+                                                </div>
+                                            {% elif dias_restantes is not None and dias_restantes <= 7 %}
+                                                <div class="mp-muted" style="color:#d97706; font-weight: 600; margin-top: 0.25rem;">
+                                                    <i class="fas fa-clock"></i> En {{ dias_restantes }} día{{ dias_restantes|pluralize }}
+                                                </div>
+                                            {% elif dias_restantes is not None %}
+                                                <div class="mp-muted" style="color:#64748b; margin-top: 0.25rem;">
+                                                    En {{ dias_restantes }} día{{ dias_restantes|pluralize }}
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="mp-badge {{ pago.estado }}">
+                                            {% if pago.estado == 'pendiente' %}<i class="fas fa-clock"></i>{% endif %}
+                                            {% if pago.estado == 'vencido' %}<i class="fas fa-exclamation-triangle"></i>{% endif %}
+                                            {% if pago.estado == 'pagado' %}<i class="fas fa-check-circle"></i>{% endif %}
+                                            {% if pago.estado == 'cancelado' %}<i class="fas fa-ban"></i>{% endif %}
+                                            {{ pago.get_estado_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {{ pago.get_periodo_mes_display }} {{ pago.periodo_anio }}
+                                        {% if pago.fecha_pago %}
+                                        <div class="mp-muted">Pagado: {{ pago.fecha_pago|date:"d/m/Y" }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td style="font-weight: 800;">${{ pago.monto|floatformat:2 }}</td>
+                                    <td class="mp-action">
+                                        <a href="{% url 'clientes:portal_detalle_pago' pago_id=pago.pk %}" class="{% if pago.estado in 'pendiente,vencido' %}primary{% endif %}">
+                                            {% if pago.estado in 'pendiente,vencido' %}Pagar{% else %}Ver{% endif %}
+                                        </a>
+                                    </td>
+                                </tr>
+                                    {% endwith %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Vista de cards (móvil) -->
+                    <div class="mp-table-mobile">
+                        {% for item in pagos_con_dias %}
+                            {% with pago=item.pago dias_restantes=item.dias_restantes dias_vencido=item.dias_vencido %}
+                            <div class="mp-payment-card">
+                                <div class="mp-payment-card-header">
+                                    <div class="mp-payment-card-title">
+                                        <div>{{ pago.concepto }}</div>
+                                        {% if pago.instalacion %}
+                                        <div class="mp-muted" style="margin-top: 0.25rem;">
+                                            <i class="fas fa-wifi"></i> {{ pago.instalacion.plan_nombre }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="mp-payment-card-badge">
+                                        <span class="mp-badge {{ pago.estado }}">
+                                            {% if pago.estado == 'pendiente' %}<i class="fas fa-clock"></i>{% endif %}
+                                            {% if pago.estado == 'vencido' %}<i class="fas fa-exclamation-triangle"></i>{% endif %}
+                                            {% if pago.estado == 'pagado' %}<i class="fas fa-check-circle"></i>{% endif %}
+                                            {% if pago.estado == 'cancelado' %}<i class="fas fa-ban"></i>{% endif %}
+                                            {{ pago.get_estado_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mp-payment-card-body">
+                                    <div class="mp-payment-card-field">
+                                        <div class="mp-payment-card-label">Vence</div>
+                                        <div class="mp-payment-card-value">{{ pago.fecha_vencimiento|date:"d/m/Y" }}</div>
+                                        {% if pago.estado == 'vencido' or dias_vencido %}
+                                            <div class="mp-muted" style="color:#991b1b; font-weight: 600; margin-top: 0.25rem; font-size: 0.75rem;">
+                                                <i class="fas fa-exclamation-circle"></i> Vencido hace {{ dias_vencido|default:0 }} día{{ dias_vencido|default:0|pluralize }}
+                                            </div>
+                                        {% elif pago.estado == 'pendiente' and dias_restantes is not None %}
+                                            {% if dias_restantes == 0 %}
+                                                <div class="mp-muted" style="color:#991b1b; font-weight: 600; margin-top: 0.25rem; font-size: 0.75rem;">
+                                                    <i class="fas fa-exclamation-circle"></i> Vence hoy
+                                                </div>
+                                            {% elif dias_restantes <= 7 %}
+                                                <div class="mp-muted" style="color:{% if dias_restantes <= 3 %}#dc2626{% else %}#d97706{% endif %}; font-weight: 600; margin-top: 0.25rem; font-size: 0.75rem;">
+                                                    <i class="fas fa-clock"></i> En {{ dias_restantes }} día{{ dias_restantes|pluralize }}
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                    <div class="mp-payment-card-field">
+                                        <div class="mp-payment-card-label">Período</div>
+                                        <div class="mp-payment-card-value">{{ pago.get_periodo_mes_display }} {{ pago.periodo_anio }}</div>
+                                    </div>
+                                    <div class="mp-payment-card-field">
+                                        <div class="mp-payment-card-label">Importe</div>
+                                        <div class="mp-payment-card-value" style="font-size: 1.1rem; color: #111827; font-weight: 800;">${{ pago.monto|floatformat:2 }}</div>
+                                    </div>
+                                    {% if pago.fecha_pago %}
+                                    <div class="mp-payment-card-field">
+                                        <div class="mp-payment-card-label">Pagado</div>
+                                        <div class="mp-payment-card-value">{{ pago.fecha_pago|date:"d/m/Y" }}</div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="mp-payment-card-actions">
+                                    <a href="{% url 'clientes:portal_detalle_pago' pago_id=pago.pk %}" class="{% if pago.estado in 'pendiente,vencido' %}primary{% endif %}" style="display: inline-block; padding: 0.55rem 1rem; border-radius: 10px; border: 1px solid {% if pago.estado in 'pendiente,vencido' %}#10b981{% else %}#e5e7eb{% endif %}; background: {% if pago.estado in 'pendiente,vencido' %}#10b981{% else %}#fff{% endif %}; color: {% if pago.estado in 'pendiente,vencido' %}white{% else %}#111827{% endif %}; text-decoration: none; font-weight: 700; font-size: 0.875rem;">
+                                        {% if pago.estado in 'pendiente,vencido' %}Pagar{% else %}Ver{% endif %}
+                                    </a>
+                                </div>
+                            </div>
+                            {% endwith %}
+                        {% endfor %}
+                    </div>
+
+                    {% if page_obj.has_other_pages %}
+                    <div style="display:flex; justify-content:center; gap:0.5rem; flex-wrap:wrap; margin-top:1rem;">
+                        {% if page_obj.has_previous %}
+                            <a class="mp-pill" href="?page=1{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">Primera</a>
+                            <a class="mp-pill" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">Anterior</a>
+                        {% endif %}
+                        <span class="mp-pill active">Página {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                        {% if page_obj.has_next %}
+                            <a class="mp-pill" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">Siguiente</a>
+                            <a class="mp-pill" href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">Última</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="mp-empty">
+                        <i class="fas fa-inbox" style="font-size: 2.5rem; opacity: 0.4;"></i>
+                        <h3>No se encontraron pagos</h3>
+                        <div>Cuando tengas pagos, aparecerán aquí.</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- LATERAL: resumen + filtros -->
+        <aside class="mp-aside">
+            <div class="mp-card" style="margin-bottom: 1.25rem;">
+                <div class="mp-card-header">
+                    <h3 class="mp-card-title"><i class="fas fa-chart-pie"></i> Resumen</h3>
+                </div>
+                <div class="mp-card-body">
+                    <div class="mp-kpis">
+                        <div class="mp-kpi">
+                            <div class="mp-kpi-label">Total</div>
+                            <div class="mp-kpi-value">{{ total_pagos }}</div>
+                        </div>
+                        <div class="mp-kpi">
+                            <div class="mp-kpi-label">Pendientes</div>
+                            <div class="mp-kpi-value">{{ pagos_pendientes }}</div>
+                        </div>
+                        <div class="mp-kpi">
+                            <div class="mp-kpi-label">Vencidos</div>
+                            <div class="mp-kpi-value">{{ pagos_vencidos }}</div>
+                        </div>
+                        <div class="mp-kpi">
+                            <div class="mp-kpi-label">Pagados</div>
+                            <div class="mp-kpi-value">{{ pagos_pagados }}</div>
+                        </div>
+                    </div>
+
+                    {% if monto_pendiente > 0 %}
+                    <div style="margin-top: 1rem; padding: 1rem; border:2px solid #fed7aa; border-radius: 12px; background:linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%); box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);">
+                        <div style="font-weight:800; color:#9a3412; font-size: 0.85rem; margin-bottom: 0.5rem;">
+                            <i class="fas fa-exclamation-triangle"></i> Pendiente
+                        </div>
+                        <div style="font-weight:800; color:#9a3412; font-size: 1.5rem; margin-bottom: 0.5rem;">
+                            ${{ monto_pendiente|floatformat:2 }}
+                        </div>
+                        {% if monto_vencido > 0 %}
+                        <div style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.4rem 0.75rem; background:rgba(153, 27, 27, 0.1); border-radius: 999px; color:#991b1b; font-weight:700; font-size:0.85rem;">
+                            <i class="fas fa-exclamation-circle"></i> Vencido: ${{ monto_vencido|floatformat:2 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mp-card">
+                <div class="mp-card-header">
+                    <h3 class="mp-card-title"><i class="fas fa-filter"></i> Filtros</h3>
+                </div>
+                <div class="mp-card-body">
+                    <form method="get" class="mp-search">
+                        <input type="text" name="q" placeholder="Buscar..." value="{{ query }}">
+                        {% if estado_filter %}<input type="hidden" name="estado" value="{{ estado_filter }}">{% endif %}
+                        <button type="submit"><i class="fas fa-search"></i> Buscar</button>
+                    </form>
+
+                    <div class="mp-pill-row" style="margin-bottom: 1rem;">
+                        <a class="mp-pill {% if not estado_filter %}active{% endif %}" href="?{% if query %}q={{ query }}{% endif %}"><i class="fas fa-list"></i> Todos</a>
+                        {% for estado_val, estado_label in estados %}
+                        <a class="mp-pill {% if estado_filter == estado_val %}active{% endif %}" href="?estado={{ estado_val }}{% if query %}&q={{ query }}{% endif %}">
+                            {% if estado_val == 'pendiente' %}<i class="fas fa-clock"></i>{% endif %}
+                            {% if estado_val == 'vencido' %}<i class="fas fa-exclamation-triangle"></i>{% endif %}
+                            {% if estado_val == 'pagado' %}<i class="fas fa-check-circle"></i>{% endif %}
+                            {% if estado_val == 'cancelado' %}<i class="fas fa-ban"></i>{% endif %}
+                            {{ estado_label }}
+                        </a>
+                        {% endfor %}
+                    </div>
+
+                    {% if proximos_vencimientos %}
+                    <div style="border-top:1px solid #f1f5f9; padding-top: 0.75rem;">
+                        <div style="font-weight:800; color:#111827; margin-bottom:0.5rem;">Próximos vencimientos (7 días)</div>
+                        <ul class="mp-list">
+                            {% for p in proximos_vencimientos %}
+                            <li>
+                                <span>{{ p.concepto }}</span>
+                                <span style="white-space:nowrap; font-weight:800;">{{ p.fecha_vencimiento|date:"d/m" }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+{% endblock %}

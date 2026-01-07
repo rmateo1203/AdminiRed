@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestionar Materiales - {{ instalacion.numero_contrato }} - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div>
+            <h2><i class="fas fa-boxes"></i> Gestionar Materiales</h2>
+            <p style="color: #6b7280; margin-top: 0.5rem;">
+                Instalación: <strong>{{ instalacion.numero_contrato }}</strong> - {{ instalacion.cliente.nombre_completo }}
+            </p>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <a href="{% url 'instalaciones:instalacion_detail' instalacion.pk %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver a Instalación
+            </a>
+        </div>
+    </div>
+    
+    {% if materiales_insuficientes %}
+    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+        <strong style="color: #92400e;"><i class="fas fa-exclamation-triangle"></i> Advertencia: Stock Insuficiente</strong>
+        <ul style="margin: 0.5rem 0 0 0; padding-left: 1.5rem; color: #92400e;">
+            {% for material in materiales_insuficientes %}
+            <li>
+                <strong>{{ material.material.nombre }}</strong>: 
+                Disponible: {{ material.disponible }} {{ material.material.get_unidad_medida_display }}, 
+                Necesario: {{ material.necesario }} {{ material.material.get_unidad_medida_display }}, 
+                <span style="color: #dc2626;">Faltan: {{ material.faltante }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+    <!-- Formulario para agregar material -->
+    <div style="background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 2px solid #e5e7eb;">
+        <h3 style="color: #667eea; margin-bottom: 1rem;">
+            <i class="fas fa-plus-circle"></i> Agregar Material
+        </h3>
+        <form method="post" id="form-agregar-material">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="agregar">
+            <div style="display: grid; grid-template-columns: 2fr 1fr 2fr auto; gap: 1rem; align-items: end;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                        <i class="fas fa-box"></i> Material <span style="color: #ef4444;">*</span>
+                    </label>
+                    <select name="material_id" id="id_material" class="form-control" required>
+                        <option value="">-- Seleccionar material --</option>
+                        {% for material in materiales_disponibles %}
+                        <option value="{{ material.pk }}" data-stock="{{ material.stock_actual }}" data-unidad="{{ material.get_unidad_medida_display }}">
+                            {{ material.nombre }} (Stock: {{ material.stock_actual }} {{ material.get_unidad_medida_display }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                        <i class="fas fa-hashtag"></i> Cantidad <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input type="number" name="cantidad" id="id_cantidad" class="form-control" min="1" required>
+                    <small id="stock-info" style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 4px; font-size: 0.75rem; font-weight: 500;"></small>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                        <i class="fas fa-sticky-note"></i> Notas (opcional)
+                    </label>
+                    <input type="text" name="notas" id="id_notas" class="form-control" placeholder="Notas sobre el uso de este material">
+                </div>
+                <div>
+                    <button type="submit" class="btn" style="min-width: 150px;">
+                        <i class="fas fa-plus"></i> Agregar
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Lista de materiales -->
+    <div style="background: white; padding: 1.5rem; border-radius: 8px; border: 2px solid #e5e7eb;">
+        <h3 style="color: #667eea; margin-bottom: 1rem;">
+            <i class="fas fa-list"></i> Materiales Asignados ({{ materiales_instalacion.count }})
+        </h3>
+        
+        {% if materiales_instalacion %}
+        <table class="table" style="width: 100%;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #e5e7eb;">Material</th>
+                    <th style="padding: 1rem; text-align: center; border-bottom: 2px solid #e5e7eb;">Cantidad</th>
+                    <th style="padding: 1rem; text-align: center; border-bottom: 2px solid #e5e7eb;">Stock Disponible</th>
+                    <th style="padding: 1rem; text-align: center; border-bottom: 2px solid #e5e7eb;">Estado</th>
+                    <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #e5e7eb;">Notas</th>
+                    <th style="padding: 1rem; text-align: center; border-bottom: 2px solid #e5e7eb;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mat_inst in materiales_instalacion %}
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 1rem;">
+                        <strong>{{ mat_inst.material.nombre }}</strong>
+                        <br>
+                        <small style="color: #6b7280;">Código: {{ mat_inst.material.codigo }}</small>
+                    </td>
+                    <td style="padding: 1rem; text-align: center;">
+                        <span style="font-size: 1.25rem; font-weight: bold; color: #667eea;">
+                            {{ mat_inst.cantidad }}
+                        </span>
+                        <br>
+                        <small style="color: #6b7280;">{{ mat_inst.material.get_unidad_medida_display }}</small>
+                    </td>
+                    <td style="padding: 1rem; text-align: center;">
+                        {% if mat_inst.material.stock_actual >= mat_inst.cantidad %}
+                            <span style="color: #10b981; font-weight: bold;">
+                                <i class="fas fa-check-circle"></i> {{ mat_inst.material.stock_actual }}
+                            </span>
+                        {% elif mat_inst.material.stock_actual > 0 %}
+                            <span style="color: #f59e0b; font-weight: bold;">
+                                <i class="fas fa-exclamation-triangle"></i> {{ mat_inst.material.stock_actual }}
+                            </span>
+                        {% else %}
+                            <span style="color: #ef4444; font-weight: bold;">
+                                <i class="fas fa-times-circle"></i> {{ mat_inst.material.stock_actual }}
+                            </span>
+                        {% endif %}
+                        <br>
+                        <small style="color: #6b7280;">{{ mat_inst.material.get_unidad_medida_display }}</small>
+                    </td>
+                    <td style="padding: 1rem; text-align: center;">
+                        {% if mat_inst.material.estado == 'disponible' %}
+                            <span class="badge badge-success">{{ mat_inst.material.get_estado_display }}</span>
+                        {% elif mat_inst.material.estado == 'bajo_stock' %}
+                            <span class="badge badge-warning">{{ mat_inst.material.get_estado_display }}</span>
+                        {% else %}
+                            <span class="badge badge-danger">{{ mat_inst.material.get_estado_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem;">
+                        {% if mat_inst.notas %}
+                            <small style="color: #6b7280;">{{ mat_inst.notas }}</small>
+                        {% else %}
+                            <span style="color: #9ca3af;">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem; text-align: center;">
+                        <form method="post" style="display: inline;" onsubmit="return confirm('¿Estás seguro de eliminar este material?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="eliminar">
+                            <input type="hidden" name="material_inst_id" value="{{ mat_inst.pk }}">
+                            <button type="submit" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="text-align: center; padding: 3rem; color: #6b7280;">
+            <i class="fas fa-box-open" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+            <p>No se han asignado materiales a esta instalación.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const materialSelect = document.getElementById('id_material');
+    const cantidadInput = document.getElementById('id_cantidad');
+    const stockInfo = document.getElementById('stock-info');
+    
+    function actualizarInfoStock() {
+        const materialId = materialSelect.value;
+        const cantidad = parseInt(cantidadInput.value) || 0;
+        
+        if (!materialId) {
+            stockInfo.textContent = '';
+            stockInfo.style.background = '';
+            stockInfo.style.border = '';
+            return;
+        }
+        
+        const option = materialSelect.options[materialSelect.selectedIndex];
+        const stock = parseInt(option.dataset.stock) || 0;
+        const unidad = option.dataset.unidad || '';
+        
+        if (cantidad > 0) {
+            if (stock >= cantidad) {
+                stockInfo.innerHTML = `<i class="fas fa-check-circle"></i> Stock disponible: <strong>${stock} ${unidad}</strong>`;
+                stockInfo.style.color = '#10b981';
+                stockInfo.style.background = '#d1fae5';
+                stockInfo.style.border = '1px solid #10b981';
+                cantidadInput.style.borderColor = '#10b981';
+            } else {
+                const faltante = cantidad - stock;
+                stockInfo.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Stock insuficiente. Disponible: <strong>${stock} ${unidad}</strong>, Faltan: <strong style="color: #dc2626;">${faltante}</strong>`;
+                stockInfo.style.color = '#92400e';
+                stockInfo.style.background = '#fef3c7';
+                stockInfo.style.border = '1px solid #f59e0b';
+                cantidadInput.style.borderColor = '#ef4444';
+            }
+        } else {
+            stockInfo.innerHTML = `Stock disponible: <strong>${stock} ${unidad}</strong>`;
+            stockInfo.style.color = '#6b7280';
+            stockInfo.style.background = '#f3f4f6';
+            stockInfo.style.border = '1px solid #e5e7eb';
+        }
+    }
+    
+    materialSelect.addEventListener('change', actualizarInfoStock);
+    cantidadInput.addEventListener('input', actualizarInfoStock);
+});
+</script>
+{% endblock %}
+
+

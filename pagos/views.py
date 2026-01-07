@@ -5,13 +5,20 @@ from django.db.models import Q, Sum, Count, Avg
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.core.paginator import Paginator
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 from datetime import timedelta, date, datetime
 from calendar import monthrange
 import json
-from .models import Pago, PlanPago
+import logging
+import requests
+from .models import Pago, PlanPago, TransaccionPago
 from .forms import PagoForm, PlanPagoForm
+from .payment_gateway import PaymentGateway
 from clientes.models import Cliente
 from instalaciones.models import Instalacion
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -97,9 +104,21 @@ def pago_detail(request, pk):
     # Obtener notificaciones relacionadas si existen
     notificaciones = pago.notificaciones.all() if hasattr(pago, 'notificaciones') else []
     
+    # Obtener transacciones de pasarela
+    transacciones = pago.transacciones.all().order_by('-fecha_creacion')
+    
+    # Verificar si hay alguna pasarela configurada
+    tiene_pasarela = (
+        bool(getattr(settings, 'STRIPE_SECRET_KEY', None)) or
+        bool(getattr(settings, 'MERCADOPAGO_ACCESS_TOKEN', None)) or
+        (bool(getattr(settings, 'PAYPAL_CLIENT_ID', None)) and bool(getattr(settings, 'PAYPAL_SECRET', None)))
+    )
+    
     context = {
         'pago': pago,
         'notificaciones': notificaciones,
+        'transacciones': transacciones,
+        'tiene_pasarela': tiene_pasarela,
     }
     
     return render(request, 'pagos/pago_detail.html', context)
@@ -673,3 +692,403 @@ def pago_reportes(request):
     }
     
     return render(request, 'pagos/pago_reportes.html', context)
+
+
+def pago_procesar_online(request, pk):
+    """Inicia el proceso de pago en línea para un pago."""
+    pago = get_object_or_404(Pago, pk=pk)
+    
+    # Verificar permisos: solo el cliente dueño o staff puede pagar
+    from clientes.portal_views import es_cliente, obtener_cliente_desde_usuario
+    if request.user.is_authenticated:
+        if es_cliente(request.user):
+            cliente = obtener_cliente_desde_usuario(request.user)
+            # Verificar que el pago pertenezca al cliente
+            if pago.cliente != cliente:
+                messages.error(request, 'No tienes permiso para acceder a este pago.')
+                return redirect('clientes:portal_mis_pagos')
+            # Verificar que si el pago tiene instalación, esa instalación pertenezca al cliente
+            if pago.instalacion and pago.instalacion.cliente != cliente:
+                messages.error(request, 'No tienes permiso para acceder a este pago.')
+                return redirect('clientes:portal_mis_pagos')
+        elif not request.user.is_staff:
+            messages.error(request, 'No tienes permiso para acceder a esta página.')
+            return redirect('login')
+    else:
+        messages.error(request, 'Debes iniciar sesión para realizar un pago.')
+        return redirect('clientes:portal_login')
+    
+    # Verificar que el pago esté pendiente
+    if pago.estado != 'pendiente' and pago.estado != 'vencido':
+        messages.warning(request, 'Este pago ya ha sido procesado.')
+        if es_cliente(request.user):
+            return redirect('clientes:portal_detalle_pago', pago_id=pk)
+        return redirect('pagos:pago_detail', pk=pk)
+    
+    # Si es POST, procesar la selección de pasarela
+    if request.method == 'POST':
+        pasarela = request.POST.get('pasarela', 'stripe')
+        
+        # Obtener URLs de retorno
+        return_url = request.build_absolute_uri(f'/pagos/{pk}/pago-exitoso/')
+        cancel_url = request.build_absolute_uri(f'/pagos/{pk}/pago-cancelado/')
+        
+        try:
+            # Crear intento de pago con la pasarela seleccionada
+            gateway = PaymentGateway(pasarela=pasarela)
+            resultado = gateway.crear_intento_pago(pago, return_url, cancel_url)
+            
+            if resultado.get('success'):
+                # Redirigir a la pasarela de pago
+                return redirect(resultado['url'])
+            else:
+                messages.error(request, f'Error al procesar el pago: {resultado.get("error", "Error desconocido")}')
+                if es_cliente(request.user):
+                    return redirect('clientes:portal_detalle_pago', pago_id=pk)
+                return redirect('pagos:pago_detail', pk=pk)
+        except ImportError as e:
+            messages.error(request, f'La pasarela seleccionada no está disponible: {str(e)}')
+            if es_cliente(request.user):
+                return redirect('clientes:portal_detalle_pago', pago_id=pk)
+            return redirect('pagos:pago_detail', pk=pk)
+        except Exception as e:
+            messages.error(request, f'Error inesperado: {str(e)}')
+            if es_cliente(request.user):
+                return redirect('clientes:portal_detalle_pago', pago_id=pk)
+            return redirect('pagos:pago_detail', pk=pk)
+    
+    # Si es GET, mostrar formulario de selección de pasarela
+    pasarelas_disponibles = []
+    
+    # Verificar Stripe
+    try:
+        from pagos.payment_gateway import STRIPE_AVAILABLE
+        if STRIPE_AVAILABLE and getattr(settings, 'STRIPE_SECRET_KEY', ''):
+            pasarelas_disponibles.append(('stripe', 'Stripe', 'Tarjetas de crédito y débito'))
+    except:
+        pass
+    
+    # Verificar Mercado Pago
+    try:
+        from pagos.payment_gateway import MERCADOPAGO_AVAILABLE
+        if MERCADOPAGO_AVAILABLE and getattr(settings, 'MERCADOPAGO_ACCESS_TOKEN', ''):
+            pasarelas_disponibles.append(('mercadopago', 'Mercado Pago', 'Tarjetas, efectivo y más'))
+    except:
+        pass
+    
+    # Verificar PayPal
+    try:
+        if getattr(settings, 'PAYPAL_CLIENT_ID', '') and getattr(settings, 'PAYPAL_SECRET', ''):
+            pasarelas_disponibles.append(('paypal', 'PayPal', 'PayPal y tarjetas'))
+    except:
+        pass
+    
+    if not pasarelas_disponibles:
+        messages.warning(request, 'No hay pasarelas de pago configuradas.')
+        if es_cliente(request.user):
+            return redirect('clientes:portal_detalle_pago', pago_id=pk)
+        return redirect('pagos:pago_detail', pk=pk)
+    
+    context = {
+        'pago': pago,
+        'pasarelas_disponibles': pasarelas_disponibles,
+    }
+    
+    return render(request, 'pagos/pago_seleccionar_pasarela.html', context)
+
+
+def pago_exitoso(request, pk):
+    """Vista que se muestra después de un pago exitoso."""
+    pago = get_object_or_404(Pago, pk=pk)
+    
+    # Verificar permisos
+    from clientes.portal_views import es_cliente, obtener_cliente_desde_usuario
+    if request.user.is_authenticated:
+        if es_cliente(request.user):
+            cliente = obtener_cliente_desde_usuario(request.user)
+            # Verificar que el pago pertenezca al cliente
+            if pago.cliente != cliente:
+                messages.error(request, 'No tienes permiso para acceder a este pago.')
+                return redirect('clientes:portal_mis_pagos')
+            # Verificar que si el pago tiene instalación, esa instalación pertenezca al cliente
+            if pago.instalacion and pago.instalacion.cliente != cliente:
+                messages.error(request, 'No tienes permiso para acceder a este pago.')
+                return redirect('clientes:portal_mis_pagos')
+        elif not request.user.is_staff:
+            messages.error(request, 'No tienes permiso para acceder a esta página.')
+            return redirect('login')
+    
+    # Verificar según la pasarela
+    session_id = request.GET.get('session_id')  # Stripe
+    payment_id = request.GET.get('payment_id')  # Mercado Pago
+    # PayPal puede usar 'token' o 'paymentId' dependiendo de la versión de la API
+    paypal_token = request.GET.get('token') or request.GET.get('paymentId')  # PayPal
+    
+    if session_id:
+        # Verificar el pago con Stripe
+        gateway = PaymentGateway(pasarela='stripe')
+        resultado = gateway.verificar_pago(session_id)
+        
+        if resultado.get('success') and resultado.get('estado') == 'completada':
+            messages.success(request, '¡Pago procesado exitosamente!')
+            pago.refresh_from_db()
+        elif resultado.get('success'):
+            messages.info(request, 'El pago está siendo procesado. Recibirás una confirmación pronto.')
+        else:
+            messages.warning(request, f'No se pudo verificar el pago: {resultado.get("error", "Error desconocido")}')
+    elif payment_id:
+        # Mercado Pago - verificar transacción
+        try:
+            transaccion = TransaccionPago.objects.get(
+                id_transaccion_pasarela=payment_id,
+                pasarela='mercadopago'
+            )
+            if transaccion.estado == 'completada':
+                messages.success(request, '¡Pago procesado exitosamente!')
+            else:
+                messages.info(request, 'El pago está siendo procesado. Recibirás una confirmación pronto.')
+            pago.refresh_from_db()
+        except TransaccionPago.DoesNotExist:
+            messages.warning(request, 'No se encontró la transacción.')
+    elif paypal_token:
+        # PayPal - verificar y capturar el pago
+        # paypal_token es el token (order_id) que PayPal devuelve
+        try:
+            gateway = PaymentGateway(pasarela='paypal')
+            # Buscar la transacción por order_id
+            transaccion = TransaccionPago.objects.filter(
+                id_transaccion_pasarela=paypal_token,
+                pasarela='paypal'
+            ).first()
+            
+            if not transaccion:
+                # Si no encontramos la transacción, intentar buscar por cualquier orden de PayPal para este pago
+                transaccion = TransaccionPago.objects.filter(
+                    pago=pago,
+                    pasarela='paypal',
+                    estado='pendiente'
+                ).first()
+            
+            if transaccion:
+                # Verificar el estado de la orden primero
+                access_token = gateway._obtener_paypal_access_token()
+                if access_token:
+                    api_url = 'https://api-m.sandbox.paypal.com' if gateway.paypal_mode == 'sandbox' else 'https://api-m.paypal.com'
+                    headers = {
+                        'Content-Type': 'application/json',
+                        'Authorization': f'Bearer {access_token}'
+                    }
+                    
+                    # Obtener detalles de la orden
+                    order_response = requests.get(
+                        f'{api_url}/v2/checkout/orders/{paypal_token}',
+                        headers=headers
+                    )
+                    
+                    if order_response.status_code == 200:
+                        order = order_response.json()
+                        order_status = order.get('status', '')
+                        
+                        # Si la orden está aprobada pero no capturada, capturarla
+                        if order_status == 'APPROVED':
+                            # Capturar el pago en PayPal
+                            capture_response = requests.post(
+                                f'{api_url}/v2/checkout/orders/{paypal_token}/capture',
+                                headers=headers,
+                                json={}
+                            )
+                            
+                            if capture_response.status_code == 201:
+                                capture_data = capture_response.json()
+                                # Actualizar transacción con el order_id correcto si no lo tenía
+                                if transaccion.id_transaccion_pasarela != paypal_token:
+                                    transaccion.id_transaccion_pasarela = paypal_token
+                                
+                                transaccion.estado = 'completada'
+                                transaccion.fecha_completada = timezone.now()
+                                if not transaccion.datos_respuesta:
+                                    transaccion.datos_respuesta = {}
+                                transaccion.datos_respuesta['order'] = order
+                                transaccion.datos_respuesta['capture'] = capture_data
+                                transaccion.save()
+                                transaccion.marcar_como_completada()
+                                messages.success(request, '¡Pago procesado exitosamente!')
+                            else:
+                                error_data = capture_response.json() if capture_response.content else {}
+                                error_msg = error_data.get('message', 'Error al capturar el pago')
+                                logger.error(f"Error al capturar pago de PayPal: {error_msg}")
+                                messages.warning(request, f'Error al procesar el pago: {error_msg}')
+                        elif order_status == 'COMPLETED':
+                            # La orden ya está completada
+                            if transaccion.estado != 'completada':
+                                transaccion.estado = 'completada'
+                                transaccion.fecha_completada = timezone.now()
+                                if not transaccion.datos_respuesta:
+                                    transaccion.datos_respuesta = {}
+                                transaccion.datos_respuesta['order'] = order
+                                transaccion.save()
+                                transaccion.marcar_como_completada()
+                            messages.success(request, '¡Pago procesado exitosamente!')
+                        elif order_status == 'CREATED':
+                            messages.info(request, 'El pago está pendiente de aprobación.')
+                        else:
+                            messages.warning(request, f'Estado del pago: {order_status}')
+                    else:
+                        error_data = order_response.json() if order_response.content else {}
+                        error_msg = error_data.get('message', 'Error al verificar el pago')
+                        logger.error(f"Error al verificar orden de PayPal: {error_msg}")
+                        messages.warning(request, f'Error al verificar el pago: {error_msg}')
+                else:
+                    messages.warning(request, 'No se pudo obtener el token de acceso de PayPal.')
+            else:
+                messages.warning(request, 'No se encontró la transacción asociada a este pago.')
+            pago.refresh_from_db()
+        except Exception as e:
+            logger.error(f"Error al procesar pago de PayPal: {str(e)}", exc_info=True)
+            messages.warning(request, f'Error al verificar el pago: {str(e)}')
+    
+    # Obtener transacciones relacionadas
+    transacciones = pago.transacciones.all().order_by('-fecha_creacion')
+    
+    context = {
+        'pago': pago,
+        'transacciones': transacciones,
+    }
+    
+    return render(request, 'pagos/pago_exitoso.html', context)
+
+
+def pago_cancelado(request, pk):
+    """Vista que se muestra cuando se cancela un pago."""
+    pago = get_object_or_404(Pago, pk=pk)
+    messages.info(request, 'El pago fue cancelado. Puedes intentar nuevamente cuando lo desees.')
+    
+    # Redirigir según el tipo de usuario
+    from clientes.portal_views import es_cliente
+    if request.user.is_authenticated and es_cliente(request.user):
+        return redirect('clientes:portal_detalle_pago', pago_id=pk)
+    return redirect('pagos:pago_detail', pk=pk)
+
+
+def stripe_webhook(request):
+    """Endpoint para recibir webhooks de Stripe."""
+    payload = request.body
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+    
+    gateway = PaymentGateway(pasarela='stripe')
+    resultado = gateway.procesar_webhook(payload, sig_header)
+    
+    if resultado.get('success'):
+        return JsonResponse({'status': 'success'}, status=200)
+    else:
+        return JsonResponse({'status': 'error', 'message': resultado.get('error')}, status=400)
+
+
+@csrf_exempt
+def mercadopago_webhook(request):
+    """Endpoint para recibir webhooks de Mercado Pago."""
+    import json
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            tipo = data.get('type')
+            datos = data.get('data', {})
+            
+            if tipo == 'payment':
+                payment_id = datos.get('id')
+                
+                # Buscar la transacción
+                try:
+                    transaccion = TransaccionPago.objects.get(
+                        id_transaccion_pasarela=payment_id,
+                        pasarela='mercadopago'
+                    )
+                    
+                    # Obtener detalles del pago
+                    gateway = PaymentGateway(pasarela='mercadopago')
+                    payment_response = gateway.mp.payment().get(int(payment_id))
+                    
+                    if payment_response["status"] == 200:
+                        payment = payment_response["response"]
+                        
+                        if payment.get("status") == "approved":
+                            transaccion.estado = 'completada'
+                            transaccion.fecha_completada = timezone.now()
+                            transaccion.datos_respuesta = payment
+                            transaccion.save()
+                            transaccion.marcar_como_completada()
+                        elif payment.get("status") == "rejected":
+                            transaccion.estado = 'fallida'
+                            transaccion.mensaje_error = payment.get("status_detail", "Pago rechazado")
+                            transaccion.save()
+                    
+                except TransaccionPago.DoesNotExist:
+                    logger.warning(f"Transacción no encontrada para payment_id: {payment_id}")
+            
+            return JsonResponse({'status': 'success'}, status=200)
+        except Exception as e:
+            logger.error(f"Error al procesar webhook de Mercado Pago: {str(e)}")
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+
+
+@login_required
+def pago_reembolsar(request, transaccion_id):
+    """Procesa un reembolso de una transacción."""
+    transaccion = get_object_or_404(TransaccionPago, pk=transaccion_id)
+    
+    # Verificar que la transacción esté completada
+    if transaccion.estado != 'completada':
+        messages.error(request, 'Solo se pueden reembolsar transacciones completadas.')
+        return redirect('pagos:pago_detail', pk=transaccion.pago.pk)
+    
+    # Verificar que no esté ya reembolsada
+    if transaccion.estado == 'reembolsada':
+        messages.warning(request, 'Esta transacción ya ha sido reembolsada.')
+        return redirect('pagos:pago_detail', pk=transaccion.pago.pk)
+    
+    if request.method == 'POST':
+        monto_parcial = request.POST.get('monto_parcial')
+        motivo = request.POST.get('motivo', '')
+        
+        try:
+            monto_parcial = float(monto_parcial) if monto_parcial else None
+            
+            # Validar monto parcial
+            if monto_parcial:
+                if monto_parcial <= 0:
+                    messages.error(request, 'El monto del reembolso debe ser mayor a cero.')
+                    return redirect('pagos:pago_reembolsar', transaccion_id=transaccion_id)
+                if monto_parcial > float(transaccion.monto):
+                    messages.error(request, 'El monto del reembolso no puede ser mayor al monto de la transacción.')
+                    return redirect('pagos:pago_reembolsar', transaccion_id=transaccion_id)
+            
+            # Procesar reembolso
+            gateway = PaymentGateway(pasarela=transaccion.pasarela)
+            resultado = gateway.procesar_reembolso(transaccion, monto_parcial, motivo)
+            
+            if resultado.get('success'):
+                messages.success(
+                    request,
+                    f'Reembolso procesado exitosamente. Monto: ${resultado.get("amount", 0):.2f}'
+                )
+                return redirect('pagos:pago_detail', pk=transaccion.pago.pk)
+            else:
+                messages.error(request, f'Error al procesar el reembolso: {resultado.get("error", "Error desconocido")}')
+                return redirect('pagos:pago_reembolsar', transaccion_id=transaccion_id)
+        except ValueError:
+            messages.error(request, 'El monto del reembolso debe ser un número válido.')
+            return redirect('pagos:pago_reembolsar', transaccion_id=transaccion_id)
+        except Exception as e:
+            logger.error(f"Error al procesar reembolso: {str(e)}")
+            messages.error(request, f'Error inesperado: {str(e)}')
+            return redirect('pagos:pago_reembolsar', transaccion_id=transaccion_id)
+    
+    context = {
+        'transaccion': transaccion,
+        'pago': transaccion.pago,
+    }
+    
+    return render(request, 'pagos/pago_reembolsar.html', context)
