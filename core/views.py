@@ -30,6 +30,10 @@ class CustomLoginView(LoginView):
             try:
                 cliente = user.cliente_perfil
                 if cliente and not cliente.is_deleted and cliente.estado_cliente == 'activo':
+                    # Verificar si debe cambiar la contraseña
+                    if cliente.debe_cambiar_password:
+                        messages.warning(self.request, 'Por seguridad, debes cambiar tu contraseña antes de continuar.')
+                        return redirect('clientes:portal_cambiar_password')
                     # Redirigir al portal de clientes
                     messages.success(self.request, f'¡Bienvenido, {cliente.nombre_completo}!')
                     return redirect('clientes:portal_mis_pagos')

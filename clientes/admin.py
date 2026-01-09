@@ -54,7 +54,7 @@ class ClienteAdmin(SimpleHistoryAdmin):
             'classes': ('collapse',)
         }),
         ('Portal de Cliente', {
-            'fields': ('usuario',),
+            'fields': ('usuario', 'debe_cambiar_password'),
             'classes': ('collapse',),
             'description': 'Usuario que puede acceder al portal de cliente'
         }),
@@ -118,7 +118,7 @@ class ClienteAdmin(SimpleHistoryAdmin):
         for obj in queryset:
             obj.soft_delete(user=request.user)
     
-    actions = ['restaurar_clientes', 'eliminar_permanentemente', 'crear_usuario_portal']
+    actions = ['restaurar_clientes', 'eliminar_permanentemente', 'crear_usuario_portal', 'forzar_cambio_password']
     
     def restaurar_clientes(self, request, queryset):
         """Acción para restaurar clientes eliminados."""
@@ -198,3 +198,13 @@ class ClienteAdmin(SimpleHistoryAdmin):
             )
     
     crear_usuario_portal.short_description = '🔐 Crear usuario para portal (clientes seleccionados)'
+    
+    def forzar_cambio_password(self, request, queryset):
+        """Acción para forzar el cambio de contraseña a los clientes seleccionados."""
+        count = queryset.update(debe_cambiar_password=True)
+        self.message_user(
+            request,
+            f'{count} cliente(s) deberán cambiar su contraseña en el próximo inicio de sesión.',
+            messages.SUCCESS
+        )
+    forzar_cambio_password.short_description = '🔒 Forzar cambio de contraseña'

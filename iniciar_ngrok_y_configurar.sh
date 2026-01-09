@@ -31,9 +31,18 @@ PUERTO=${1:-8082}
 echo "📡 Iniciando ngrok en puerto $PUERTO..."
 echo ""
 
-# Detener ngrok si ya está corriendo
-pkill -f "ngrok http" 2>/dev/null
-sleep 2
+# Detener ngrok si ya está corriendo (más agresivo)
+echo "Deteniendo procesos de ngrok existentes..."
+pkill -9 -f "ngrok" 2>/dev/null
+sleep 3
+
+# Verificar que no haya procesos activos
+if pgrep -f "ngrok" > /dev/null; then
+    echo "⚠️  Aún hay procesos de ngrok activos. Esperando un poco más..."
+    sleep 2
+    pkill -9 -f "ngrok" 2>/dev/null
+    sleep 2
+fi
 
 # Iniciar ngrok en segundo plano con opciones para evitar la página de advertencia
 # --request-header-add: Agrega header para evitar la página de advertencia de ngrok

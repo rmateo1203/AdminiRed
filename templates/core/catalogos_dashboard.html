@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Catálogos - AdminiRed{% endblock %}
+{% block title %}Catálogos - {{ sistema_config.nombre_empresa|default:"AdminiRed" }}{% endblock %}
 
 {% block content %}
 <div class="section">

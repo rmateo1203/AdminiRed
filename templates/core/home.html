@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Inicio - AdminiRed{% endblock %}
+{% block title %}Inicio - {{ sistema_config.nombre_empresa|default:"AdminiRed" }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -96,7 +96,7 @@
         onerror="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.display='none';"
     >
     <div class="hero-overlay">
-        <h1 class="hero-title">AdminiRed</h1>
+        <h1 class="hero-title">{{ sistema_config.nombre_empresa|default:"AdminiRed" }}</h1>
         <p class="hero-subtitle">Sistema para el control total de instalaciones de internet</p>
     </div>
 </div>

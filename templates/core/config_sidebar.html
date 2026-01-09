@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Configurar Menú - AdminiRed{% endblock %}
+{% block title %}Configurar Menú - {{ sistema_config.nombre_empresa|default:"AdminiRed" }}{% endblock %}
 
 {% block extra_css %}
 <style>

@@ -112,6 +112,20 @@ class Cliente(models.Model):
         help_text='Usuario que puede acceder al portal de cliente'
     )
     
+    # Seguridad: cambio de contraseña obligatorio
+    debe_cambiar_password = models.BooleanField(
+        default=True,
+        verbose_name='Debe cambiar contraseña',
+        help_text='Indica si el cliente debe cambiar su contraseña en el próximo inicio de sesión'
+    )
+    
+    # Seguridad: cambio de contraseña obligatorio
+    debe_cambiar_password = models.BooleanField(
+        default=True,
+        verbose_name='Debe cambiar contraseña',
+        help_text='Indica si el cliente debe cambiar su contraseña en el próximo inicio de sesión'
+    )
+    
     # Historial
     history = HistoricalRecords()
     

@@ -56,6 +56,14 @@ def cliente_required(view_func):
             messages.error(request, 'Tu cuenta de cliente no está activa.')
             return redirect('clientes:portal_login')
         
+        # Verificar si debe cambiar la contraseña
+        # Permitir acceso solo a la página de cambiar contraseña si debe_cambiar_password es True
+        if cliente.debe_cambiar_password:
+            # Si ya está en la página de cambiar contraseña, permitir acceso
+            if request.resolver_match.url_name != 'portal_cambiar_password':
+                messages.warning(request, 'Por seguridad, debes cambiar tu contraseña antes de continuar.')
+                return redirect('clientes:portal_cambiar_password')
+        
         # Agregar cliente al contexto
         kwargs['cliente'] = cliente
         return view_func(request, *args, **kwargs)
@@ -469,9 +477,64 @@ def portal_perfil(request, cliente):
 
 
 @login_required
-@cliente_required
-def portal_cambiar_password(request, cliente):
-    """Cambiar contraseña del cliente - Acceso denegado."""
-    messages.warning(request, 'No tienes acceso a esta sección. Solo puedes ver tus pagos.')
-    return redirect('clientes:portal_mis_pagos')
+def portal_cambiar_password(request):
+    """Cambiar contraseña del cliente."""
+    # Obtener el cliente del usuario autenticado
+    cliente = obtener_cliente_desde_usuario(request.user)
+    if not cliente:
+        messages.error(request, 'No tienes acceso al portal de clientes.')
+        return redirect('clientes:portal_login')
+    
+    if cliente.is_deleted or cliente.estado_cliente != 'activo':
+        messages.error(request, 'Tu cuenta de cliente no está activa.')
+        return redirect('clientes:portal_login')
+    
+    es_obligatorio = cliente.debe_cambiar_password
+    
+    if request.method == 'POST':
+        password_actual = request.POST.get('password_actual')
+        password_nueva = request.POST.get('password_nueva')
+        password_confirm = request.POST.get('password_confirm')
+        
+        # Validar que todos los campos estén presentes
+        if not all([password_actual, password_nueva, password_confirm]):
+            messages.error(request, 'Todos los campos son requeridos.')
+        else:
+            # Verificar contraseña actual
+            user = request.user
+            if not user.check_password(password_actual):
+                messages.error(request, 'La contraseña actual es incorrecta.')
+            # Verificar que las nuevas contraseñas coincidan
+            elif password_nueva != password_confirm:
+                messages.error(request, 'Las nuevas contraseñas no coinciden.')
+            # Verificar que la nueva contraseña sea diferente a la actual
+            elif user.check_password(password_nueva):
+                messages.error(request, 'La nueva contraseña debe ser diferente a la contraseña actual.')
+            # Validar longitud mínima
+            elif len(password_nueva) < 8:
+                messages.error(request, 'La nueva contraseña debe tener al menos 8 caracteres.')
+            else:
+                # Cambiar la contraseña
+                user.set_password(password_nueva)
+                user.save()
+                
+                # Actualizar el flag de cambio de contraseña
+                cliente.debe_cambiar_password = False
+                cliente.save()
+                
+                # Actualizar la sesión para mantener al usuario autenticado
+                from django.contrib.auth import update_session_auth_hash
+                update_session_auth_hash(request, user)
+                
+                messages.success(request, '¡Tu contraseña ha sido cambiada exitosamente!')
+                if es_obligatorio:
+                    return redirect('clientes:portal_mis_pagos')
+                else:
+                    return redirect('clientes:portal_mis_pagos')
+    
+    context = {
+        'cliente': cliente,
+        'es_obligatorio': es_obligatorio,
+    }
+    return render(request, 'clientes/portal_cambiar_password.html', context)
 

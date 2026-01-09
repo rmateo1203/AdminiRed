@@ -5,6 +5,7 @@ Soporta múltiples pasarelas: Stripe, Mercado Pago, PayPal, etc.
 import logging
 import json
 import requests
+import re
 from django.conf import settings
 from django.utils import timezone
 from .models import TransaccionPago
@@ -430,28 +431,69 @@ class PaymentGateway:
             
             # Preparar datos del pagador
             payer_data = {
-                "name": pago.cliente.nombre_completo or "Cliente",
+                "name": (pago.cliente.nombre_completo or "Cliente")[:256],  # Limitar longitud
             }
             
             # IMPORTANTE: Mercado Pago requiere un email válido para activar el botón de pago
-            # Si el cliente no tiene email, usar uno genérico basado en el ID
+            # Obtener email del cliente o del usuario asociado
+            email_cliente = None
+            
+            # Primero intentar obtener el email del cliente
             if hasattr(pago.cliente, 'email') and pago.cliente.email:
-                payer_data["email"] = pago.cliente.email
+                email_cliente = pago.cliente.email.strip()
+            
+            # Si no tiene email en el cliente, intentar obtenerlo del usuario asociado
+            if not email_cliente and hasattr(pago.cliente, 'usuario') and pago.cliente.usuario:
+                if hasattr(pago.cliente.usuario, 'email') and pago.cliente.usuario.email:
+                    email_cliente = pago.cliente.usuario.email.strip()
+            
+            # Validar formato de email
+            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            
+            if email_cliente and re.match(email_pattern, email_cliente):
+                payer_data["email"] = email_cliente
+                logger.info(f"Email del pagador: {email_cliente}")
             else:
                 # Usar un email temporal válido basado en el ID del cliente para pruebas
                 # En producción, asegúrate de que todos los clientes tengan email
                 payer_data["email"] = f"cliente{pago.cliente.id}@adminired.local"
                 logger.warning(
-                    f"Cliente {pago.cliente.id} ({pago.cliente.nombre_completo}) no tiene email. "
+                    f"Cliente {pago.cliente.id} ({pago.cliente.nombre_completo}) no tiene email válido. "
+                    f"Email encontrado: {email_cliente if email_cliente else 'None'}. "
                     f"Usando email temporal: {payer_data['email']}. "
                     f"Se recomienda agregar un email válido al cliente para una mejor experiencia."
                 )
             
-            # Solo agregar teléfono si existe
+            # Solo agregar teléfono si existe y tiene formato válido
+            # Mercado Pago puede rechazar teléfonos mal formateados y desactivar el botón
+            # IMPORTANTE: Para Mercado Pago, el área code debe ser válido y el número debe tener el formato correcto
+            # En México, el formato típico es: código de área (2-3 dígitos) + número (7-8 dígitos)
+            # Sin embargo, Mercado Pago puede ser estricto con el formato
+            # Si el formato no es correcto, es mejor NO incluir el teléfono para evitar que el botón se desactive
             if hasattr(pago.cliente, 'telefono') and pago.cliente.telefono:
-                payer_data["phone"] = {
-                    "number": str(pago.cliente.telefono)
-                }
+                # Limpiar teléfono: quitar espacios, guiones, paréntesis, etc.
+                telefono_limpio = ''.join(filter(str.isdigit, str(pago.cliente.telefono)))
+                if telefono_limpio and len(telefono_limpio) >= 10:
+                    # Tomar últimos 10 dígitos para números largos
+                    telefono_limpio = telefono_limpio[-10:]
+                    # Para México: área code típicamente 2-3 dígitos
+                    # Intentar con 2 dígitos de área code primero (más común en México)
+                    area_code = telefono_limpio[:2]
+                    number = telefono_limpio[2:]
+                    
+                    # Validar que el número tenga al menos 7 dígitos
+                    if len(number) >= 7:
+                        payer_data["phone"] = {
+                            "area_code": area_code,
+                            "number": number
+                        }
+                        logger.info(f"Teléfono agregado al pagador (formato MX 2+8): {payer_data['phone']}")
+                    else:
+                        logger.warning(f"Teléfono del cliente no tiene formato válido. Número demasiado corto: {number}. Omitiendo teléfono.")
+                else:
+                    logger.warning(f"Teléfono del cliente no tiene formato válido: {len(telefono_limpio) if telefono_limpio else 0} dígitos (se requieren al menos 10). Omitiendo teléfono.")
+            else:
+                logger.info("Cliente no tiene teléfono configurado. Continuando sin teléfono (esto es opcional para Mercado Pago).")
             
             preference_data = {
                 "items": [
@@ -484,6 +526,22 @@ class PaymentGateway:
             
             # Log detallado del payload que se enviará
             logger.info(f"Creando preferencia de Mercado Pago para pago {pago.id}")
+            logger.info(f"Datos del pagador: {payer_data}")
+            logger.info(f"Email del pagador: {payer_data.get('email', 'NO CONFIGURADO')}")
+            
+            # Validación crítica: El email es REQUERIDO para activar el botón
+            if 'email' not in payer_data or not payer_data.get('email'):
+                error_msg = "CRÍTICO: No se pudo obtener un email válido para el pagador. El botón de pago se desactivará."
+                logger.error(error_msg)
+                # Intentar usar el email del usuario como último recurso
+                if pago.cliente.usuario and pago.cliente.usuario.email:
+                    payer_data["email"] = pago.cliente.usuario.email.strip()
+                    logger.warning(f"Usando email del usuario como último recurso: {payer_data['email']}")
+                else:
+                    # Email genérico temporal
+                    payer_data["email"] = f"cliente{pago.cliente.id}@adminired.local"
+                    logger.warning(f"Usando email temporal genérico: {payer_data['email']}")
+            
             logger.info(f"Datos de preferencia - back_urls: {preference_data['back_urls']}")
             logger.info(f"Datos de preferencia - auto_return: {preference_data.get('auto_return', 'No configurado (localhost)')}")
             logger.info(f"URL success completa: {success_url}")
@@ -499,10 +557,15 @@ class PaymentGateway:
                     'error': error_msg,
                 }
             
+            # Log del payload completo antes de enviar (útil para debug)
+            logger.info(f"Payload completo que se enviará a Mercado Pago:")
+            logger.info(json.dumps(preference_data, indent=2, ensure_ascii=False))
+            
             preference_response = self.mp.preference().create(preference_data)
             
             # Log de la respuesta para debug
-            logger.debug(f"Respuesta de Mercado Pago: {preference_response}")
+            logger.info(f"Respuesta de Mercado Pago (status: {preference_response.get('status')}):")
+            logger.info(json.dumps(preference_response, indent=2, ensure_ascii=False, default=str))
             
             if preference_response.get("status") == 201:
                 preference = preference_response.get("response", {})

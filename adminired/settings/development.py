@@ -18,7 +18,14 @@ allowed_hosts_from_env = config('ALLOWED_HOSTS', default=default_hosts, cast=lam
 # Agregar automáticamente el dominio de ngrok desde SITE_URL si está configurado
 ALLOWED_HOSTS = list(allowed_hosts_from_env)
 
-# Extraer dominio de ngrok de SITE_URL y agregarlo a ALLOWED_HOSTS
+# CSRF_TRUSTED_ORIGINS para desarrollo
+# Incluye localhost y cualquier dominio de ngrok detectado en SITE_URL
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
+
+# Extraer dominio de ngrok de SITE_URL y agregarlo a ALLOWED_HOSTS y CSRF_TRUSTED_ORIGINS
 site_url = config('SITE_URL', default='')
 if site_url:
     from urllib.parse import urlparse
@@ -29,8 +36,19 @@ if site_url:
             if parsed.hostname not in ALLOWED_HOSTS:
                 ALLOWED_HOSTS.append(parsed.hostname)
                 print(f"✅ Dominio agregado a ALLOWED_HOSTS: {parsed.hostname}")
+            
+            # Agregar la URL completa a CSRF_TRUSTED_ORIGINS
+            # Construir la URL completa (scheme + hostname + puerto si existe)
+            if parsed.scheme and parsed.hostname:
+                csrf_origin = f"{parsed.scheme}://{parsed.hostname}"
+                if parsed.port:
+                    csrf_origin += f":{parsed.port}"
+                
+                if csrf_origin not in CSRF_TRUSTED_ORIGINS:
+                    CSRF_TRUSTED_ORIGINS.append(csrf_origin)
+                    print(f"✅ Origen agregado a CSRF_TRUSTED_ORIGINS: {csrf_origin}")
     except Exception as e:
-        print(f"⚠️  Error al procesar SITE_URL para ALLOWED_HOSTS: {e}")
+        print(f"⚠️  Error al procesar SITE_URL para ALLOWED_HOSTS/CSRF_TRUSTED_ORIGINS: {e}")
 
 # Database
 # PostgreSQL configuration for development
