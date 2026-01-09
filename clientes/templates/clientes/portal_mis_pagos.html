@@ -10,13 +10,17 @@
         max-width: 100%;
         margin: 0;
         padding: 0;
+        box-sizing: border-box;
     }
 
     .mp-layout {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 1.25rem;
+        display: block;
         width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .mp-aside {
+        display: none;
     }
 
     .mp-card {
@@ -25,9 +29,11 @@
         border-radius: 12px;
         box-shadow: 0 1px 4px rgba(0,0,0,0.06);
         width: 100%;
+        max-width: 100%;
         display: block;
         visibility: visible;
         opacity: 1;
+        box-sizing: border-box;
     }
 
     .mp-card-header {
@@ -150,6 +156,8 @@
         overflow-x: auto;
         width: 100%;
         -webkit-overflow-scrolling: touch;
+        margin: 0 -1rem;
+        padding: 0 1rem;
     }
 
     .mp-table {
@@ -232,6 +240,7 @@
         font-size: 0.875rem;
         transition: all 0.2s ease;
         white-space: nowrap;
+        box-sizing: border-box;
     }
 
     .mp-action a:hover {
@@ -295,6 +304,8 @@
         padding: 1rem;
         margin-bottom: 1rem;
         box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        width: 100%;
+        box-sizing: border-box;
     }
     
     .mp-payment-card-header {
@@ -352,29 +363,108 @@
     }
     
     /* Media queries */
-    @media (min-width: 992px) {
+    @media (max-width: 991px) {
         .mp-layout {
-            grid-template-columns: 1fr 360px;
-            align-items: start;
+            gap: 1rem;
         }
-        .mp-aside {
-            position: sticky;
-            top: 1rem;
+        
+        .mp-kpis {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+        
+        .mp-kpi {
+            padding: 0.875rem 0.75rem;
+        }
+        
+        .mp-kpi-value {
+            font-size: 1.2rem;
+        }
+        
+        .mp-kpi-label {
+            font-size: 0.75rem;
+        }
+        
+        /* Mostrar cards en tablets también */
+        .mp-table-wrap {
+            display: none;
+        }
+        
+        .mp-table-mobile {
+            display: block;
+        }
+        
+        .mp-payment-card {
+            display: block;
         }
     }
     
-    @media (max-width: 991px) {
-        .mp-layout {
+    @media (max-width: 768px) {
+        .mp-wrap {
+            margin: 0;
+            padding: 0;
+        }
+        
+        .mp-card-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+            padding: 1rem;
+        }
+        
+        .mp-card-title {
+            font-size: 0.95rem;
+        }
+        
+        .mp-card-body {
+            padding: 1rem;
+        }
+        
+        .mp-table-wrap {
+            display: none;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .mp-table-mobile {
+            display: block;
+        }
+        
+        .mp-payment-card {
+            display: block;
+        }
+        
+        .mp-search {
+            grid-template-columns: 1fr;
+        }
+        
+        .mp-search input {
+            padding: 0.75rem;
+            box-sizing: border-box;
+        }
+        
+        .mp-search button {
+            width: 100%;
+            padding: 0.75rem;
+            box-sizing: border-box;
+        }
+        
+        .mp-pill-row {
+            gap: 0.375rem;
+        }
+        
+        .mp-pill {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8rem;
+        }
+        
+        .mp-payment-card-body {
             grid-template-columns: 1fr;
             gap: 1rem;
         }
         
-        .mp-aside {
-            order: -1; /* Mover el aside arriba en móviles */
-        }
-        
         .mp-kpis {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 0.5rem;
         }
         
@@ -391,71 +481,19 @@
         }
     }
     
-    @media (max-width: 768px) {
-        .mp-card-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.5rem;
-            padding: 0.875rem;
-        }
-        
-        .mp-card-title {
-            font-size: 0.95rem;
-        }
-        
-        .mp-card-body {
-            padding: 0.875rem;
-        }
-        
-        .mp-table th,
-        .mp-table td {
-            padding: 0.75rem 0.5rem;
-            font-size: 0.85rem;
-        }
-        
-        .mp-table-wrap {
-            display: none;
-        }
-        
-        .mp-table-mobile {
-            display: block;
-        }
-        
-        .mp-payment-card {
-            display: block;
-        }
-        
-        .mp-search {
-            grid-template-columns: 1fr;
-        }
-        
-        .mp-search button {
-            width: 100%;
-        }
-        
-        .mp-pill-row {
-            gap: 0.375rem;
-        }
-        
-        .mp-pill {
-            padding: 0.45rem 0.625rem;
-            font-size: 0.8rem;
-        }
-        
-        .mp-payment-card-body {
-            grid-template-columns: 1fr;
-        }
-    }
-    
     @media (max-width: 576px) {
         .mp-wrap {
             padding: 0;
+            margin: 0;
+        }
+        
+        .mp-layout {
+            gap: 0.75rem;
         }
         
         .mp-card {
-            border-radius: 0;
-            border-left: none;
-            border-right: none;
+            border-radius: 8px;
+            margin: 0;
         }
         
         .mp-card-header,
@@ -468,23 +506,70 @@
             gap: 0.5rem;
         }
         
+        .mp-kpi {
+            padding: 0.625rem 0.5rem;
+        }
+        
         .mp-kpi-value {
             font-size: 1rem;
+        }
+        
+        .mp-kpi-label {
+            font-size: 0.7rem;
         }
         
         .mp-payment-card {
             border-radius: 8px;
             padding: 0.875rem;
+            margin-bottom: 0.75rem;
         }
         
         .mp-payment-card-header {
             flex-direction: column;
             gap: 0.5rem;
+            align-items: flex-start;
         }
         
         .mp-payment-card-badge {
             margin-left: 0;
             align-self: flex-start;
+        }
+        
+        .mp-payment-card-body {
+            grid-template-columns: 1fr;
+            gap: 0.875rem;
+        }
+        
+        .mp-payment-card-actions {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+        }
+        
+        .mp-payment-card-actions a {
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+        }
+        
+        .mp-search input {
+            padding: 0.7rem;
+            font-size: 0.9rem;
+        }
+        
+        .mp-search button {
+            padding: 0.7rem;
+            font-size: 0.9rem;
+        }
+        
+        .mp-pill {
+            padding: 0.45rem 0.625rem;
+            font-size: 0.75rem;
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        
+        .mp-pill-row {
+            gap: 0.375rem;
         }
     }
     
@@ -492,8 +577,106 @@
         .mp-kpis {
             grid-template-columns: 1fr;
         }
+        
+        .mp-kpi {
+            padding: 0.75rem;
+        }
+        
+        .mp-card-header,
+        .mp-card-body {
+            padding: 0.75rem;
+        }
+        
+        .mp-payment-card {
+            padding: 0.75rem;
+        }
+        
+        .mp-pill {
+            font-size: 0.7rem;
+            padding: 0.4rem 0.5rem;
+        }
     }
 </style>
+{% endblock %}
+
+{% block portal_sidebar_content %}
+<div class="portal-sidebar-resumen">
+    <div class="portal-sidebar-resumen-title">
+        <i class="fas fa-chart-pie"></i> Resumen
+    </div>
+                    <div class="portal-sidebar-kpis">
+                        <div class="portal-sidebar-kpi total">
+                            <div class="portal-sidebar-kpi-label">Total</div>
+            <div class="portal-sidebar-kpi-value">{{ total_pagos }}</div>
+        </div>
+        <div class="portal-sidebar-kpi pendientes">
+            <div class="portal-sidebar-kpi-label">Pendientes</div>
+            <div class="portal-sidebar-kpi-value">{{ pagos_pendientes }}</div>
+        </div>
+        <div class="portal-sidebar-kpi vencidos">
+            <div class="portal-sidebar-kpi-label">Vencidos</div>
+            <div class="portal-sidebar-kpi-value">{{ pagos_vencidos }}</div>
+        </div>
+        <div class="portal-sidebar-kpi pagados">
+            <div class="portal-sidebar-kpi-label">Pagados</div>
+            <div class="portal-sidebar-kpi-value">{{ pagos_pagados }}</div>
+        </div>
+    </div>
+
+    {% if monto_pendiente > 0 %}
+    <div class="portal-sidebar-monto-pendiente">
+        <div class="portal-sidebar-monto-pendiente-title">
+            <i class="fas fa-exclamation-triangle"></i> Pendiente
+        </div>
+        <div class="portal-sidebar-monto-pendiente-value">
+            ${{ monto_pendiente|floatformat:2 }}
+        </div>
+        {% if monto_vencido > 0 %}
+        <div class="portal-sidebar-monto-vencido">
+            <i class="fas fa-exclamation-circle"></i> Vencido: ${{ monto_vencido|floatformat:2 }}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<div class="portal-sidebar-filtros">
+    <div class="portal-sidebar-filtros-title">
+        <i class="fas fa-filter"></i> Filtros
+    </div>
+    <form method="get" class="portal-sidebar-search">
+        <input type="text" name="q" placeholder="Buscar..." value="{{ query }}">
+        {% if estado_filter %}<input type="hidden" name="estado" value="{{ estado_filter }}">{% endif %}
+        <button type="submit"><i class="fas fa-search"></i> Buscar</button>
+    </form>
+
+    <div class="portal-sidebar-pills">
+        <a class="portal-sidebar-pill {% if not estado_filter %}active{% endif %}" href="?{% if query %}q={{ query }}{% endif %}"><i class="fas fa-list"></i> Todos</a>
+        {% for estado_val, estado_label in estados %}
+        <a class="portal-sidebar-pill {% if estado_filter == estado_val %}active{% endif %}" href="?estado={{ estado_val }}{% if query %}&q={{ query }}{% endif %}">
+            {% if estado_val == 'pendiente' %}<i class="fas fa-clock"></i>{% endif %}
+            {% if estado_val == 'vencido' %}<i class="fas fa-exclamation-triangle"></i>{% endif %}
+            {% if estado_val == 'pagado' %}<i class="fas fa-check-circle"></i>{% endif %}
+            {% if estado_val == 'cancelado' %}<i class="fas fa-ban"></i>{% endif %}
+            {{ estado_label }}
+        </a>
+        {% endfor %}
+    </div>
+
+    {% if proximos_vencimientos %}
+    <div class="portal-sidebar-proximos">
+        <div class="portal-sidebar-proximos-title">Próximos vencimientos (7 días)</div>
+        <ul class="portal-sidebar-proximos-list">
+            {% for p in proximos_vencimientos %}
+            <li>
+                <span>{{ p.concepto }}</span>
+                <span style="white-space:nowrap; font-weight:800;">{{ p.fecha_vencimiento|date:"d/m" }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}
 
 {% block portal_content %}
@@ -577,9 +760,19 @@
                                     </td>
                                     <td style="font-weight: 800;">${{ pago.monto|floatformat:2 }}</td>
                                     <td class="mp-action">
-                                        <a href="{% url 'clientes:portal_detalle_pago' pago_id=pago.pk %}" class="{% if pago.estado in 'pendiente,vencido' %}primary{% endif %}">
-                                            {% if pago.estado in 'pendiente,vencido' %}Pagar{% else %}Ver{% endif %}
-                                        </a>
+                                        {% if pago.estado == 'pagado' %}
+                                            <a href="#" data-pago-id="{{ pago.pk }}" class="ver-pago-modal">
+                                                Ver
+                                            </a>
+                                        {% elif pago.estado == 'pendiente' or pago.estado == 'vencido' %}
+                                            <a href="#" data-pago-id="{{ pago.pk }}" class="ver-pago-modal primary">
+                                                Pagar
+                                            </a>
+                                        {% else %}
+                                            <a href="#" data-pago-id="{{ pago.pk }}" class="ver-pago-modal">
+                                                Ver
+                                            </a>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                     {% endwith %}
@@ -648,9 +841,19 @@
                                     {% endif %}
                                 </div>
                                 <div class="mp-payment-card-actions">
-                                    <a href="{% url 'clientes:portal_detalle_pago' pago_id=pago.pk %}" class="{% if pago.estado in 'pendiente,vencido' %}primary{% endif %}" style="display: inline-block; padding: 0.55rem 1rem; border-radius: 10px; border: 1px solid {% if pago.estado in 'pendiente,vencido' %}#10b981{% else %}#e5e7eb{% endif %}; background: {% if pago.estado in 'pendiente,vencido' %}#10b981{% else %}#fff{% endif %}; color: {% if pago.estado in 'pendiente,vencido' %}white{% else %}#111827{% endif %}; text-decoration: none; font-weight: 700; font-size: 0.875rem;">
-                                        {% if pago.estado in 'pendiente,vencido' %}Pagar{% else %}Ver{% endif %}
-                                    </a>
+                                    {% if pago.estado == 'pagado' %}
+                                        <a href="#" data-pago-id="{{ pago.pk }}" class="ver-pago-modal" style="display: inline-block; padding: 0.55rem 1rem; border-radius: 10px; border: 1px solid #e5e7eb; background: #fff; color: #111827; text-decoration: none; font-weight: 700; font-size: 0.875rem; cursor: pointer;">
+                                            Ver
+                                        </a>
+                                    {% elif pago.estado == 'pendiente' or pago.estado == 'vencido' %}
+                                        <a href="#" data-pago-id="{{ pago.pk }}" class="ver-pago-modal" style="display: inline-block; padding: 0.55rem 1rem; border-radius: 10px; border: 1px solid #10b981; background: #10b981; color: white; text-decoration: none; font-weight: 700; font-size: 0.875rem; cursor: pointer;">
+                                            Pagar
+                                        </a>
+                                    {% else %}
+                                        <a href="#" data-pago-id="{{ pago.pk }}" class="ver-pago-modal" style="display: inline-block; padding: 0.55rem 1rem; border-radius: 10px; border: 1px solid #e5e7eb; background: #fff; color: #111827; text-decoration: none; font-weight: 700; font-size: 0.875rem; cursor: pointer;">
+                                            Ver
+                                        </a>
+                                    {% endif %}
                                 </div>
                             </div>
                             {% endwith %}
@@ -680,91 +883,6 @@
                 </div>
             </div>
         </section>
-
-        <!-- LATERAL: resumen + filtros -->
-        <aside class="mp-aside">
-            <div class="mp-card" style="margin-bottom: 1.25rem;">
-                <div class="mp-card-header">
-                    <h3 class="mp-card-title"><i class="fas fa-chart-pie"></i> Resumen</h3>
-                </div>
-                <div class="mp-card-body">
-                    <div class="mp-kpis">
-                        <div class="mp-kpi">
-                            <div class="mp-kpi-label">Total</div>
-                            <div class="mp-kpi-value">{{ total_pagos }}</div>
-                        </div>
-                        <div class="mp-kpi">
-                            <div class="mp-kpi-label">Pendientes</div>
-                            <div class="mp-kpi-value">{{ pagos_pendientes }}</div>
-                        </div>
-                        <div class="mp-kpi">
-                            <div class="mp-kpi-label">Vencidos</div>
-                            <div class="mp-kpi-value">{{ pagos_vencidos }}</div>
-                        </div>
-                        <div class="mp-kpi">
-                            <div class="mp-kpi-label">Pagados</div>
-                            <div class="mp-kpi-value">{{ pagos_pagados }}</div>
-                        </div>
-                    </div>
-
-                    {% if monto_pendiente > 0 %}
-                    <div style="margin-top: 1rem; padding: 1rem; border:2px solid #fed7aa; border-radius: 12px; background:linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%); box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);">
-                        <div style="font-weight:800; color:#9a3412; font-size: 0.85rem; margin-bottom: 0.5rem;">
-                            <i class="fas fa-exclamation-triangle"></i> Pendiente
-                        </div>
-                        <div style="font-weight:800; color:#9a3412; font-size: 1.5rem; margin-bottom: 0.5rem;">
-                            ${{ monto_pendiente|floatformat:2 }}
-                        </div>
-                        {% if monto_vencido > 0 %}
-                        <div style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.4rem 0.75rem; background:rgba(153, 27, 27, 0.1); border-radius: 999px; color:#991b1b; font-weight:700; font-size:0.85rem;">
-                            <i class="fas fa-exclamation-circle"></i> Vencido: ${{ monto_vencido|floatformat:2 }}
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="mp-card">
-                <div class="mp-card-header">
-                    <h3 class="mp-card-title"><i class="fas fa-filter"></i> Filtros</h3>
-                </div>
-                <div class="mp-card-body">
-                    <form method="get" class="mp-search">
-                        <input type="text" name="q" placeholder="Buscar..." value="{{ query }}">
-                        {% if estado_filter %}<input type="hidden" name="estado" value="{{ estado_filter }}">{% endif %}
-                        <button type="submit"><i class="fas fa-search"></i> Buscar</button>
-                    </form>
-
-                    <div class="mp-pill-row" style="margin-bottom: 1rem;">
-                        <a class="mp-pill {% if not estado_filter %}active{% endif %}" href="?{% if query %}q={{ query }}{% endif %}"><i class="fas fa-list"></i> Todos</a>
-                        {% for estado_val, estado_label in estados %}
-                        <a class="mp-pill {% if estado_filter == estado_val %}active{% endif %}" href="?estado={{ estado_val }}{% if query %}&q={{ query }}{% endif %}">
-                            {% if estado_val == 'pendiente' %}<i class="fas fa-clock"></i>{% endif %}
-                            {% if estado_val == 'vencido' %}<i class="fas fa-exclamation-triangle"></i>{% endif %}
-                            {% if estado_val == 'pagado' %}<i class="fas fa-check-circle"></i>{% endif %}
-                            {% if estado_val == 'cancelado' %}<i class="fas fa-ban"></i>{% endif %}
-                            {{ estado_label }}
-                        </a>
-                        {% endfor %}
-                    </div>
-
-                    {% if proximos_vencimientos %}
-                    <div style="border-top:1px solid #f1f5f9; padding-top: 0.75rem;">
-                        <div style="font-weight:800; color:#111827; margin-bottom:0.5rem;">Próximos vencimientos (7 días)</div>
-                        <ul class="mp-list">
-                            {% for p in proximos_vencimientos %}
-                            <li>
-                                <span>{{ p.concepto }}</span>
-                                <span style="white-space:nowrap; font-weight:800;">{{ p.fecha_vencimiento|date:"d/m" }}</span>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </aside>
     </div>
 </div>
 {% endblock %}

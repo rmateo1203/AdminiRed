@@ -397,6 +397,63 @@ def portal_detalle_pago(request, cliente, pago_id):
 
 @login_required
 @cliente_required
+def portal_detalle_pago_modal(request, cliente, pago_id):
+    """Vista AJAX para obtener el detalle de un pago en formato JSON (para modal)."""
+    from django.http import JsonResponse
+    
+    # Obtener el pago y verificar que pertenezca al cliente
+    try:
+        pago = Pago.objects.filter(
+            cliente=cliente
+        ).filter(
+            Q(instalacion__isnull=True) | Q(instalacion__cliente=cliente)
+        ).get(pk=pago_id)
+    except Pago.DoesNotExist:
+        return JsonResponse({'error': 'Pago no encontrado'}, status=404)
+    
+    # Obtener transacciones relacionadas
+    transacciones = []
+    for trans in pago.transacciones.all().order_by('-fecha_creacion'):
+        transacciones.append({
+            'fecha_creacion': trans.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+            'pasarela': trans.get_pasarela_display(),
+            'estado': trans.estado,
+            'estado_display': trans.get_estado_display(),
+            'monto': str(trans.monto),
+        })
+    
+    # Verificar si hay pasarelas disponibles
+    from django.conf import settings
+    tiene_pasarela = (
+        bool(getattr(settings, 'STRIPE_SECRET_KEY', None)) or
+        bool(getattr(settings, 'MERCADOPAGO_ACCESS_TOKEN', None)) or
+        (bool(getattr(settings, 'PAYPAL_CLIENT_ID', None)) and bool(getattr(settings, 'PAYPAL_SECRET', None)))
+    )
+    
+    data = {
+        'id': pago.id,
+        'concepto': pago.concepto,
+        'monto': str(pago.monto),
+        'estado': pago.estado,
+        'estado_display': pago.get_estado_display(),
+        'fecha_vencimiento': pago.fecha_vencimiento.strftime('%d/%m/%Y'),
+        'fecha_pago': pago.fecha_pago.strftime('%d/%m/%Y %H:%M') if pago.fecha_pago else None,
+        'periodo_mes': pago.get_periodo_mes_display(),
+        'periodo_anio': pago.periodo_anio,
+        'metodo_pago': pago.get_metodo_pago_display() if pago.metodo_pago else None,
+        'referencia_pago': pago.referencia_pago,
+        'instalacion': pago.instalacion.plan_nombre if pago.instalacion else None,
+        'cliente': pago.cliente.nombre_completo,
+        'transacciones': transacciones,
+        'tiene_pasarela': tiene_pasarela,
+        'puede_pagar': (pago.estado == 'pendiente' or pago.estado == 'vencido') and tiene_pasarela and pago.estado != 'pagado',
+    }
+    
+    return JsonResponse(data)
+
+
+@login_required
+@cliente_required
 def portal_mis_servicios(request, cliente):
     """Lista de servicios/instalaciones del cliente - Acceso denegado."""
     messages.warning(request, 'No tienes acceso a esta sección. Solo puedes ver tus pagos.')

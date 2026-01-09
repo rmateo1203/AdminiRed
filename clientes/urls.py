@@ -28,6 +28,7 @@ urlpatterns = [
     path('portal/', portal_views.portal_dashboard, name='portal_dashboard'),
     path('portal/mis-pagos/', portal_views.portal_mis_pagos, name='portal_mis_pagos'),
     path('portal/mis-pagos/<int:pago_id>/', portal_views.portal_detalle_pago, name='portal_detalle_pago'),
+    path('portal/mis-pagos/<int:pago_id>/modal/', portal_views.portal_detalle_pago_modal, name='portal_detalle_pago_modal'),
     path('portal/mis-servicios/', portal_views.portal_mis_servicios, name='portal_mis_servicios'),
     path('portal/perfil/', portal_views.portal_perfil, name='portal_perfil'),
     path('portal/cambiar-password/', portal_views.portal_cambiar_password, name='portal_cambiar_password'),

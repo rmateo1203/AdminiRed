@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 Script para verificar la configuración de PayPal
 Ejecutar: python verificar_paypal.py
@@ -136,6 +137,7 @@ def verificar_configuracion():
 
 if __name__ == '__main__':
     verificar_configuracion()
+
 
 
 

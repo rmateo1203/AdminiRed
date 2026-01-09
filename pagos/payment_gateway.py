@@ -46,9 +46,15 @@ class PaymentGateway:
         elif self.pasarela == 'mercadopago':
             if not MERCADOPAGO_AVAILABLE:
                 raise ImportError("mercadopago no está instalado. Ejecuta: pip install mercadopago")
-            self.mp = mercadopago.SDK(getattr(settings, 'MERCADOPAGO_ACCESS_TOKEN', ''))
-            if not getattr(settings, 'MERCADOPAGO_ACCESS_TOKEN', ''):
-                logger.warning("MERCADOPAGO_ACCESS_TOKEN no configurada en settings")
+            access_token = getattr(settings, 'MERCADOPAGO_ACCESS_TOKEN', '')
+            if not access_token:
+                logger.error("MERCADOPAGO_ACCESS_TOKEN no configurada en settings")
+                raise ValueError("MERCADOPAGO_ACCESS_TOKEN no está configurada. Agrega tu Access Token en .env")
+            try:
+                self.mp = mercadopago.SDK(access_token)
+            except Exception as e:
+                logger.error(f"Error al inicializar SDK de Mercado Pago: {str(e)}")
+                raise ValueError(f"No se pudo inicializar el SDK de Mercado Pago: {str(e)}. Verifica tu Access Token.")
         elif self.pasarela == 'paypal':
             self.paypal_client_id = getattr(settings, 'PAYPAL_CLIENT_ID', '')
             self.paypal_secret = getattr(settings, 'PAYPAL_SECRET', '')
@@ -341,74 +347,256 @@ class PaymentGateway:
     def _crear_intento_mercadopago(self, pago, return_url, cancel_url):
         """Crea un intento de pago con Mercado Pago."""
         try:
+            # Validar que el SDK esté inicializado
+            if not hasattr(self, 'mp') or self.mp is None:
+                error_msg = "SDK de Mercado Pago no está inicializado. Verifica MERCADOPAGO_ACCESS_TOKEN en settings."
+                logger.error(error_msg)
+                return {
+                    'success': False,
+                    'error': error_msg,
+                }
+            
             base_url = settings.SITE_URL
-            success_url = return_url or f"{base_url}/pagos/{pago.pk}/pago-exitoso/?payment_id={{payment_id}}"
-            failure_url = cancel_url or f"{base_url}/pagos/{pago.pk}/pago-cancelado/"
-            pending_url = f"{base_url}/pagos/{pago.pk}/pago-exitoso/?payment_id={{payment_id}}"
+            if not base_url:
+                base_url = 'http://localhost:8000'
+                logger.warning("SITE_URL no configurado, usando localhost:8000")
+            
+            # Limpiar espacios y comentarios (por si vienen del .env)
+            if '#' in base_url:
+                base_url = base_url.split('#')[0]
+            base_url = base_url.strip()
+            
+            # Asegurar que base_url no termine con /
+            base_url = base_url.rstrip('/')
+            
+            # Validar que sea una URL válida
+            if not base_url.startswith(('http://', 'https://')):
+                raise ValueError(f"SITE_URL debe empezar con http:// o https://. Valor actual: {base_url}")
+            
+            # Construir URLs de retorno - Mercado Pago NO acepta placeholders en back_urls
+            # Las URLs deben ser completas y válidas. Mercado Pago agregará los parámetros automáticamente.
+            if return_url:
+                # Usar la URL proporcionada, pero asegurarse de que no tenga placeholders
+                success_url = return_url.replace('{payment_id}', '').replace('{{payment_id}}', '')
+                # Limpiar parámetros duplicados o vacíos
+                if success_url.endswith('?') or success_url.endswith('&'):
+                    success_url = success_url.rstrip('?&')
+                if '?' in success_url and '&' in success_url and '=' not in success_url.split('&')[-1]:
+                    success_url = success_url.rstrip('&')
+            else:
+                # Construir URL desde cero sin placeholders
+                success_url = f"{base_url}/pagos/{pago.pk}/pago-exitoso/"
+            
+            if cancel_url:
+                failure_url = cancel_url
+            else:
+                failure_url = f"{base_url}/pagos/{pago.pk}/pago-cancelado/"
+            
+            pending_url = f"{base_url}/pagos/{pago.pk}/pago-exitoso/"
+            
+            # IMPORTANTE: Mercado Pago NO acepta URLs locales (localhost, 127.0.0.1) en back_urls cuando auto_return está presente
+            # Si detectamos localhost, no usaremos auto_return (aunque las URLs seguirán funcionando para el redirect manual)
+            is_localhost = any(host in base_url.lower() for host in ['localhost', '127.0.0.1', '0.0.0.0'])
+            use_auto_return = not is_localhost  # Solo usar auto_return si NO es localhost
+            
+            if is_localhost:
+                logger.warning(
+                    f"⚠️  ADVERTENCIA: SITE_URL usa localhost ({base_url}). "
+                    f"Mercado Pago NO acepta URLs locales en back_urls cuando se usa auto_return. "
+                    f"Para desarrollo, usa ngrok o un dominio público. "
+                    f"Por ahora, se omitirá auto_return para evitar el error."
+                )
+            
+            # Validar que las URLs sean válidas y tengan el formato correcto
+            from urllib.parse import urlparse
+            try:
+                # Verificar que todas las URLs empiecen con http:// o https://
+                for url_name, url_value in [("success", success_url), ("failure", failure_url), ("pending", pending_url)]:
+                    parsed = urlparse(url_value)
+                    if not parsed.scheme or not parsed.netloc:
+                        raise ValueError(f"URL {url_name} no es válida: {url_value}. Debe empezar con http:// o https://")
+                    
+                    # Verificar que no tenga espacios, placeholders o caracteres inválidos
+                    if ' ' in url_value:
+                        raise ValueError(f"URL {url_name} contiene espacios: {url_value}")
+                    if '{' in url_value or '}' in url_value:
+                        raise ValueError(f"URL {url_name} contiene placeholders ({{}}): {url_value}. Mercado Pago no acepta placeholders en back_urls.")
+                
+                logger.info(f"URLs de retorno validadas: success={success_url}, failure={failure_url}, pending={pending_url}")
+                
+            except Exception as e:
+                logger.error(f"Error al validar URLs: {str(e)}")
+                raise ValueError(f"URLs de retorno inválidas: {str(e)}. Verifica que SITE_URL esté configurado correctamente.")
+            
+            # Preparar datos del pagador
+            payer_data = {
+                "name": pago.cliente.nombre_completo or "Cliente",
+            }
+            
+            # IMPORTANTE: Mercado Pago requiere un email válido para activar el botón de pago
+            # Si el cliente no tiene email, usar uno genérico basado en el ID
+            if hasattr(pago.cliente, 'email') and pago.cliente.email:
+                payer_data["email"] = pago.cliente.email
+            else:
+                # Usar un email temporal válido basado en el ID del cliente para pruebas
+                # En producción, asegúrate de que todos los clientes tengan email
+                payer_data["email"] = f"cliente{pago.cliente.id}@adminired.local"
+                logger.warning(
+                    f"Cliente {pago.cliente.id} ({pago.cliente.nombre_completo}) no tiene email. "
+                    f"Usando email temporal: {payer_data['email']}. "
+                    f"Se recomienda agregar un email válido al cliente para una mejor experiencia."
+                )
+            
+            # Solo agregar teléfono si existe
+            if hasattr(pago.cliente, 'telefono') and pago.cliente.telefono:
+                payer_data["phone"] = {
+                    "number": str(pago.cliente.telefono)
+                }
             
             preference_data = {
                 "items": [
                     {
-                        "title": pago.concepto,
-                        "description": f"Pago para {pago.cliente.nombre_completo}",
+                        "title": pago.concepto[:256] if pago.concepto else "Pago",
+                        "description": (f"Pago para {pago.cliente.nombre_completo}")[:256] if pago.cliente.nombre_completo else "Pago de servicio",
                         "quantity": 1,
                         "unit_price": float(pago.monto),
                         "currency_id": "MXN"
                     }
                 ],
-                "payer": {
-                    "name": pago.cliente.nombre_completo,
-                    "email": pago.cliente.email if pago.cliente.email else None,
-                    "phone": {
-                        "number": pago.cliente.telefono
-                    }
-                },
+                "payer": payer_data,
                 "back_urls": {
                     "success": success_url,
                     "failure": failure_url,
                     "pending": pending_url
                 },
-                "auto_return": "approved",
                 "external_reference": str(pago.id),
                 "notification_url": f"{base_url}/pagos/webhook/mercadopago/",
                 "statement_descriptor": "AdminiRed"
             }
             
+            # Solo agregar auto_return si NO estamos usando localhost
+            # Mercado Pago rechaza URLs locales cuando auto_return está presente
+            if use_auto_return:
+                preference_data["auto_return"] = "approved"
+                logger.info("Auto_return habilitado (redirección automática después del pago)")
+            else:
+                logger.info("Auto_return deshabilitado (localhost detectado). El usuario deberá hacer clic en 'Volver al sitio' manualmente.")
+            
+            # Log detallado del payload que se enviará
+            logger.info(f"Creando preferencia de Mercado Pago para pago {pago.id}")
+            logger.info(f"Datos de preferencia - back_urls: {preference_data['back_urls']}")
+            logger.info(f"Datos de preferencia - auto_return: {preference_data.get('auto_return', 'No configurado (localhost)')}")
+            logger.info(f"URL success completa: {success_url}")
+            logger.info(f"URL failure completa: {failure_url}")
+            logger.info(f"URL pending completa: {pending_url}")
+            
+            # Validar que success_url no esté vacía antes de enviar
+            if not success_url or not success_url.strip():
+                error_msg = "La URL de éxito (success) está vacía. No se puede crear la preferencia."
+                logger.error(error_msg)
+                return {
+                    'success': False,
+                    'error': error_msg,
+                }
+            
             preference_response = self.mp.preference().create(preference_data)
             
-            if preference_response["status"] == 201:
-                preference = preference_response["response"]
+            # Log de la respuesta para debug
+            logger.debug(f"Respuesta de Mercado Pago: {preference_response}")
+            
+            if preference_response.get("status") == 201:
+                preference = preference_response.get("response", {})
+                
+                if not preference:
+                    error_msg = "La respuesta de Mercado Pago no contiene 'response'"
+                    logger.error(f"Error de Mercado Pago: {error_msg}. Respuesta: {preference_response}")
+                    return {
+                        'success': False,
+                        'error': error_msg,
+                    }
+                
+                # Verificar que tenga el ID de la preferencia
+                preference_id = preference.get("id")
+                if not preference_id:
+                    error_msg = "La respuesta de Mercado Pago no contiene el ID de la preferencia"
+                    logger.error(f"Error de Mercado Pago: {error_msg}. Respuesta: {preference_response}")
+                    return {
+                        'success': False,
+                        'error': error_msg,
+                    }
+                
+                # Obtener la URL de inicialización (init_point o sandbox_init_point)
+                init_url = preference.get("init_point") or preference.get("sandbox_init_point") or ""
+                if not init_url:
+                    logger.warning(f"No se encontró init_point ni sandbox_init_point en la preferencia {preference_id}")
+                    # Intentar construir la URL manualmente
+                    init_url = f"https://sandbox.mercadopago.com.mx/checkout/v1/redirect?pref_id={preference_id}"
                 
                 # Guardar transacción
                 transaccion = TransaccionPago.objects.create(
                     pago=pago,
                     pasarela='mercadopago',
                     estado='pendiente',
-                    id_transaccion_pasarela=preference["id"],
+                    id_transaccion_pasarela=preference_id,
                     monto=pago.monto,
                     moneda='MXN',
                     datos_respuesta=preference
                 )
                 
+                logger.info(f"Preferencia de Mercado Pago creada exitosamente: {preference_id} para pago {pago.id}")
+                
                 return {
                     'success': True,
-                    'preference_id': preference["id"],
-                    'url': preference["init_point"],
+                    'preference_id': preference_id,
+                    'url': init_url,
                     'transaccion_id': transaccion.id,
                 }
             else:
+                # Mejorar el manejo de errores
                 error_msg = preference_response.get("message", "Error desconocido")
-                logger.error(f"Error de Mercado Pago: {error_msg}")
+                error_cause = preference_response.get("cause", [])
+                
+                # Si hay causas específicas, agregarlas al mensaje
+                if error_cause:
+                    causas = []
+                    for causa in error_cause:
+                        if isinstance(causa, dict):
+                            code = causa.get("code", "")
+                            description = causa.get("description", "")
+                            causas.append(f"{code}: {description}")
+                        else:
+                            causas.append(str(causa))
+                    
+                    if causas:
+                        error_msg += f" ({'; '.join(causas)})"
+                
+                logger.error(f"Error de Mercado Pago - Status: {preference_response.get('status')}, Mensaje: {error_msg}, Respuesta completa: {preference_response}")
+                
                 return {
                     'success': False,
                     'error': error_msg,
                 }
                 
-        except Exception as e:
-            logger.error(f"Error inesperado en Mercado Pago: {str(e)}")
+        except KeyError as e:
+            error_msg = f"Falta información requerida en la respuesta de Mercado Pago: {str(e)}"
+            logger.error(f"Error KeyError en Mercado Pago: {error_msg}", exc_info=True)
             return {
                 'success': False,
-                'error': str(e),
+                'error': error_msg,
+            }
+        except AttributeError as e:
+            error_msg = f"Error al acceder a la API de Mercado Pago: {str(e)}. Verifica que el SDK esté correctamente instalado."
+            logger.error(f"Error AttributeError en Mercado Pago: {error_msg}", exc_info=True)
+            return {
+                'success': False,
+                'error': error_msg,
+            }
+        except Exception as e:
+            error_msg = f"Error inesperado: {str(e)}"
+            logger.error(f"Error inesperado en Mercado Pago: {error_msg}", exc_info=True)
+            return {
+                'success': False,
+                'error': error_msg,
             }
     
     def _crear_intento_paypal(self, pago, return_url, cancel_url):

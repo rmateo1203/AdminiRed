@@ -60,7 +60,7 @@
                         <i class="fas fa-exclamation-triangle"></i> Este pago está pendiente. Puedes pagarlo en línea.
                     </div>
                     {% if tiene_pasarela %}
-                        <a href="{% url 'pagos:pago_seleccionar_pasarela' pk=pago.pk %}" class="btn btn-primary btn-lg">
+                        <a href="{% url 'pagos:pago_procesar_online' pk=pago.pk %}" class="btn btn-primary btn-lg">
                             <i class="fas fa-credit-card"></i> Pagar en Línea
                         </a>
                     {% else %}
@@ -131,6 +131,7 @@
     </div>
 </div>
 {% endblock %}
+
 
 
 

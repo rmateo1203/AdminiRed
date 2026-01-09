@@ -28,8 +28,8 @@
     .portal-sidebar {
         width: 280px;
         min-width: 280px;
-        background: white;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+        box-shadow: 2px 0 20px rgba(0,0,0,0.08);
         padding: 1.5rem;
         position: sticky;
         top: 0;
@@ -37,24 +37,28 @@
         max-height: calc(100vh - 100px);
         overflow-y: auto;
         flex-shrink: 0;
+        border-right: 1px solid #e5e7eb;
     }
     
     .portal-sidebar-header {
         margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
+        padding-bottom: 1.25rem;
         border-bottom: 2px solid #e5e7eb;
     }
     
     .portal-sidebar-header h3 {
         color: var(--color-primario);
-        font-size: 1.1rem;
+        font-size: 1.15rem;
+        font-weight: 700;
         margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
     }
     
     .portal-sidebar-header p {
-        font-size: 0.85rem;
-        color: #6b7280;
+        font-size: 0.875rem;
+        color: #4b5563;
         margin: 0;
+        font-weight: 500;
     }
     
     .portal-sidebar-menu {
@@ -73,12 +77,20 @@
         color: #374151;
         text-decoration: none;
         border-radius: 8px;
-        transition: all 0.3s;
-        border-bottom: 1px solid #e5e7eb;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid #f3f4f6;
+        font-weight: 500;
+        position: relative;
     }
     
     .portal-sidebar-menu a:hover {
-        background-color: #f3f4f6;
+        background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 100%);
+        color: var(--color-primario);
+        transform: translateX(4px);
+    }
+    
+    .portal-sidebar-menu a:active {
+        background-color: #e5e7eb;
     }
     
     .portal-sidebar-menu a i {
@@ -116,6 +128,302 @@
     .portal-sidebar-instalacion-status {
         font-size: 0.75rem;
         color: #6b7280;
+    }
+    
+    /* Estilos para el resumen en el sidebar */
+    .portal-sidebar-resumen {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid #e5e7eb;
+    }
+    
+    .portal-sidebar-resumen-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .portal-sidebar-kpis {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.625rem;
+        margin-bottom: 1rem;
+    }
+    
+    .portal-sidebar-kpi {
+        background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 0.875rem 0.75rem;
+        text-align: center;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .portal-sidebar-kpi::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--color-primario), var(--color-secundario));
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    
+    .portal-sidebar-kpi:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-color: #d1d5db;
+    }
+    
+    .portal-sidebar-kpi:hover::before {
+        opacity: 1;
+    }
+    
+    .portal-sidebar-kpi-label {
+        font-size: 0.7rem;
+        color: #6b7280;
+        font-weight: 600;
+        margin-bottom: 0.375rem;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+    
+    .portal-sidebar-kpi-value {
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #111827;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+    }
+    
+    /* Colores específicos por tipo de KPI */
+    .portal-sidebar-kpi.total .portal-sidebar-kpi-value {
+        color: var(--color-primario);
+    }
+    
+    .portal-sidebar-kpi.pendientes .portal-sidebar-kpi-value {
+        color: #f59e0b;
+    }
+    
+    .portal-sidebar-kpi.vencidos .portal-sidebar-kpi-value {
+        color: #ef4444;
+    }
+    
+    .portal-sidebar-kpi.pagados .portal-sidebar-kpi-value {
+        color: #10b981;
+    }
+    
+    .portal-sidebar-monto-pendiente {
+        margin-top: 1rem;
+        padding: 1.125rem;
+        border: 2px solid #fed7aa;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .portal-sidebar-monto-pendiente::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #f59e0b, #ef4444);
+    }
+    
+    .portal-sidebar-monto-pendiente-title {
+        font-weight: 800;
+        color: #9a3412;
+        font-size: 0.8rem;
+        margin-bottom: 0.625rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .portal-sidebar-monto-pendiente-value {
+        font-weight: 900;
+        color: #9a3412;
+        font-size: 1.5rem;
+        margin-bottom: 0.625rem;
+        letter-spacing: -0.02em;
+    }
+    
+    .portal-sidebar-monto-vencido {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.75rem;
+        background: rgba(153, 27, 27, 0.1);
+        border-radius: 999px;
+        color: #991b1b;
+        font-weight: 700;
+        font-size: 0.8rem;
+    }
+    
+    /* Estilos para filtros en el sidebar */
+    .portal-sidebar-filtros {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid #e5e7eb;
+    }
+    
+    .portal-sidebar-filtros-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #6b7280;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .portal-sidebar-search {
+        margin-bottom: 1rem;
+    }
+    
+    .portal-sidebar-search input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid #d1d5db;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+        background: #ffffff;
+    }
+    
+    .portal-sidebar-search input:focus {
+        outline: none;
+        border-color: var(--color-primario);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .portal-sidebar-search button {
+        width: 100%;
+        margin-top: 0.625rem;
+        padding: 0.75rem;
+        border-radius: 10px;
+        border: none;
+        background: linear-gradient(135deg, #111827 0%, #374151 100%);
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 0.875rem;
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .portal-sidebar-search button:hover {
+        background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .portal-sidebar-search button:active {
+        transform: translateY(0);
+    }
+    
+    .portal-sidebar-pills {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .portal-sidebar-pill {
+        padding: 0.625rem 0.875rem;
+        border-radius: 10px;
+        border: 1.5px solid #e5e7eb;
+        background: #ffffff;
+        color: #334155;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        text-align: center;
+        justify-content: center;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    
+    .portal-sidebar-pill:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .portal-sidebar-pill.active {
+        background: linear-gradient(135deg, #111827 0%, #374151 100%);
+        border-color: #111827;
+        color: #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    
+    .portal-sidebar-pill.active:hover {
+        background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+        transform: translateY(-1px);
+    }
+    
+    .portal-sidebar-proximos {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e5e7eb;
+    }
+    
+    .portal-sidebar-proximos-title {
+        font-weight: 800;
+        color: #111827;
+        margin-bottom: 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .portal-sidebar-proximos-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .portal-sidebar-proximos-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.625rem 0;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.8rem;
+        color: #0f172a;
+        transition: all 0.2s ease;
+    }
+    
+    .portal-sidebar-proximos-list li:hover {
+        padding-left: 0.25rem;
+        color: var(--color-primario);
+    }
+    
+    .portal-sidebar-proximos-list li:last-child {
+        border-bottom: none;
     }
     
     .portal-content-area {
@@ -217,6 +525,7 @@
     @media (max-width: 576px) {
         .portal-content-area {
             padding: 0.75rem;
+            overflow-x: hidden;
         }
         
         .portal-sidebar {
@@ -234,6 +543,44 @@
         .portal-sidebar-menu a {
             padding: 0.625rem 0.875rem;
             font-size: 0.9rem;
+        }
+        
+        .portal-sidebar-kpis {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .portal-sidebar-kpi {
+            padding: 0.625rem;
+        }
+        
+        .portal-sidebar-kpi-value {
+            font-size: 1.1rem;
+        }
+        
+        .portal-sidebar-kpi-label {
+            font-size: 0.65rem;
+        }
+        
+        .portal-sidebar-pills {
+            gap: 0.375rem;
+        }
+        
+        .portal-sidebar-pill {
+            padding: 0.45rem 0.625rem;
+            font-size: 0.75rem;
+        }
+    }
+    
+    @media (max-width: 400px) {
+        .portal-sidebar-kpis {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    @media (max-width: 400px) {
+        .portal-content-area {
+            padding: 0.5rem;
         }
     }
 </style>
@@ -296,6 +643,9 @@
                 </li>
             {% endif %}
         </ul>
+        
+        <!-- Bloque para contenido adicional del sidebar -->
+        {% block portal_sidebar_content %}{% endblock %}
     </aside>
     
     <!-- Área de contenido -->
@@ -309,6 +659,422 @@
         {% block portal_content %}{% endblock %}
     </div>
 </div>
+
+<!-- Modal para Detalle de Pago -->
+<div id="modalDetallePago" class="pago-modal" style="display: none;">
+    <div class="pago-modal-overlay" onclick="cerrarModalDetallePago()"></div>
+    <div class="pago-modal-content">
+        <div class="pago-modal-header">
+            <h5 class="pago-modal-title">
+                <i class="fas fa-money-bill-wave"></i> Detalle del Pago
+            </h5>
+            <button type="button" class="pago-modal-close" onclick="cerrarModalDetallePago()" aria-label="Cerrar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="pago-modal-body" id="modalDetallePagoBody">
+            <div style="text-align: center; padding: 2rem;">
+                <div class="spinner" style="border: 4px solid #f3f4f6; border-top: 4px solid var(--primary-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                <p style="margin-top: 1rem; color: #6b7280;">Cargando información del pago...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Modal Personalizado para Detalle de Pago */
+.pago-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pago-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+.pago-modal-content {
+    position: relative;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    max-width: 600px;
+    width: 90%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    z-index: 10001;
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.pago-modal-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #667eea 100%);
+    color: white;
+    padding: 1.25rem 1.5rem;
+    border-radius: 16px 16px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pago-modal-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pago-modal-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 1.1rem;
+}
+
+.pago-modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.pago-modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    max-height: calc(85vh - 80px);
+}
+
+.pago-modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.pago-modal-body::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.pago-modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.pago-modal-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Estilos para badges en el modal */
+.badge {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.badge.bg-success {
+    background-color: #10b981;
+    color: white;
+}
+
+.badge.bg-danger {
+    background-color: #ef4444;
+    color: white;
+}
+
+.badge.bg-warning {
+    background-color: #f59e0b;
+    color: white;
+}
+
+.badge.bg-secondary {
+    background-color: #6b7280;
+    color: white;
+}
+
+.pago-detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.pago-detail-row:last-child {
+    border-bottom: none;
+}
+
+.pago-detail-label {
+    font-weight: 600;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.pago-detail-value {
+    color: #111827;
+    font-weight: 500;
+    text-align: right;
+}
+
+.pago-detail-badge {
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.transaccion-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border-left: 3px solid #667eea;
+}
+</style>
+
+<script>
+// Función para abrir el modal con el detalle del pago
+function abrirModalDetallePago(pagoId) {
+    const modal = document.getElementById('modalDetallePago');
+    const modalBody = document.getElementById('modalDetallePagoBody');
+    
+    // Mostrar loading
+    modalBody.innerHTML = `
+        <div style="text-align: center; padding: 2rem;">
+            <div class="spinner" style="border: 4px solid #f3f4f6; border-top: 4px solid var(--primary-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+            <p style="margin-top: 1rem; color: #6b7280;">Cargando información del pago...</p>
+        </div>
+    `;
+    
+    // Mostrar el modal
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // Prevenir scroll del body
+    
+    // Cargar los datos del pago (usar URL relativa para compatibilidad)
+    const url = `/clientes/portal/mis-pagos/${pagoId}/modal/`;
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error al cargar el pago');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Formatear la fecha de pago
+            const fechaPago = data.fecha_pago ? data.fecha_pago : null;
+            
+            // Determinar el color del badge según el estado
+            let estadoBadgeClass = 'bg-secondary';
+            let estadoIcon = '';
+            if (data.estado === 'pagado') {
+                estadoBadgeClass = 'bg-success';
+                estadoIcon = '<i class="fas fa-check-circle"></i> ';
+            } else if (data.estado === 'vencido') {
+                estadoBadgeClass = 'bg-danger';
+                estadoIcon = '<i class="fas fa-exclamation-triangle"></i> ';
+            } else if (data.estado === 'pendiente') {
+                estadoBadgeClass = 'bg-warning';
+                estadoIcon = '<i class="fas fa-clock"></i> ';
+            }
+            
+            // Construir el HTML del detalle
+            let html = `
+                <div class="pago-detail-row">
+                    <span class="pago-detail-label">Concepto:</span>
+                    <span class="pago-detail-value">${data.concepto}</span>
+                </div>
+                
+                <div class="pago-detail-row">
+                    <span class="pago-detail-label">Monto:</span>
+                    <span class="pago-detail-value" style="color: #10b981; font-weight: 700; font-size: 1.2rem;">$${parseFloat(data.monto).toFixed(2)}</span>
+                </div>
+                
+                <div class="pago-detail-row">
+                    <span class="pago-detail-label">Estado:</span>
+                    <span class="pago-detail-value">
+                        <span class="badge ${estadoBadgeClass} pago-detail-badge">
+                            ${estadoIcon}${data.estado_display}
+                        </span>
+                    </span>
+                </div>
+                
+                <div class="pago-detail-row">
+                    <span class="pago-detail-label">Fecha de Vencimiento:</span>
+                    <span class="pago-detail-value">${data.fecha_vencimiento}</span>
+                </div>
+            `;
+            
+            if (fechaPago) {
+                html += `
+                    <div class="pago-detail-row">
+                        <span class="pago-detail-label">Fecha de Pago:</span>
+                        <span class="pago-detail-value">${fechaPago}</span>
+                    </div>
+                `;
+            }
+            
+            if (data.instalacion) {
+                html += `
+                    <div class="pago-detail-row">
+                        <span class="pago-detail-label">Servicio:</span>
+                        <span class="pago-detail-value"><i class="fas fa-wifi"></i> ${data.instalacion}</span>
+                    </div>
+                `;
+            }
+            
+            html += `
+                <div class="pago-detail-row">
+                    <span class="pago-detail-label">Período:</span>
+                    <span class="pago-detail-value">${data.periodo_mes} ${data.periodo_anio}</span>
+                </div>
+            `;
+            
+            if (data.metodo_pago) {
+                html += `
+                    <div class="pago-detail-row">
+                        <span class="pago-detail-label">Método de Pago:</span>
+                        <span class="pago-detail-value">${data.metodo_pago}</span>
+                    </div>
+                `;
+            }
+            
+            if (data.referencia_pago) {
+                html += `
+                    <div class="pago-detail-row">
+                        <span class="pago-detail-label">Referencia:</span>
+                        <span class="pago-detail-value" style="font-family: monospace; font-size: 0.9rem;">${data.referencia_pago}</span>
+                    </div>
+                `;
+            }
+            
+            // Agregar sección de transacciones si existen
+            if (data.transacciones && data.transacciones.length > 0) {
+                html += `
+                    <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid #e5e7eb;">
+                        <h6 style="font-weight: 700; color: #111827; margin-bottom: 1rem;">
+                            <i class="fas fa-history"></i> Historial de Transacciones
+                        </h6>
+                `;
+                
+                data.transacciones.forEach(trans => {
+                    let transBadgeClass = 'bg-secondary';
+                    let transIcon = '';
+                    if (trans.estado === 'completada') {
+                        transBadgeClass = 'bg-success';
+                        transIcon = '<i class="fas fa-check-circle"></i> ';
+                    } else if (trans.estado === 'fallida') {
+                        transBadgeClass = 'bg-danger';
+                        transIcon = '<i class="fas fa-times-circle"></i> ';
+                    } else if (trans.estado === 'pendiente') {
+                        transBadgeClass = 'bg-warning';
+                        transIcon = '<i class="fas fa-clock"></i> ';
+                    }
+                    
+                    html += `
+                        <div class="transaccion-item">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span style="font-weight: 600; color: #111827;">${trans.pasarela}</span>
+                                <span class="badge ${transBadgeClass}">${transIcon}${trans.estado_display}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #64748b;">
+                                <span><i class="fas fa-calendar"></i> ${trans.fecha_creacion}</span>
+                                <span style="font-weight: 600; color: #111827;">$${parseFloat(trans.monto).toFixed(2)}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+            }
+            
+            // Agregar botón de pagar solo si el pago está pendiente o vencido Y hay pasarelas disponibles
+            if (data.puede_pagar && (data.estado === 'pendiente' || data.estado === 'vencido')) {
+                html += `
+                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid #e5e7eb;">
+                        <a href="/pagos/${data.id}/pagar-online/" class="btn btn-primary w-100" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; padding: 0.75rem; font-weight: 600;">
+                            <i class="fas fa-credit-card"></i> Pagar en Línea
+                        </a>
+                    </div>
+                `;
+            }
+            
+            modalBody.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> Error al cargar la información del pago: ${error.message}
+                </div>
+            `;
+        });
+}
+
+// Función para cerrar el modal
+function cerrarModalDetallePago() {
+    const modal = document.getElementById('modalDetallePago');
+    modal.style.display = 'none';
+    document.body.style.overflow = ''; // Restaurar scroll del body
+}
+
+// Escuchar clicks en enlaces con clase 'ver-pago-modal' o data-pago-id
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('a[data-pago-id], .ver-pago-modal').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const pagoId = this.getAttribute('data-pago-id');
+            if (pagoId) {
+                abrirModalDetallePago(pagoId);
+            }
+        });
+    });
+    
+    // Cerrar modal con tecla ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('modalDetallePago');
+            if (modal && modal.style.display === 'flex') {
+                cerrarModalDetallePago();
+            }
+        }
+    });
+});
+</script>
+
 <script>
     function toggleSidebar() {
         const sidebar = document.getElementById('portalSidebar');

@@ -1,164 +1,498 @@
 {% extends 'clientes/portal_base.html' %}
 {% load static %}
 
-{% block page_title %}Mis Pagos{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block portal_extra_css %}
+<style>
+    .dashboard-kpis {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+    
+    .dashboard-kpi {
+        background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .dashboard-kpi::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+    
+    .dashboard-kpi:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        border-color: #d1d5db;
+    }
+    
+    .dashboard-kpi:hover::before {
+        transform: scaleX(1);
+    }
+    
+    .dashboard-kpi-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+    
+    .dashboard-kpi-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        background: var(--icon-bg);
+        color: var(--icon-color);
+        box-shadow: 0 4px 12px var(--icon-shadow);
+    }
+    
+    .dashboard-kpi-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.5rem;
+    }
+    
+    .dashboard-kpi-value {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #111827;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+    }
+    
+    .dashboard-kpi.pendientes {
+        --gradient-start: #667eea;
+        --gradient-end: #764ba2;
+        --icon-bg: rgba(102, 126, 234, 0.1);
+        --icon-color: #667eea;
+        --icon-shadow: rgba(102, 126, 234, 0.25);
+    }
+    
+    .dashboard-kpi.vencidos {
+        --gradient-start: #f093fb;
+        --gradient-end: #f5576c;
+        --icon-bg: rgba(245, 87, 108, 0.1);
+        --icon-color: #f5576c;
+        --icon-shadow: rgba(245, 87, 108, 0.25);
+    }
+    
+    .dashboard-kpi.completados {
+        --gradient-start: #4facfe;
+        --gradient-end: #00f2fe;
+        --icon-bg: rgba(79, 172, 254, 0.1);
+        --icon-color: #4facfe;
+        --icon-shadow: rgba(79, 172, 254, 0.25);
+    }
+    
+    .dashboard-kpi.monto {
+        --gradient-start: #fa709a;
+        --gradient-end: #fee140;
+        --icon-bg: rgba(250, 112, 154, 0.1);
+        --icon-color: #fa709a;
+        --icon-shadow: rgba(250, 112, 154, 0.25);
+    }
+    
+    .dashboard-pagos-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        overflow: hidden;
+    }
+    
+    .dashboard-pagos-header {
+        background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-secundario) 100%);
+        color: white;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .dashboard-pagos-header h5 {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .dashboard-filters {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    
+    .dashboard-filters select,
+    .dashboard-filters input {
+        padding: 0.625rem 0.875rem;
+        border: 1.5px solid rgba(255,255,255,0.3);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.15);
+        color: white;
+        font-size: 0.875rem;
+        backdrop-filter: blur(10px);
+        transition: all 0.2s ease;
+    }
+    
+    .dashboard-filters select:focus,
+    .dashboard-filters input:focus {
+        outline: none;
+        border-color: rgba(255,255,255,0.5);
+        background: rgba(255,255,255,0.25);
+        box-shadow: 0 0 0 3px rgba(255,255,255,0.1);
+    }
+    
+    .dashboard-filters input::placeholder {
+        color: rgba(255,255,255,0.7);
+    }
+    
+    .dashboard-filters button {
+        padding: 0.625rem 1.25rem;
+        border: none;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(10px);
+    }
+    
+    .dashboard-filters button:hover {
+        background: rgba(255,255,255,0.3);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .dashboard-table-wrapper {
+        padding: 1.5rem;
+    }
+    
+    .dashboard-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .dashboard-table thead {
+        background: #f9fafb;
+    }
+    
+    .dashboard-table th {
+        padding: 1rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .dashboard-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #f3f4f6;
+        color: #374151;
+        font-size: 0.9rem;
+    }
+    
+    .dashboard-table tbody tr {
+        transition: all 0.2s ease;
+    }
+    
+    .dashboard-table tbody tr:hover {
+        background: #f9fafb;
+    }
+    
+    .dashboard-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.375rem 0.75rem;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .dashboard-badge.success {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .dashboard-badge.danger {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .dashboard-badge.warning {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .dashboard-badge.secondary {
+        background: #f3f4f6;
+        color: #374151;
+    }
+    
+    .dashboard-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        border: none;
+        background: var(--color-primario);
+        color: white;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .dashboard-btn:hover {
+        background: var(--color-secundario);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        color: white;
+    }
+    
+    .dashboard-empty {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6b7280;
+    }
+    
+    .dashboard-empty i {
+        font-size: 3rem;
+        opacity: 0.3;
+        margin-bottom: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .dashboard-kpis {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .dashboard-pagos-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .dashboard-filters {
+            width: 100%;
+        }
+        
+        .dashboard-filters select,
+        .dashboard-filters input,
+        .dashboard-filters button {
+            width: 100%;
+        }
+        
+        .dashboard-table-wrapper {
+            overflow-x: auto;
+            padding: 1rem;
+        }
+        
+        .dashboard-table {
+            min-width: 600px;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block portal_content %}
-<div class="row">
-    <!-- Estadísticas -->
-    <div class="col-md-3 mb-4">
-        <div class="card text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-subtitle mb-2">Pagos Pendientes</h6>
-                        <h2 class="mb-0">{{ pagos_pendientes }}</h2>
-                    </div>
-                    <i class="fas fa-clock fa-2x opacity-50"></i>
-                </div>
+<!-- KPIs -->
+<div class="dashboard-kpis">
+    <div class="dashboard-kpi pendientes">
+        <div class="dashboard-kpi-header">
+            <div>
+                <div class="dashboard-kpi-label">Pagos Pendientes</div>
+                <div class="dashboard-kpi-value">{{ pagos_pendientes }}</div>
+            </div>
+            <div class="dashboard-kpi-icon">
+                <i class="fas fa-clock"></i>
             </div>
         </div>
     </div>
-    <div class="col-md-3 mb-4">
-        <div class="card text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-subtitle mb-2">Pagos Vencidos</h6>
-                        <h2 class="mb-0">{{ pagos_vencidos }}</h2>
-                    </div>
-                    <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
-                </div>
+    
+    <div class="dashboard-kpi vencidos">
+        <div class="dashboard-kpi-header">
+            <div>
+                <div class="dashboard-kpi-label">Pagos Vencidos</div>
+                <div class="dashboard-kpi-value">{{ pagos_vencidos }}</div>
+            </div>
+            <div class="dashboard-kpi-icon">
+                <i class="fas fa-exclamation-triangle"></i>
             </div>
         </div>
     </div>
-    <div class="col-md-3 mb-4">
-        <div class="card text-white" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-subtitle mb-2">Pagos Completados</h6>
-                        <h2 class="mb-0">{{ pagos_pagados }}</h2>
-                    </div>
-                    <i class="fas fa-check-circle fa-2x opacity-50"></i>
-                </div>
+    
+    <div class="dashboard-kpi completados">
+        <div class="dashboard-kpi-header">
+            <div>
+                <div class="dashboard-kpi-label">Pagos Completados</div>
+                <div class="dashboard-kpi-value">{{ pagos_pagados }}</div>
+            </div>
+            <div class="dashboard-kpi-icon">
+                <i class="fas fa-check-circle"></i>
             </div>
         </div>
     </div>
-    <div class="col-md-3 mb-4">
-        <div class="card text-white" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-subtitle mb-2">Monto Pendiente</h6>
-                        <h2 class="mb-0">${{ monto_pendiente|floatformat:2 }}</h2>
-                    </div>
-                    <i class="fas fa-dollar-sign fa-2x opacity-50"></i>
-                </div>
+    
+    <div class="dashboard-kpi monto">
+        <div class="dashboard-kpi-header">
+            <div>
+                <div class="dashboard-kpi-label">Monto Pendiente</div>
+                <div class="dashboard-kpi-value">${{ monto_pendiente|floatformat:2 }}</div>
+            </div>
+            <div class="dashboard-kpi-icon">
+                <i class="fas fa-dollar-sign"></i>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Lista de Pagos -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header" style="background-color: var(--primary-color); color: white;">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-money-bill-wave"></i> Mis Pagos</h5>
-                    <div>
-                        <form method="get" class="d-inline-flex">
-                            <select name="estado" class="form-select form-select-sm me-2">
-                                <option value="">Todos los estados</option>
-                                {% for estado_val, estado_label in estados %}
-                                    <option value="{{ estado_val }}" {% if estado_filter == estado_val %}selected{% endif %}>
-                                        {{ estado_label }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                            <input type="text" name="q" class="form-control form-control-sm me-2" placeholder="Buscar..." value="{{ query }}">
-                            <button type="submit" class="btn btn-light btn-sm">
-                                <i class="fas fa-search"></i>
-                            </button>
-                        </form>
-                    </div>
-                </div>
+<div class="dashboard-pagos-card">
+    <div class="dashboard-pagos-header">
+        <h5><i class="fas fa-money-bill-wave"></i> Mis Pagos</h5>
+        <form method="get" class="dashboard-filters">
+            <select name="estado">
+                <option value="">Todos los estados</option>
+                {% for estado_val, estado_label in estados %}
+                    <option value="{{ estado_val }}" {% if estado_filter == estado_val %}selected{% endif %}>
+                        {{ estado_label }}
+                    </option>
+                {% endfor %}
+            </select>
+            <input type="text" name="q" placeholder="Buscar..." value="{{ query }}">
+            <button type="submit">
+                <i class="fas fa-search"></i> Buscar
+            </button>
+        </form>
+    </div>
+    
+    <div class="dashboard-table-wrapper">
+        {% if page_obj %}
+            <div style="overflow-x: auto;">
+                <table class="dashboard-table">
+                    <thead>
+                        <tr>
+                            <th>Concepto</th>
+                            <th>Monto</th>
+                            <th>Fecha Vencimiento</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pago in page_obj %}
+                        <tr>
+                            <td>
+                                <div style="font-weight: 600; color: #111827;">{{ pago.concepto }}</div>
+                                {% if pago.instalacion %}
+                                <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">
+                                    <i class="fas fa-wifi"></i> {{ pago.instalacion.plan_nombre }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong style="font-size: 1.1rem; color: #111827;">${{ pago.monto|floatformat:2 }}</strong>
+                            </td>
+                            <td>{{ pago.fecha_vencimiento|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if pago.estado == 'pagado' %}
+                                    <span class="dashboard-badge success">
+                                        <i class="fas fa-check-circle"></i> {{ pago.get_estado_display }}
+                                    </span>
+                                {% elif pago.estado == 'vencido' %}
+                                    <span class="dashboard-badge danger">
+                                        <i class="fas fa-exclamation-triangle"></i> {{ pago.get_estado_display }}
+                                    </span>
+                                {% elif pago.estado == 'pendiente' %}
+                                    <span class="dashboard-badge warning">
+                                        <i class="fas fa-clock"></i> {{ pago.get_estado_display }}
+                                    </span>
+                                {% else %}
+                                    <span class="dashboard-badge secondary">
+                                        <i class="fas fa-ban"></i> {{ pago.get_estado_display }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="#" data-pago-id="{{ pago.pk }}" class="dashboard-btn ver-pago-modal" style="cursor: pointer;">
+                                    <i class="fas fa-eye"></i> Ver
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <div class="card-body">
-                {% if page_obj %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Concepto</th>
-                                    <th>Monto</th>
-                                    <th>Fecha Vencimiento</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for pago in page_obj %}
-                                <tr>
-                                    <td>{{ pago.concepto }}</td>
-                                    <td><strong>${{ pago.monto|floatformat:2 }}</strong></td>
-                                    <td>{{ pago.fecha_vencimiento|date:"d/m/Y" }}</td>
-                                    <td>
-                                        {% if pago.estado == 'pagado' %}
-                                            <span class="badge bg-success">{{ pago.get_estado_display }}</span>
-                                        {% elif pago.estado == 'vencido' %}
-                                            <span class="badge bg-danger">{{ pago.get_estado_display }}</span>
-                                        {% elif pago.estado == 'pendiente' %}
-                                            <span class="badge bg-warning">{{ pago.get_estado_display }}</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">{{ pago.get_estado_display }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <a href="{% url 'clientes:portal_detalle_pago' pago_id=pago.pk %}" class="btn btn-sm btn-primary">
-                                            <i class="fas fa-eye"></i> Ver
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- Paginación -->
-                    {% if page_obj.has_other_pages %}
-                    <nav aria-label="Paginación">
-                        <ul class="pagination justify-content-center">
-                            {% if page_obj.has_previous %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">Primera</a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">Anterior</a>
-                                </li>
-                            {% endif %}
-                            
-                            <li class="page-item active">
-                                <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-                            </li>
-                            
-                            {% if page_obj.has_next %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">Siguiente</a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}">Última</a>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    </nav>
-                    {% endif %}
-                {% else %}
-                    <p class="text-muted text-center">No se encontraron pagos.</p>
+            
+            <!-- Paginación -->
+            {% if page_obj.has_other_pages %}
+            <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}" class="dashboard-btn" style="background: #f3f4f6; color: #374151;">
+                        Primera
+                    </a>
+                    <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}" class="dashboard-btn" style="background: #f3f4f6; color: #374151;">
+                        Anterior
+                    </a>
+                {% endif %}
+                
+                <span class="dashboard-btn" style="background: var(--color-primario); cursor: default;">
+                    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                </span>
+                
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}" class="dashboard-btn" style="background: #f3f4f6; color: #374151;">
+                        Siguiente
+                    </a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}" class="dashboard-btn" style="background: #f3f4f6; color: #374151;">
+                        Última
+                    </a>
                 {% endif %}
             </div>
-        </div>
+            {% endif %}
+        {% else %}
+            <div class="dashboard-empty">
+                <i class="fas fa-inbox"></i>
+                <h3 style="color: #111827; margin-bottom: 0.5rem;">No se encontraron pagos</h3>
+                <p>Cuando tengas pagos, aparecerán aquí.</p>
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

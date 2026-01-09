@@ -10,7 +10,27 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-pro
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
+# ALLOWED_HOSTS para desarrollo
+# Incluye localhost, 127.0.0.1 y cualquier dominio de ngrok detectado en SITE_URL
+default_hosts = 'localhost,127.0.0.1'
+allowed_hosts_from_env = config('ALLOWED_HOSTS', default=default_hosts, cast=lambda v: [s.strip() for s in v.split(',')])
+
+# Agregar automáticamente el dominio de ngrok desde SITE_URL si está configurado
+ALLOWED_HOSTS = list(allowed_hosts_from_env)
+
+# Extraer dominio de ngrok de SITE_URL y agregarlo a ALLOWED_HOSTS
+site_url = config('SITE_URL', default='')
+if site_url:
+    from urllib.parse import urlparse
+    try:
+        parsed = urlparse(site_url)
+        if parsed.hostname:
+            # Agregar el dominio si no está ya en ALLOWED_HOSTS
+            if parsed.hostname not in ALLOWED_HOSTS:
+                ALLOWED_HOSTS.append(parsed.hostname)
+                print(f"✅ Dominio agregado a ALLOWED_HOSTS: {parsed.hostname}")
+    except Exception as e:
+        print(f"⚠️  Error al procesar SITE_URL para ALLOWED_HOSTS: {e}")
 
 # Database
 # PostgreSQL configuration for development
@@ -46,4 +66,10 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='AdminiRed <noreply@ad
 # INSTALLED_APPS += ['debug_toolbar']
 # MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
 # INTERNAL_IPS = ['127.0.0.1']
+
+# Middleware para saltar la advertencia de ngrok en desarrollo
+# Agregar al principio del middleware stack para que se ejecute primero
+MIDDLEWARE = [
+    'core.middleware.NgrokSkipBrowserWarningMiddleware',
+] + MIDDLEWARE
 

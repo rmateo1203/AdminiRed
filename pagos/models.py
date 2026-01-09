@@ -4,6 +4,9 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from clientes.models import Cliente
 from instalaciones.models import Instalacion
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Pago(models.Model):
@@ -465,15 +468,52 @@ class TransaccionPago(models.Model):
     
     def marcar_como_completada(self):
         """Marca la transacción como completada y actualiza el pago."""
+        # Verificar que el pago no esté ya pagado (evitar duplicidad)
+        if self.pago.estado == 'pagado':
+            logger.warning(f"Intento de marcar como completada una transacción para un pago ya pagado (Pago ID: {self.pago.id}, Transacción ID: {self.id})")
+            # Solo actualizar el estado de la transacción, no el pago
+            self.estado = 'completada'
+            self.fecha_completada = timezone.now()
+            self.save()
+            return
+        
+        # Verificar que no haya otra transacción completada para este pago
+        otra_completada = TransaccionPago.objects.filter(
+            pago=self.pago,
+            estado='completada'
+        ).exclude(id=self.id).exists()
+        
+        if otra_completada:
+            logger.warning(f"Intento de marcar como completada una transacción cuando ya existe otra completada (Pago ID: {self.pago.id}, Transacción ID: {self.id})")
+            # Solo actualizar el estado de esta transacción, no el pago
+            self.estado = 'completada'
+            self.fecha_completada = timezone.now()
+            self.save()
+            return
+        
+        # Marcar la transacción como completada
         self.estado = 'completada'
         self.fecha_completada = timezone.now()
         self.save()
         
-        # Marcar el pago como pagado
-        self.pago.marcar_como_pagado(
-            metodo_pago='tarjeta',
-            referencia=self.id_transaccion_pasarela
-        )
+        # Determinar el método de pago según la pasarela
+        metodo_pago = 'tarjeta'  # Por defecto
+        if self.pasarela == 'mercadopago':
+            metodo_pago = 'tarjeta'  # Mercado Pago principalmente usa tarjetas
+        elif self.pasarela == 'paypal':
+            metodo_pago = 'tarjeta'  # PayPal también usa tarjetas principalmente
+        elif self.pasarela == 'stripe':
+            metodo_pago = 'tarjeta'
+        
+        # Marcar el pago como pagado con el método correcto (solo si no está ya pagado)
+        if self.pago.estado != 'pagado':
+            self.pago.marcar_como_pagado(
+                metodo_pago=metodo_pago,
+                referencia=f"{self.pasarela.upper()}-{self.id_transaccion_pasarela}"
+            )
+            logger.info(f"Pago {self.pago.id} marcado como pagado por transacción {self.id}")
+        else:
+            logger.warning(f"Pago {self.pago.id} ya estaba pagado, no se actualizó")
     
     def marcar_como_fallida(self, mensaje_error=None):
         """Marca la transacción como fallida."""

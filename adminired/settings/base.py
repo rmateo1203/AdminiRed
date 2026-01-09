@@ -155,7 +155,12 @@ PAYPAL_SECRET = config('PAYPAL_SECRET', default='')
 PAYPAL_MODE = config('PAYPAL_MODE', default='sandbox')  # sandbox o live
 
 # URL del sitio (para webhooks y redirects)
-SITE_URL = config('SITE_URL', default='http://localhost:8000')
+# Limpiar espacios y comentarios del valor
+site_url_raw = config('SITE_URL', default='http://localhost:8000')
+# Remover comentarios inline (todo después de #) y espacios
+if '#' in site_url_raw:
+    site_url_raw = site_url_raw.split('#')[0]
+SITE_URL = site_url_raw.strip()
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/

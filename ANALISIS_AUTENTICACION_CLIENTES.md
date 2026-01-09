@@ -422,3 +422,5 @@ El sistema actual permite:
 **Última actualización:** {{ fecha_actual }}
 **Versión del sistema:** 1.0
 
+
+

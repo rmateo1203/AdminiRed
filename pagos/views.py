@@ -718,9 +718,39 @@ def pago_procesar_online(request, pk):
         messages.error(request, 'Debes iniciar sesión para realizar un pago.')
         return redirect('clientes:portal_login')
     
-    # Verificar que el pago esté pendiente
-    if pago.estado != 'pendiente' and pago.estado != 'vencido':
-        messages.warning(request, 'Este pago ya ha sido procesado.')
+    # Verificar que el pago esté pendiente o vencido (no pagado)
+    if pago.estado == 'pagado':
+        messages.warning(request, 'Este pago ya ha sido pagado. No se puede procesar nuevamente.')
+        if es_cliente(request.user):
+            return redirect('clientes:portal_detalle_pago', pago_id=pk)
+        return redirect('pagos:pago_detail', pk=pk)
+    
+    if pago.estado == 'cancelado':
+        messages.warning(request, 'Este pago ha sido cancelado. No se puede procesar.')
+        if es_cliente(request.user):
+            return redirect('clientes:portal_detalle_pago', pago_id=pk)
+        return redirect('pagos:pago_detail', pk=pk)
+    
+    # Verificar si ya existe una transacción completada para este pago
+    transaccion_completada = pago.transacciones.filter(estado='completada').exists()
+    if transaccion_completada:
+        messages.warning(request, 'Este pago ya tiene una transacción completada. No se puede procesar nuevamente.')
+        # Actualizar el estado del pago si no está marcado como pagado
+        if pago.estado != 'pagado':
+            pago.marcar_como_pagado(metodo_pago='tarjeta')
+        if es_cliente(request.user):
+            return redirect('clientes:portal_detalle_pago', pago_id=pk)
+        return redirect('pagos:pago_detail', pk=pk)
+    
+    # Verificar si hay una transacción pendiente reciente (últimos 5 minutos)
+    # para evitar múltiples intentos simultáneos
+    from datetime import timedelta
+    transaccion_reciente = pago.transacciones.filter(
+        estado='pendiente',
+        fecha_creacion__gte=timezone.now() - timedelta(minutes=5)
+    ).exists()
+    if transaccion_reciente:
+        messages.info(request, 'Ya existe un proceso de pago en curso para este pago. Por favor espera unos momentos.')
         if es_cliente(request.user):
             return redirect('clientes:portal_detalle_pago', pago_id=pk)
         return redirect('pagos:pago_detail', pk=pk)
@@ -730,8 +760,18 @@ def pago_procesar_online(request, pk):
         pasarela = request.POST.get('pasarela', 'stripe')
         
         # Obtener URLs de retorno
-        return_url = request.build_absolute_uri(f'/pagos/{pk}/pago-exitoso/')
-        cancel_url = request.build_absolute_uri(f'/pagos/{pk}/pago-cancelado/')
+        # NOTA: Mercado Pago NO acepta placeholders ({payment_id}) en back_urls
+        # Las URLs deben ser completas. Mercado Pago agregará los parámetros automáticamente.
+        base_url = getattr(settings, 'SITE_URL', None) or request.build_absolute_uri('/').rstrip('/')
+        
+        # Limpiar base_url de comentarios o espacios si vienen del .env
+        if '#' in base_url:
+            base_url = base_url.split('#')[0]
+        base_url = base_url.strip().rstrip('/')
+        
+        # URLs sin placeholders - Mercado Pago agregará payment_id automáticamente en la redirección
+        return_url = f"{base_url}/pagos/{pk}/pago-exitoso/"
+        cancel_url = f"{base_url}/pagos/{pk}/pago-cancelado/"
         
         try:
             # Crear intento de pago con la pasarela seleccionada
@@ -752,7 +792,17 @@ def pago_procesar_online(request, pk):
                 return redirect('clientes:portal_detalle_pago', pago_id=pk)
             return redirect('pagos:pago_detail', pk=pk)
         except Exception as e:
-            messages.error(request, f'Error inesperado: {str(e)}')
+            error_msg = str(e)
+            logger.error(f"Error inesperado al procesar pago {pk}: {error_msg}", exc_info=True)
+            
+            # Mensaje más amigable según el tipo de error
+            if "no está instalado" in error_msg:
+                messages.error(request, f'La pasarela seleccionada no está disponible: {error_msg}')
+            elif "no está configurada" in error_msg or "no configurada" in error_msg:
+                messages.error(request, f'Error de configuración: {error_msg}. Verifica tus credenciales en .env')
+            else:
+                messages.error(request, f'Error al procesar el pago: {error_msg}')
+            
             if es_cliente(request.user):
                 return redirect('clientes:portal_detalle_pago', pago_id=pk)
             return redirect('pagos:pago_detail', pk=pk)
@@ -789,9 +839,14 @@ def pago_procesar_online(request, pk):
             return redirect('clientes:portal_detalle_pago', pago_id=pk)
         return redirect('pagos:pago_detail', pk=pk)
     
+    # Detectar si estamos en localhost para mostrar advertencia
+    base_url = getattr(settings, 'SITE_URL', None) or request.build_absolute_uri('/').rstrip('/')
+    es_localhost = any(host in base_url.lower() for host in ['localhost', '127.0.0.1', '0.0.0.0'])
+    
     context = {
         'pago': pago,
         'pasarelas_disponibles': pasarelas_disponibles,
+        'es_localhost': es_localhost,
     }
     
     return render(request, 'pagos/pago_seleccionar_pasarela.html', context)
@@ -818,11 +873,35 @@ def pago_exitoso(request, pk):
             messages.error(request, 'No tienes permiso para acceder a esta página.')
             return redirect('login')
     
+    # Verificar si el pago ya está pagado (evitar procesamiento duplicado)
+    if pago.estado == 'pagado':
+        # Verificar si hay una transacción completada
+        transaccion_completada = pago.transacciones.filter(estado='completada').first()
+        if transaccion_completada:
+            # Si es cliente, redirigir directamente a mis-pagos
+            if request.user.is_authenticated and es_cliente(request.user):
+                messages.info(request, 'Este pago ya fue procesado exitosamente anteriormente.')
+                # Redirigir específicamente a localhost:8000
+                from django.http import HttpResponseRedirect
+                return HttpResponseRedirect('http://localhost:8000/clientes/portal/mis-pagos/')
+            # Si es staff, mostrar la página de éxito
+            messages.success(request, 'Este pago ya fue procesado exitosamente anteriormente.')
+            transacciones = pago.transacciones.all().order_by('-fecha_creacion')
+            context = {
+                'pago': pago,
+                'transacciones': transacciones,
+            }
+            return render(request, 'pagos/pago_exitoso.html', context)
+    
     # Verificar según la pasarela
     session_id = request.GET.get('session_id')  # Stripe
-    payment_id = request.GET.get('payment_id')  # Mercado Pago
+    payment_id = request.GET.get('payment_id') or request.GET.get('paymentId')  # Mercado Pago (puede venir de diferentes formas)
     # PayPal puede usar 'token' o 'paymentId' dependiendo de la versión de la API
     paypal_token = request.GET.get('token') or request.GET.get('paymentId')  # PayPal
+    
+    # Log para debugging
+    logger.info(f"pago_exitoso llamado para pago {pk}. GET params: {dict(request.GET)}")
+    logger.info(f"payment_id encontrado: {payment_id}, session_id: {session_id}, paypal_token: {paypal_token}")
     
     if session_id:
         # Verificar el pago con Stripe
@@ -837,19 +916,169 @@ def pago_exitoso(request, pk):
         else:
             messages.warning(request, f'No se pudo verificar el pago: {resultado.get("error", "Error desconocido")}')
     elif payment_id:
-        # Mercado Pago - verificar transacción
+        # Mercado Pago - verificar y actualizar transacción
         try:
-            transaccion = TransaccionPago.objects.get(
+            # Buscar la transacción por payment_id
+            transaccion = TransaccionPago.objects.filter(
                 id_transaccion_pasarela=payment_id,
                 pasarela='mercadopago'
-            )
-            if transaccion.estado == 'completada':
-                messages.success(request, '¡Pago procesado exitosamente!')
+            ).first()
+            
+            # Si no encontramos por payment_id, buscar por preference_id o external_reference
+            if not transaccion:
+                # Buscar por el external_reference que debería ser el ID del pago
+                gateway = PaymentGateway(pasarela='mercadopago')
+                try:
+                    payment_response = gateway.mp.payment().get(int(payment_id))
+                    if payment_response.get("status") == 200:
+                        payment = payment_response.get("response", {})
+                        external_reference = payment.get("external_reference")
+                        if external_reference:
+                            # Buscar transacción por el pago asociado
+                            try:
+                                pago_id = int(external_reference)
+                                transaccion = TransaccionPago.objects.filter(
+                                    pago__id=pago_id,
+                                    pasarela='mercadopago'
+                                ).first()
+                            except (ValueError, TypeError):
+                                pass
+                except Exception as e:
+                    logger.warning(f"Error al buscar transacción por payment_id {payment_id}: {str(e)}")
+            
+            # Si todavía no encontramos, buscar cualquier transacción pendiente de este pago
+            if not transaccion:
+                transaccion = TransaccionPago.objects.filter(
+                    pago=pago,
+                    pasarela='mercadopago',
+                    estado__in=['pendiente', 'completada']
+                ).order_by('-fecha_creacion').first()
+            
+            if transaccion:
+                # Verificar el estado del pago con la API de Mercado Pago
+                gateway = PaymentGateway(pasarela='mercadopago')
+                try:
+                    payment_response = gateway.mp.payment().get(int(payment_id))
+                    
+                    if payment_response.get("status") == 200:
+                        payment = payment_response.get("response", {})
+                        payment_status = payment.get("status", "")
+                        
+                        # Actualizar datos de la transacción
+                        if not transaccion.id_transaccion_pasarela or transaccion.id_transaccion_pasarela != payment_id:
+                            transaccion.id_transaccion_pasarela = payment_id
+                        
+                        if not transaccion.datos_respuesta:
+                            transaccion.datos_respuesta = {}
+                        transaccion.datos_respuesta['payment'] = payment
+                        
+                        # Si el pago fue aprobado, marcar como completada
+                        if payment_status == "approved":
+                            # Verificar que el pago no esté ya pagado (evitar duplicidad)
+                            if pago.estado == 'pagado':
+                                # Verificar si esta transacción ya está completada
+                                if transaccion.estado == 'completada':
+                                    messages.success(request, 'Este pago ya fue procesado exitosamente anteriormente.')
+                                    logger.info(f"Intento de procesar pago ya pagado (Pago ID: {pago.id}, Payment ID: {payment_id})")
+                                else:
+                                    # Actualizar solo la transacción, no el pago
+                                    transaccion.estado = 'completada'
+                                    transaccion.fecha_completada = timezone.now()
+                                    transaccion.save()
+                                    messages.success(request, '¡Pago procesado exitosamente!')
+                            elif transaccion.estado != 'completada':
+                                transaccion.marcar_como_completada()
+                                messages.success(request, '¡Pago procesado exitosamente!')
+                                logger.info(f"Pago {pago.id} marcado como pagado por Mercado Pago payment_id: {payment_id}")
+                            else:
+                                messages.success(request, '¡Pago procesado exitosamente!')
+                        elif payment_status == "pending":
+                            transaccion.estado = 'pendiente'
+                            transaccion.save()
+                            messages.info(request, 'El pago está siendo procesado. Recibirás una confirmación pronto.')
+                        elif payment_status == "rejected":
+                            transaccion.estado = 'fallida'
+                            transaccion.mensaje_error = payment.get("status_detail", "Pago rechazado")
+                            transaccion.save()
+                            messages.warning(request, f'El pago fue rechazado: {transaccion.mensaje_error}')
+                        elif payment_status == "cancelled":
+                            transaccion.estado = 'fallida'
+                            transaccion.mensaje_error = "Pago cancelado"
+                            transaccion.save()
+                            messages.warning(request, 'El pago fue cancelado.')
+                        else:
+                            # Estado desconocido
+                            transaccion.estado = 'pendiente'
+                            transaccion.save()
+                            messages.info(request, f'Estado del pago: {payment_status}. Estamos verificando el pago...')
+                    else:
+                        # Error al obtener el pago de Mercado Pago
+                        error_msg = payment_response.get("message", "Error desconocido")
+                        logger.error(f"Error al obtener pago de Mercado Pago {payment_id}: {error_msg}")
+                        messages.warning(request, 'No se pudo verificar el estado del pago con Mercado Pago.')
+                except Exception as e:
+                    logger.error(f"Error al verificar pago de Mercado Pago {payment_id}: {str(e)}", exc_info=True)
+                    # Si la transacción ya está completada, asumir que el pago fue exitoso
+                    if transaccion.estado == 'completada':
+                        messages.success(request, '¡Pago procesado exitosamente!')
+                    else:
+                        messages.info(request, 'El pago está siendo procesado. Recibirás una confirmación pronto.')
             else:
-                messages.info(request, 'El pago está siendo procesado. Recibirás una confirmación pronto.')
+                # Transacción no encontrada, pero el payment_id existe - crear una nueva transacción
+                gateway = PaymentGateway(pasarela='mercadopago')
+                try:
+                    payment_response = gateway.mp.payment().get(int(payment_id))
+                    if payment_response.get("status") == 200:
+                        payment = payment_response.get("response", {})
+                        payment_status = payment.get("status", "")
+                        
+                        # Crear nueva transacción
+                        transaccion = TransaccionPago.objects.create(
+                            pago=pago,
+                            pasarela='mercadopago',
+                            estado='pendiente',
+                            id_transaccion_pasarela=payment_id,
+                            monto=pago.monto,
+                            moneda='MXN',
+                            datos_respuesta={'payment': payment}
+                        )
+                        
+                        # Si el pago fue aprobado, marcar como completada
+                        if payment_status == "approved":
+                            transaccion.marcar_como_completada()
+                            messages.success(request, '¡Pago procesado exitosamente!')
+                            logger.info(f"Pago {pago.id} marcado como pagado por Mercado Pago payment_id: {payment_id}")
+                        elif payment_status == "pending":
+                            messages.info(request, 'El pago está siendo procesado. Recibirás una confirmación pronto.')
+                        else:
+                            messages.info(request, f'Estado del pago: {payment_status}')
+                except Exception as e:
+                    logger.error(f"Error al crear transacción para payment_id {payment_id}: {str(e)}", exc_info=True)
+                    messages.warning(request, 'No se encontró la transacción y no se pudo crear una nueva.')
+            
+            # Refrescar el pago desde la base de datos para obtener el estado actualizado
             pago.refresh_from_db()
+            
+            # Verificar si el pago se marcó como pagado
+            if pago.estado != 'pagado':
+                # Si hay una transacción completada pero el pago no está marcado como pagado, actualizar
+                transaccion_completada = pago.transacciones.filter(estado='completada').first()
+                if transaccion_completada:
+                    logger.warning(f"Pago {pago.id} tiene transacción completada pero estado no es 'pagado'. Actualizando...")
+                    # Forzar actualización del estado del pago
+                    pago.marcar_como_pagado(
+                        metodo_pago='tarjeta',
+                        referencia=transaccion_completada.id_transaccion_pasarela or f"MP-{transaccion_completada.id}"
+                    )
+                    pago.refresh_from_db()
+                    logger.info(f"Pago {pago.id} actualizado a estado 'pagado'")
         except TransaccionPago.DoesNotExist:
             messages.warning(request, 'No se encontró la transacción.')
+        except ValueError:
+            messages.warning(request, 'ID de pago inválido.')
+        except Exception as e:
+            logger.error(f"Error inesperado al procesar pago de Mercado Pago: {str(e)}", exc_info=True)
+            messages.warning(request, f'Error al procesar el pago: {str(e)}')
     elif paypal_token:
         # PayPal - verificar y capturar el pago
         # paypal_token es el token (order_id) que PayPal devuelve
@@ -946,13 +1175,96 @@ def pago_exitoso(request, pk):
         except Exception as e:
             logger.error(f"Error al procesar pago de PayPal: {str(e)}", exc_info=True)
             messages.warning(request, f'Error al verificar el pago: {str(e)}')
+    else:
+        # Si no hay payment_id, session_id ni paypal_token, verificar si hay transacciones completadas recientes
+        # Esto puede pasar si el usuario hace clic en "Volver al sitio" sin parámetros
+        logger.info(f"No se encontró payment_id, session_id ni paypal_token. Verificando transacciones completadas para pago {pk}")
+        transaccion_completada = pago.transacciones.filter(
+            estado='completada',
+            pasarela='mercadopago'
+        ).order_by('-fecha_completada').first()
+        
+        if transaccion_completada:
+            # Verificar que el pago esté marcado como pagado
+            if pago.estado != 'pagado':
+                logger.warning(f"Pago {pago.id} tiene transacción completada reciente pero estado no es 'pagado'. Actualizando...")
+                pago.marcar_como_pagado(
+                    metodo_pago='tarjeta',
+                    referencia=transaccion_completada.id_transaccion_pasarela or f"MP-{transaccion_completada.id}"
+                )
+                pago.refresh_from_db()
+                logger.info(f"Pago {pago.id} actualizado a estado 'pagado' basado en transacción completada")
+            messages.success(request, '¡Pago procesado exitosamente!')
+        else:
+            # Buscar transacciones pendientes recientes (últimas 10 minutos) que puedan haberse completado
+            from datetime import timedelta
+            transacciones_recientes = pago.transacciones.filter(
+                pasarela='mercadopago',
+                fecha_creacion__gte=timezone.now() - timedelta(minutes=10)
+            ).order_by('-fecha_creacion')
+            
+            if transacciones_recientes.exists():
+                # Intentar verificar con Mercado Pago si alguna se completó
+                gateway = PaymentGateway(pasarela='mercadopago')
+                for trans in transacciones_recientes:
+                    if trans.id_transaccion_pasarela:
+                        try:
+                            payment_response = gateway.mp.payment().get(int(trans.id_transaccion_pasarela))
+                            if payment_response.get("status") == 200:
+                                payment = payment_response.get("response", {})
+                                payment_status = payment.get("status", "")
+                                
+                                if payment_status == "approved" and trans.estado != 'completada':
+                                    trans.marcar_como_completada()
+                                    pago.refresh_from_db()
+                                    messages.success(request, '¡Pago procesado exitosamente!')
+                                    logger.info(f"Pago {pago.id} verificado y marcado como pagado desde transacción {trans.id}")
+                                    break
+                        except Exception as e:
+                            logger.warning(f"Error al verificar transacción {trans.id}: {str(e)}")
+                            continue
+            
+            if pago.estado != 'pagado':
+                messages.info(request, 'El pago está siendo verificado. Si ya realizaste el pago, el estado se actualizará automáticamente.')
+    
+    # Refrescar el pago desde la base de datos antes de renderizar para asegurar el estado más actualizado
+    pago.refresh_from_db()
+    
+    # Verificación final: si hay una transacción completada pero el pago no está marcado como pagado, actualizar
+    if pago.estado != 'pagado':
+        transaccion_completada = pago.transacciones.filter(estado='completada').first()
+        if transaccion_completada:
+            logger.warning(f"Verificación final: Pago {pago.id} tiene transacción completada pero estado no es 'pagado'. Actualizando...")
+            pago.marcar_como_pagado(
+                metodo_pago='tarjeta',
+                referencia=transaccion_completada.id_transaccion_pasarela or f"MP-{transaccion_completada.id}"
+            )
+            pago.refresh_from_db()
+            logger.info(f"Pago {pago.id} actualizado a estado 'pagado' en verificación final")
+    
+    # Si es un cliente, redirigir directamente a mis-pagos después de procesar el pago
+    if request.user.is_authenticated and es_cliente(request.user):
+        messages.success(request, f'¡Pago procesado exitosamente! El pago de ${pago.monto} ha sido registrado.')
+        # Redirigir específicamente a localhost:8000
+        # Nota: Si vienes desde ngrok, necesitarás hacer clic en "Visit Site" la primera vez
+        from django.http import HttpResponseRedirect
+        return HttpResponseRedirect('http://localhost:8000/clientes/portal/mis-pagos/')
     
     # Obtener transacciones relacionadas
     transacciones = pago.transacciones.all().order_by('-fecha_creacion')
     
+    # Determinar la URL de redirección según el tipo de usuario
+    redirect_url = None
+    if request.user.is_authenticated:
+        if request.user.is_staff:
+            # Redirigir al detalle del pago en el admin
+            redirect_url = 'pagos:pago_detail'
+    
     context = {
         'pago': pago,
         'transacciones': transacciones,
+        'redirect_url': redirect_url,
+        'es_cliente': False,  # Solo llegamos aquí si NO es cliente (ya redirigimos arriba)
     }
     
     return render(request, 'pagos/pago_exitoso.html', context)
@@ -995,40 +1307,108 @@ def mercadopago_webhook(request):
             tipo = data.get('type')
             datos = data.get('data', {})
             
+            logger.info(f"Webhook de Mercado Pago recibido: tipo={tipo}, datos={datos}")
+            
             if tipo == 'payment':
                 payment_id = datos.get('id')
                 
+                if not payment_id:
+                    logger.warning("Webhook de Mercado Pago sin payment_id")
+                    return JsonResponse({'status': 'error', 'message': 'payment_id requerido'}, status=400)
+                
                 # Buscar la transacción
-                try:
-                    transaccion = TransaccionPago.objects.get(
-                        id_transaccion_pasarela=payment_id,
-                        pasarela='mercadopago'
-                    )
-                    
-                    # Obtener detalles del pago
-                    gateway = PaymentGateway(pasarela='mercadopago')
-                    payment_response = gateway.mp.payment().get(int(payment_id))
-                    
-                    if payment_response["status"] == 200:
-                        payment = payment_response["response"]
+                transaccion = TransaccionPago.objects.filter(
+                    id_transaccion_pasarela=payment_id,
+                    pasarela='mercadopago'
+                ).first()
+                
+                # Si no encontramos por payment_id, buscar por external_reference
+                if not transaccion:
+                    try:
+                        gateway = PaymentGateway(pasarela='mercadopago')
+                        payment_response = gateway.mp.payment().get(int(payment_id))
                         
-                        if payment.get("status") == "approved":
-                            transaccion.estado = 'completada'
-                            transaccion.fecha_completada = timezone.now()
-                            transaccion.datos_respuesta = payment
-                            transaccion.save()
-                            transaccion.marcar_como_completada()
-                        elif payment.get("status") == "rejected":
-                            transaccion.estado = 'fallida'
-                            transaccion.mensaje_error = payment.get("status_detail", "Pago rechazado")
-                            transaccion.save()
-                    
-                except TransaccionPago.DoesNotExist:
-                    logger.warning(f"Transacción no encontrada para payment_id: {payment_id}")
+                        if payment_response.get("status") == 200:
+                            payment = payment_response.get("response", {})
+                            external_reference = payment.get("external_reference")
+                            
+                            if external_reference:
+                                try:
+                                    pago_id = int(external_reference)
+                                    # Buscar transacción por el pago asociado
+                                    transaccion = TransaccionPago.objects.filter(
+                                        pago__id=pago_id,
+                                        pasarela='mercadopago'
+                                    ).order_by('-fecha_creacion').first()
+                                    
+                                    # Si encontramos la transacción, actualizar el payment_id
+                                    if transaccion and not transaccion.id_transaccion_pasarela:
+                                        transaccion.id_transaccion_pasarela = payment_id
+                                        transaccion.save()
+                                except (ValueError, TypeError):
+                                    pass
+                    except Exception as e:
+                        logger.warning(f"Error al buscar transacción por external_reference: {str(e)}")
+                
+                if transaccion:
+                    # Obtener detalles actualizados del pago
+                    try:
+                        gateway = PaymentGateway(pasarela='mercadopago')
+                        payment_response = gateway.mp.payment().get(int(payment_id))
+                        
+                        if payment_response.get("status") == 200:
+                            payment = payment_response.get("response", {})
+                            payment_status = payment.get("status", "")
+                            
+                            # Actualizar datos de la transacción
+                            if not transaccion.id_transaccion_pasarela:
+                                transaccion.id_transaccion_pasarela = payment_id
+                            
+                            if not transaccion.datos_respuesta:
+                                transaccion.datos_respuesta = {}
+                            transaccion.datos_respuesta['payment'] = payment
+                            
+                            # Actualizar estado según el status del pago
+                            if payment_status == "approved":
+                                # Verificar que el pago no esté ya pagado (evitar duplicidad)
+                                if transaccion.pago.estado == 'pagado':
+                                    # Solo actualizar la transacción si no está completada
+                                    if transaccion.estado != 'completada':
+                                        transaccion.estado = 'completada'
+                                        transaccion.fecha_completada = timezone.now()
+                                        transaccion.save()
+                                    logger.warning(f"Webhook: Intento de procesar pago ya pagado (Pago ID: {transaccion.pago.id}, Payment ID: {payment_id})")
+                                elif transaccion.estado != 'completada':
+                                    transaccion.marcar_como_completada()
+                                    logger.info(f"Webhook: Pago {transaccion.pago.id} marcado como pagado por Mercado Pago payment_id: {payment_id}")
+                            elif payment_status == "rejected":
+                                transaccion.estado = 'fallida'
+                                transaccion.mensaje_error = payment.get("status_detail", "Pago rechazado")
+                                transaccion.save()
+                                logger.info(f"Webhook: Pago {transaccion.pago.id} marcado como rechazado")
+                            elif payment_status == "cancelled":
+                                transaccion.estado = 'fallida'
+                                transaccion.mensaje_error = "Pago cancelado"
+                                transaccion.save()
+                                logger.info(f"Webhook: Pago {transaccion.pago.id} marcado como cancelado")
+                            elif payment_status == "pending":
+                                transaccion.estado = 'pendiente'
+                                transaccion.save()
+                                logger.info(f"Webhook: Pago {transaccion.pago.id} sigue pendiente")
+                        else:
+                            error_msg = payment_response.get("message", "Error desconocido")
+                            logger.error(f"Error al obtener pago de Mercado Pago {payment_id}: {error_msg}")
+                    except Exception as e:
+                        logger.error(f"Error al procesar webhook de Mercado Pago para payment_id {payment_id}: {str(e)}", exc_info=True)
+                else:
+                    logger.warning(f"Webhook: Transacción no encontrada para payment_id: {payment_id}")
             
             return JsonResponse({'status': 'success'}, status=200)
+        except json.JSONDecodeError as e:
+            logger.error(f"Error al parsear JSON del webhook de Mercado Pago: {str(e)}")
+            return JsonResponse({'status': 'error', 'message': 'JSON inválido'}, status=400)
         except Exception as e:
-            logger.error(f"Error al procesar webhook de Mercado Pago: {str(e)}")
+            logger.error(f"Error al procesar webhook de Mercado Pago: {str(e)}", exc_info=True)
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)

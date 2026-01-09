@@ -1039,6 +1039,63 @@
                 });
             });
         });
+        
+        // JavaScript para evitar la página de advertencia de ngrok
+        (function() {
+            // Detectar si estamos en un dominio de ngrok
+            const hostname = window.location.hostname;
+            const isNgrok = /\.(ngrok-free\.dev|ngrok\.io|ngrok\.app)$/.test(hostname);
+            
+            if (isNgrok) {
+                // Interceptar fetch para agregar el header ngrok-skip-browser-warning
+                const originalFetch = window.fetch;
+                window.fetch = function(...args) {
+                    const [url, options = {}] = args;
+                    options.headers = options.headers || {};
+                    options.headers['ngrok-skip-browser-warning'] = 'true';
+                    return originalFetch.apply(this, [url, options]);
+                };
+                
+                // Interceptar XMLHttpRequest para agregar el header
+                const originalOpen = XMLHttpRequest.prototype.open;
+                const originalSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
+                
+                XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+                    this._url = url;
+                    return originalOpen.apply(this, [method, url, ...rest]);
+                };
+                
+                XMLHttpRequest.prototype.setRequestHeader = function(header, value) {
+                    if (this._url && /\.(ngrok-free\.dev|ngrok\.io|ngrok\.app)/.test(this._url)) {
+                        originalSetRequestHeader.call(this, 'ngrok-skip-browser-warning', 'true');
+                    }
+                    return originalSetRequestHeader.apply(this, [header, value]);
+                };
+                
+                // Para redirecciones programáticas, usar fetch si es posible
+                const originalLocationReplace = window.location.replace;
+                window.location.replace = function(url) {
+                    if (typeof url === 'string' && /\.(ngrok-free\.dev|ngrok\.io|ngrok\.app)/.test(url)) {
+                        // Intentar usar fetch primero para enviar el header
+                        fetch(url, {
+                            method: 'GET',
+                            headers: {
+                                'ngrok-skip-browser-warning': 'true'
+                            },
+                            redirect: 'follow'
+                        }).then(() => {
+                            originalLocationReplace.call(window.location, url);
+                        }).catch(() => {
+                            originalLocationReplace.call(window.location, url);
+                        });
+                    } else {
+                        originalLocationReplace.call(window.location, url);
+                    }
+                };
+                
+                console.log('✅ ngrok skip browser warning habilitado');
+            }
+        })();
     </script>
 </body>
 </html>
