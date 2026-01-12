@@ -106,3 +106,4 @@ Si ves este mensaje, significa que estás usando localhost y la redirección des
 **La redirección automática desde tu página de éxito YA está implementada y funcionará siempre que el usuario llegue a esa página.** 🎉
 
 
+

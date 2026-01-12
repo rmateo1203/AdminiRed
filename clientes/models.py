@@ -287,6 +287,96 @@ Equipo de {getattr(settings, "SISTEMA_NOMBRE", "AdminiRed")}
         
         return usuario
     
+    def resetear_password_portal(self, password=None, enviar_email=True):
+        """
+        Resetea la contraseña del usuario del portal.
+        
+        Args:
+            password: Nueva contraseña (opcional). Si no se proporciona, se genera automáticamente.
+            enviar_email: Si es True y el cliente tiene email, se envía un email con la nueva contraseña.
+        
+        Returns:
+            str: La nueva contraseña establecida.
+        """
+        from django.contrib.auth import get_user_model
+        from django.core.mail import send_mail
+        from django.conf import settings
+        import secrets
+        import string
+        
+        User = get_user_model()
+        
+        # Verificar que el cliente tenga usuario
+        if not self.usuario:
+            raise ValueError(
+                'El cliente no tiene un usuario del portal. '
+                'Por favor, crea un usuario primero usando la acción "Crear usuario para portal".'
+            )
+        
+        # Generar contraseña si no se proporciona
+        password_generada = False
+        if not password:
+            alphabet = string.ascii_letters + string.digits
+            password = ''.join(secrets.choice(alphabet) for i in range(12))
+            password_generada = True
+        
+        # Resetear la contraseña
+        self.usuario.set_password(password)
+        self.usuario.save()
+        
+        # También forzar cambio de contraseña para que el usuario deba cambiarla en el próximo login
+        self.debe_cambiar_password = True
+        self.save()
+        
+        # Enviar email con nueva contraseña si está habilitado y el cliente tiene email
+        if enviar_email and self.email:
+            try:
+                # Obtener URL del portal desde settings o usar default
+                portal_url = getattr(settings, 'SITE_URL', 'http://localhost:8000') + '/clientes/portal/login/'
+                
+                # Preparar mensaje
+                subject = f'Contraseña restablecida - Portal de Clientes {getattr(settings, "SISTEMA_NOMBRE", "AdminiRed")}'
+                
+                mensaje_texto = f"""
+Hola {self.nombre_completo},
+
+Tu contraseña del portal de clientes ha sido restablecida por un administrador.
+
+Tu nueva contraseña es: {password}
+
+Puedes acceder al portal en: {portal_url}
+
+Por seguridad, deberás cambiar tu contraseña después del primer acceso.
+
+Si no solicitaste este restablecimiento, por favor contacta con nosotros de inmediato.
+
+Saludos,
+Equipo de {getattr(settings, "SISTEMA_NOMBRE", "AdminiRed")}
+"""
+                
+                # Intentar enviar email
+                send_mail(
+                    subject=subject,
+                    message=mensaje_texto,
+                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@adminired.com'),
+                    recipient_list=[self.email],
+                    fail_silently=False,  # Lanzar excepción si falla
+                )
+            except Exception as e:
+                # Si falla el envío de email, registrar el error pero no fallar el reset
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f'Error al enviar email de contraseña restablecida a {self.email}: {str(e)}')
+                # Si la contraseña fue generada y no se pudo enviar el email, 
+                # esto es un problema porque el cliente no sabrá su contraseña
+                if password_generada:
+                    raise ValueError(
+                        f'Se restableció la contraseña pero no se pudo enviar el email. '
+                        f'Por favor, comunica manualmente al cliente: Usuario: {self.usuario.username}, Nueva Contraseña: {password}'
+                    )
+        
+        return password
+    
     def save(self, *args, **kwargs):
         """Guarda el cliente con auditoría."""
         user = kwargs.pop('user', None)

@@ -189,3 +189,4 @@ Auto_return deshabilitado (localhost detectado). El usuario deberá hacer clic e
 
 **¡Problema resuelto!** El usuario ahora tiene instrucciones claras sobre cómo regresar al sistema después del pago. 🎉
 
+

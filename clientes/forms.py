@@ -6,6 +6,24 @@ from .models import Cliente
 class ClienteForm(forms.ModelForm):
     """Formulario para crear y editar clientes."""
     
+    nueva_password = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Dejar en blanco para no cambiar'
+        }),
+        label='Nueva contraseña del portal',
+        help_text='Dejar en blanco si no deseas cambiar la contraseña. Mínimo 8 caracteres.'
+    )
+    confirmar_password = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Confirmar contraseña'
+        }),
+        label='Confirmar contraseña'
+    )
+    
     class Meta:
         model = Cliente
         fields = [
@@ -66,9 +84,29 @@ class ClienteForm(forms.ModelForm):
             'notas': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 4,
-                'placeholder': 'Notas adicionales sobre el cliente'
             }),
         }
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        nueva_password = cleaned_data.get('nueva_password')
+        confirmar_password = cleaned_data.get('confirmar_password')
+        
+        # Solo validar si se intenta cambiar la contraseña
+        if nueva_password or confirmar_password:
+            if not nueva_password:
+                raise ValidationError({'nueva_password': 'Debes ingresar una contraseña si deseas cambiarla.'})
+            
+            if not confirmar_password:
+                raise ValidationError({'confirmar_password': 'Debes confirmar la contraseña.'})
+            
+            if nueva_password != confirmar_password:
+                raise ValidationError({'confirmar_password': 'Las contraseñas no coinciden.'})
+            
+            if len(nueva_password) < 8:
+                raise ValidationError({'nueva_password': 'La contraseña debe tener al menos 8 caracteres.'})
+        
+        return cleaned_data
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

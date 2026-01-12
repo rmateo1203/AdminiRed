@@ -254,3 +254,4 @@ Si después de seguir todos los pasos el error persiste:
 La clave es: **limpiar todo y empezar desde cero con una tarjeta nueva**.
 
 
+

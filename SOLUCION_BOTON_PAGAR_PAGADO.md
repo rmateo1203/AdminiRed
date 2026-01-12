@@ -141,3 +141,4 @@ Aunque la última condición (`and pago.estado != 'pagado'`) es redundante dado 
 **El problema está resuelto. Si persiste, verifica el estado del pago en la base de datos.** 🎉
 
 
+

@@ -161,6 +161,16 @@ def cliente_update(request, pk):
                     cliente.restore(user=request.user)
                 else:
                     cliente.save(user=request.user)  # Pasar usuario para auditoría
+                
+                # Manejar cambio de contraseña si se proporcionó
+                nueva_password = form.cleaned_data.get('nueva_password')
+                if nueva_password and cliente.usuario:
+                    try:
+                        cliente.resetear_password_portal(password=nueva_password, enviar_email=False)
+                        messages.success(request, f'Contraseña del portal actualizada para {cliente.nombre_completo}.')
+                    except Exception as e:
+                        messages.error(request, f'Error al cambiar la contraseña: {str(e)}')
+                
                 messages.success(request, f'Cliente "{cliente.nombre_completo}" actualizado exitosamente.')
                 return redirect('clientes:cliente_detail', pk=cliente.pk)
             except Exception as e:
@@ -616,4 +626,72 @@ def cliente_bulk_action(request):
             restaurados += 1
         messages.success(request, f'{restaurados} cliente(s) restaurado(s) exitosamente.')
     
+    elif action == 'cambiar_password':
+        # Redirigir a la vista de cambiar contraseña con los IDs
+        cliente_ids_str = ','.join(cliente_ids)
+        return redirect('clientes:cambiar_password', cliente_ids=cliente_ids_str)
+    
     return redirect('clientes:cliente_list')
+
+
+@login_required
+def cliente_cambiar_password(request, cliente_ids):
+    """Vista para cambiar la contraseña del portal de clientes seleccionados."""
+    # Parsear los IDs
+    try:
+        ids_list = [int(id) for id in cliente_ids.split(',') if id.strip()]
+    except ValueError:
+        messages.error(request, 'IDs de clientes inválidos.')
+        return redirect('clientes:cliente_list')
+    
+    clientes = Cliente.all_objects.filter(pk__in=ids_list)
+    
+    if not clientes.exists():
+        messages.error(request, 'No se encontraron clientes.')
+        return redirect('clientes:cliente_list')
+    
+    if request.method == 'POST':
+        nueva_password = request.POST.get('nueva_password', '').strip()
+        confirmar_password = request.POST.get('confirmar_password', '').strip()
+        
+        # Validaciones
+        if not nueva_password:
+            messages.error(request, 'La contraseña no puede estar vacía.')
+        elif nueva_password != confirmar_password:
+            messages.error(request, 'Las contraseñas no coinciden.')
+        elif len(nueva_password) < 8:
+            messages.error(request, 'La contraseña debe tener al menos 8 caracteres.')
+        else:
+            # Cambiar contraseñas
+            exitosos = 0
+            sin_usuario = 0
+            errores = 0
+            
+            for cliente in clientes:
+                if not cliente.usuario:
+                    sin_usuario += 1
+                    continue
+                
+                try:
+                    cliente.resetear_password_portal(password=nueva_password, enviar_email=False)
+                    exitosos += 1
+                except Exception as e:
+                    errores += 1
+                    messages.error(request, f'Error al cambiar contraseña para {cliente.nombre_completo}: {str(e)}')
+            
+            # Mensajes de resultado
+            if exitosos > 0:
+                messages.success(request, f'✅ {exitosos} contraseña(s) cambiada(s) exitosamente.')
+            if sin_usuario > 0:
+                messages.warning(request, f'⚠️ {sin_usuario} cliente(s) no tienen usuario del portal.')
+            if errores > 0:
+                messages.error(request, f'❌ {errores} error(es) al cambiar contraseñas.')
+            
+            return redirect('clientes:cliente_list')
+    
+    context = {
+        'clientes': clientes,
+        'cliente_ids': cliente_ids,
+    }
+    
+    return render(request, 'clientes/cliente_cambiar_password.html', context)

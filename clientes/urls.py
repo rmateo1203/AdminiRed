@@ -13,6 +13,7 @@ urlpatterns = [
     path('<int:pk>/eliminar/', views.cliente_delete, name='cliente_delete'),
     path('<int:pk>/restaurar/', views.cliente_restore, name='cliente_restore'),
     path('<int:pk>/crear-usuario-portal/', views.cliente_crear_usuario_portal, name='cliente_crear_usuario_portal'),
+    path('cambiar-password/<str:cliente_ids>/', views.cliente_cambiar_password, name='cambiar_password'),
     # Exportación e importación
     path('exportar/excel/', views.cliente_exportar_excel, name='cliente_exportar_excel'),
     path('exportar/pdf/', views.cliente_exportar_pdf, name='cliente_exportar_pdf'),

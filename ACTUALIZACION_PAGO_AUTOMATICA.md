@@ -216,3 +216,4 @@ El sistema ahora maneja errores de forma robusta:
 **¡Todo funciona automáticamente!** 🎉
 
 
+

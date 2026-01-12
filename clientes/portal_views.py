@@ -177,6 +177,12 @@ def portal_login(request):
             messages.error(request, 'Por favor, completa todos los campos.')
             return render(request, 'clientes/portal_login.html')
         
+        # Verificar si el usuario existe
+        try:
+            user_exists = User.objects.filter(username=username).exists()
+        except:
+            user_exists = False
+        
         # Autenticar usuario
         user = authenticate(request, username=username, password=password)
         
@@ -196,7 +202,11 @@ def portal_login(request):
             else:
                 messages.error(request, 'No tienes acceso al portal de clientes.')
         else:
-            messages.error(request, 'Usuario o contraseña incorrectos.')
+            # Distinguir entre usuario no existe y contraseña incorrecta
+            if not user_exists:
+                messages.error(request, 'El usuario no existe. Por favor, contacta con el administrador para crear tu cuenta.')
+            else:
+                messages.error(request, 'Contraseña incorrecta. Si olvidaste tu contraseña, contacta con el administrador.')
     
     return render(request, 'clientes/portal_login.html')
 

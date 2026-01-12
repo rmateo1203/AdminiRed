@@ -69,3 +69,4 @@ Cuando el cliente es redirigido, verá un mensaje de éxito:
 
 **¡Problema resuelto!** Ahora los clientes serán redirigidos directamente a la página de mis-pagos después de completar el pago. 🎉
 
+
