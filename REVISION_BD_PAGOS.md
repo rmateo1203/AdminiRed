@@ -108,3 +108,5 @@ Asegúrate de que:
 **Estado General:** ✅ La base de datos está consistente. Los pagos pagados sin transacciones son normales para pagos manuales. Las transacciones pendientes son intentos de pago no completados.
 
 
+
+

@@ -189,3 +189,5 @@ R: Sí, el formulario valida:
 | Más rápido para un cliente | ✅ Sí | ❌ No |
 | Útil para múltiples clientes | ❌ No | ✅ Sí |
 
+
+

@@ -1,10 +1,29 @@
 from django.urls import path
 from . import views
 from . import catalogos_views
+from . import roles_views
+from . import realtime_views
 
 app_name = 'core'
 
 urlpatterns = [
+    # Error de permisos
+    path('sin-permisos/', views.sin_permisos, name='sin_permisos'),
+    # Roles y Permisos
+    path('roles/', roles_views.roles_dashboard, name='roles_dashboard'),
+    path('roles/lista/', roles_views.roles_list, name='roles_list'),
+    path('roles/crear/', roles_views.rol_create, name='rol_create'),
+    path('roles/<int:pk>/', roles_views.rol_detail, name='rol_detail'),
+    path('roles/<int:pk>/editar/', roles_views.rol_update, name='rol_update'),
+    path('roles/<int:pk>/permisos/', roles_views.rol_permisos_update, name='rol_permisos_update'),
+    path('permisos/', roles_views.permisos_list, name='permisos_list'),
+    path('permisos/crear/', roles_views.permiso_create, name='permiso_create'),
+    path('permisos/<int:pk>/', roles_views.permiso_detail, name='permiso_detail'),
+    path('permisos/<int:pk>/editar/', roles_views.permiso_update, name='permiso_update'),
+    path('usuarios/roles/', roles_views.usuarios_roles_list, name='usuarios_roles_list'),
+    path('usuarios/crear/', roles_views.usuario_create, name='usuario_create'),
+    path('usuarios/<int:user_id>/editar/', roles_views.usuario_update, name='usuario_update'),
+    path('usuarios/<int:user_id>/roles/', roles_views.usuario_roles_manage, name='usuario_roles_manage'),
     # Catálogos
     path('catalogos/', catalogos_views.catalogos_dashboard, name='catalogos_dashboard'),
     
@@ -34,5 +53,9 @@ urlpatterns = [
     
     # Configuración del Sistema
     path('configurar-sistema/', views.configurar_sistema, name='configurar_sistema'),
+    
+    # Actualizaciones en tiempo real
+    path('realtime/check-updates/', realtime_views.check_updates, name='check_updates'),
+    path('realtime/updates/<str:model_name>/', realtime_views.get_model_updates, name='get_model_updates'),
 ]
 

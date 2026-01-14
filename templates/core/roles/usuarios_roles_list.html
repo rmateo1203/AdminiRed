@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}Usuarios y Roles - {{ sistema_config.nombre_empresa|default:"AdminiRed" }}{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2><i class="fas fa-user-tag"></i> Usuarios y Roles</h2>
+        <a href="{% url 'core:roles_dashboard' %}" class="btn btn-admin">
+            <i class="fas fa-arrow-left"></i> Volver al Dashboard
+        </a>
+    </div>
+    
+    <!-- Búsqueda -->
+    <div style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+        <form method="get" style="display: flex; gap: 1rem; align-items: end;">
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; margin-bottom: 0.5rem; color: #6b7280; font-weight: 600;">Búsqueda</label>
+                <input type="text" name="q" value="{{ query }}" placeholder="Buscar por usuario, email, nombre..." 
+                       style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px;">
+            </div>
+            <div>
+                <button type="submit" class="btn">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Tabla de Usuarios -->
+    <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Nombre Completo</th>
+                    <th>Email</th>
+                    <th>Roles</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in page_obj %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 600; color: #111827;">{{ item.usuario.username }}</div>
+                        {% if item.usuario.is_superuser %}
+                        <div style="color: #f59e0b; font-size: 0.875rem; margin-top: 0.25rem;">
+                            <i class="fas fa-crown"></i> Superusuario
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.usuario.first_name or item.usuario.last_name %}
+                        {{ item.usuario.first_name }} {{ item.usuario.last_name }}
+                        {% else %}
+                        <span style="color: #6b7280;">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.usuario.email %}
+                        {{ item.usuario.email }}
+                        {% else %}
+                        <span style="color: #6b7280;">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.roles %}
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            {% for rol in item.roles %}
+                            <span style="background: #dbeafe; color: #1e40af; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.875rem; font-weight: 600;">
+                                {{ rol.nombre }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <span style="color: #6b7280; font-size: 0.875rem;">Sin roles asignados</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="{% url 'core:usuario_update' item.usuario.pk %}" class="btn btn-action" title="Editar usuario">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'core:usuario_roles_manage' item.usuario.pk %}" class="btn btn-action" title="Gestionar roles">
+                                <i class="fas fa-user-cog"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 3rem; color: #6b7280;">
+                        No se encontraron usuarios.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Paginación -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-modern">
+        {% if page_obj.has_previous %}
+            <a href="?page=1{% if query %}&q={{ query }}{% endif %}">« Primera</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">‹ Anterior</a>
+        {% endif %}
+        <span class="current">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}">Siguiente ›</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}">Última »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

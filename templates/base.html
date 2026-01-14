@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{{ sistema_config.nombre_empresa|default:"AdminiRed" }} - Sistema de Gestión{% endblock %}</title>
+    <title>{% block title %}{{ sistema_config.titulo_para_mostrar|default:"AdminiRed" }}{% endblock %}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         :root {
@@ -13,6 +13,30 @@
             --color-advertencia: {{ sistema_config.color_advertencia|default:"#f59e0b" }};
             --color-peligro: {{ sistema_config.color_peligro|default:"#ef4444" }};
             --color-info: {{ sistema_config.color_info|default:"#3b82f6" }};
+            
+            /* Variables para modo claro */
+            --bg-primary: #f5f7fa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f8f9fa;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --text-tertiary: #9ca3af;
+            --border-color: #e5e7eb;
+            --shadow: rgba(0,0,0,0.05);
+            --shadow-hover: rgba(0,0,0,0.1);
+        }
+        
+        /* Variables para modo oscuro */
+        body.dark-mode {
+            --bg-primary: #111827;
+            --bg-secondary: #1f2937;
+            --bg-tertiary: #374151;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-tertiary: #9ca3af;
+            --border-color: #4b5563;
+            --shadow: rgba(0,0,0,0.3);
+            --shadow-hover: rgba(0,0,0,0.5);
         }
         
         * {
@@ -21,11 +45,19 @@
             box-sizing: border-box;
         }
         
+        html, body {
+            overflow-x: hidden;
+            max-width: 100%;
+        }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: #f5f7fa;
-            color: #333;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
             line-height: 1.6;
+            width: 100%;
+            box-sizing: border-box;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         
         .header {
@@ -75,14 +107,16 @@
         /* Sidebar Izquierdo */
         .sidebar-left {
             width: 250px;
-            background: white;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            background: var(--bg-secondary);
+            box-shadow: 2px 0 10px var(--shadow);
+            border-right: 1px solid var(--border-color);
             padding: 1.5rem;
             position: sticky;
             top: 0;
             height: fit-content;
             max-height: calc(100vh - 100px);
             overflow-y: auto;
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
         }
         
         /* Ocultar sidebar izquierdo cuando el sidebar superior está activo */
@@ -105,7 +139,7 @@
             align-items: center;
             gap: 0.75rem;
             padding: 0.75rem 1rem;
-            color: #333;
+            color: var(--text-primary);
             text-decoration: none;
             border-radius: 8px;
             transition: all 0.3s;
@@ -126,11 +160,13 @@
         /* Sidebar Superior */
         .sidebar-top {
             width: 100%;
-            background: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: var(--bg-secondary);
+            box-shadow: 0 2px 10px var(--shadow);
+            border: 1px solid var(--border-color);
             padding: 1rem 2rem;
             margin-bottom: 2rem;
             border-radius: 10px;
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
         }
         
         /* Ocultar sidebar superior cuando el sidebar izquierdo está activo */
@@ -152,7 +188,7 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.5rem 1rem;
-            color: #333;
+            color: var(--text-primary);
             text-decoration: none;
             border-radius: 8px;
             transition: all 0.3s;
@@ -173,11 +209,17 @@
         .main-content {
             flex: 1;
             padding: 0 2rem;
+            min-width: 0;
+            overflow-x: hidden;
+            box-sizing: border-box;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
+            padding: 0 1rem;
+            box-sizing: border-box;
+            overflow-x: hidden;
         }
         
         /* Sin sidebar (layout original) */
@@ -185,6 +227,8 @@
             max-width: 1200px;
             margin: 2rem auto;
             padding: 0 2rem;
+            box-sizing: border-box;
+            overflow-x: hidden;
         }
         
         /* Toggle Sidebar Button */
@@ -253,16 +297,17 @@
         }
         
         .stat-card {
-            background: white;
+            background: var(--bg-secondary);
             border-radius: 10px;
             padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 2px 10px var(--shadow);
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s ease, border-color 0.3s ease;
         }
         
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 20px var(--shadow-hover);
         }
         
         .stat-card h3 {
@@ -276,33 +321,117 @@
         .stat-card .value {
             font-size: 2.5rem;
             font-weight: bold;
-            color: #333;
+            color: var(--text-primary);
             margin-bottom: 0.5rem;
         }
         
         .stat-card .subtitle {
-            color: #666;
+            color: var(--text-secondary);
             font-size: 0.9rem;
         }
         
         .section {
-            background: white;
-            border-radius: 10px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px var(--shadow);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            box-sizing: border-box;
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
         }
         
         .section h2 {
             color: var(--color-primario);
             margin-bottom: 1rem;
             padding-bottom: 0.5rem;
-            border-bottom: 2px solid #f0f0f0;
+            border-bottom: 2px solid var(--border-color);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        /* Tablas modernas y responsivas */
+        .table-wrapper {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px var(--shadow);
+            border: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
         .table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 0;
+        }
+        
+        .table-modern {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        .table-modern thead {
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+        }
+        
+        .table-modern th {
+            padding: 1rem 1.25rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
+        }
+        
+        .table-modern th:first-child {
+            padding-left: 1.5rem;
+        }
+        
+        .table-modern th:last-child {
+            padding-right: 1.5rem;
+        }
+        
+        .table-modern tbody tr {
+            transition: all 0.2s;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .table-modern tbody tr:hover {
+            background: var(--bg-tertiary);
+            transform: translateX(2px);
+        }
+        
+        .table-modern tbody tr:last-child {
+            border-bottom: none;
+        }
+        
+        .table-modern td {
+            padding: 1.25rem 1.25rem;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            vertical-align: middle;
+        }
+        
+        .table-modern td:first-child {
+            padding-left: 1.5rem;
+        }
+        
+        .table-modern td:last-child {
+            padding-right: 1.5rem;
         }
         
         .table th,
@@ -310,24 +439,65 @@
             padding: 0.75rem;
             text-align: left;
             border-bottom: 1px solid #f0f0f0;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            vertical-align: middle;
         }
         
         .table th {
-            background-color: #f8f9fa;
+            background-color: var(--bg-tertiary);
             font-weight: 600;
-            color: #667eea;
+            color: var(--color-primario);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         
         .table tr:hover {
-            background-color: #f8f9fa;
+            background-color: var(--bg-tertiary);
         }
         
+        .table td {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Anchos específicos para columnas comunes */
+        .table th:first-child,
+        .table td:first-child {
+            width: 50px;
+            min-width: 50px;
+            max-width: 50px;
+        }
+        
+        .table th:last-child,
+        .table td:last-child {
+            width: 120px;
+            min-width: 120px;
+            max-width: 120px;
+        }
+        
+        /* Badges modernos */
         .badge {
             display: inline-block;
             padding: 0.25rem 0.75rem;
             border-radius: 20px;
             font-size: 0.85rem;
             font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+        
+        .badge-modern {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.375rem 0.875rem;
+            border-radius: 20px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            white-space: nowrap;
         }
         
         .badge-success {
@@ -335,9 +505,19 @@
             color: white;
         }
         
+        .badge-success-modern {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
         .badge-warning {
             background-color: var(--color-advertencia);
             color: white;
+        }
+        
+        .badge-warning-modern {
+            background: #fef3c7;
+            color: #92400e;
         }
         
         .badge-danger {
@@ -345,9 +525,19 @@
             color: white;
         }
         
+        .badge-danger-modern {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
         .badge-info {
             background-color: var(--color-info);
             color: white;
+        }
+        
+        .badge-info-modern {
+            background: #dbeafe;
+            color: #1e40af;
         }
         
         .btn {
@@ -387,6 +577,46 @@
             align-items: center;
             justify-content: center;
             min-width: 36px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+        
+        .btn-icon-primary {
+            background: var(--color-primario);
+            color: white;
+        }
+        
+        .btn-icon-primary:hover {
+            background: var(--color-secundario);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-icon-secondary {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        
+        .btn-icon-secondary:hover {
+            background: #e5e7eb;
+            color: #374151;
         }
         
         .btn-success {
@@ -434,6 +664,284 @@
             color: #999;
         }
         
+        .empty-state-modern {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 2px dashed var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        
+        .empty-state-modern i {
+            font-size: 4rem;
+            color: var(--text-tertiary);
+            margin-bottom: 1rem;
+        }
+        
+        .empty-state-modern p {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Cards modernos para móvil */
+        .card-modern {
+            display: none;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px var(--shadow);
+            transition: all 0.2s;
+        }
+        
+        .card-modern:hover {
+            box-shadow: 0 4px 12px var(--shadow-hover);
+            transform: translateY(-2px);
+        }
+        
+        .card-header-modern {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .card-body-modern {
+            display: grid;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .card-field {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .card-field-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            min-width: 90px;
+            font-size: 0.875rem;
+        }
+        
+        .card-field-value {
+            color: var(--text-primary);
+            flex: 1;
+            font-size: 0.95rem;
+        }
+        
+        .card-actions-modern {
+            display: flex;
+            gap: 0.75rem;
+            padding-top: 1rem;
+            border-top: 2px solid var(--border-color);
+        }
+        
+        /* Page header moderno */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .page-header h2 {
+            margin: 0;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .page-header h2 i {
+            color: var(--color-primario);
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        
+        /* Bulk actions moderno */
+        .bulk-actions {
+            display: none;
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px var(--shadow);
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        body.dark-mode .bulk-actions {
+            background: linear-gradient(135deg, #1e3a5f 0%, #1f2937 100%);
+            border-color: #3b82f6;
+        }
+        
+        .bulk-actions.active {
+            display: block;
+        }
+        
+        .bulk-actions-content {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .bulk-actions-count {
+            font-weight: 600;
+            color: var(--color-info);
+            font-size: 0.95rem;
+        }
+        
+        /* Toggle de modo oscuro en sidebar izquierdo */
+        .dark-mode-toggle-sidebar {
+            width: 100%;
+            background: transparent;
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        
+        .dark-mode-toggle-sidebar:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--color-primario);
+            color: var(--color-primario);
+            transform: translateX(2px);
+        }
+        
+        .dark-mode-toggle-sidebar i {
+            width: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        /* Toggle de modo oscuro en sidebar superior */
+        .dark-mode-toggle-top {
+            background: transparent;
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .dark-mode-toggle-top:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--color-primario);
+            color: var(--color-primario);
+        }
+        
+        .dark-mode-toggle-top i {
+            font-size: 0.9rem;
+        }
+        
+        /* Ajustes adicionales para modo oscuro */
+        body.dark-mode .sidebar-left h3 {
+            color: var(--text-primary);
+            border-bottom-color: var(--border-color);
+        }
+        
+        body.dark-mode .form-group label {
+            color: var(--text-primary);
+        }
+        
+        body.dark-mode .checkbox-wrapper {
+            background: var(--bg-secondary);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        body.dark-mode .advanced-filters {
+            background: var(--bg-tertiary);
+            border-color: var(--border-color);
+        }
+        
+        body.dark-mode .advanced-filters label {
+            color: var(--text-primary);
+        }
+        
+        body.dark-mode .client-name {
+            color: var(--text-primary);
+        }
+        
+        body.dark-mode .client-contact {
+            color: var(--color-primario);
+        }
+        
+        body.dark-mode code {
+            background: var(--bg-tertiary);
+            color: var(--color-primario);
+            border: 1px solid var(--border-color);
+        }
+        
+        body.dark-mode .footer {
+            background-color: #0f172a;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        body.dark-mode .alert {
+            border-left-color: currentColor;
+        }
+        
+        body.dark-mode .alert-warning {
+            background-color: #78350f;
+            color: #fbbf24;
+        }
+        
+        body.dark-mode .alert-danger {
+            background-color: #7f1d1d;
+            color: #fca5a5;
+        }
+        
+        body.dark-mode .alert-success {
+            background-color: #064e3b;
+            color: #6ee7b7;
+        }
+        
+        body.dark-mode .alert-info {
+            background-color: #1e3a8a;
+            color: #93c5fd;
+        }
+        
+        /* Clase para ocultar en móvil */
+        .desktop-only {
+            display: inline;
+        }
+        
+        @media (max-width: 768px) {
+            .desktop-only {
+                display: none;
+            }
+        }
+        
         .footer {
             background-color: #2d3748;
             color: white;
@@ -457,16 +965,22 @@
         .form-control {
             width: 100%;
             padding: 0.75rem;
-            border: 2px solid #e0e0e0;
+            border: 2px solid var(--border-color);
             border-radius: 8px;
             font-size: 1rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
             transition: all 0.3s;
         }
         
         .form-control:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--color-primario);
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-control::placeholder {
+            color: var(--text-tertiary);
         }
         
         .form-actions {
@@ -491,13 +1005,66 @@
             background-color: #dc2626;
         }
         
-        /* Búsqueda y filtros */
+        /* Búsqueda y filtros modernos */
+        .search-container {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px var(--shadow);
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .search-main {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .search-input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+        
+        .search-input-wrapper i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            pointer-events: none;
+        }
+        
+        .search-input-wrapper input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+        
+        .search-input-wrapper input:focus {
+            outline: none;
+            border-color: var(--color-primario);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .search-input-wrapper input::placeholder {
+            color: var(--text-tertiary);
+        }
+        
         .search-filters {
-            background: white;
+            background: var(--bg-secondary);
             padding: 1.5rem;
             border-radius: 10px;
             margin-bottom: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px var(--shadow);
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
         }
         
         .search-form {
@@ -512,12 +1079,47 @@
             min-width: 200px;
         }
         
-        /* Paginación */
+        .filters-row {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .filter-select {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+        
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--color-primario);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        /* Paginación moderna */
         .pagination {
             display: flex;
             justify-content: center;
             gap: 0.5rem;
             margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .pagination-modern {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
         }
         
         .pagination a,
@@ -529,10 +1131,34 @@
             color: #667eea;
         }
         
+        .pagination-modern a,
+        .pagination-modern span {
+            padding: 0.625rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 2px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        
+        .pagination-modern a:hover {
+            background: var(--color-primario);
+            color: white;
+            border-color: var(--color-primario);
+        }
+        
         .pagination .current {
             background-color: #667eea;
             color: white;
             border-color: #667eea;
+        }
+        
+        .pagination-modern .current {
+            background: var(--color-primario);
+            color: white;
+            border-color: var(--color-primario);
         }
         
         /* Botón menú hamburguesa */
@@ -573,6 +1199,62 @@
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             margin-bottom: 1rem;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .table-responsive table {
+            min-width: 100%;
+            border-radius: 0;
+        }
+        
+        /* Evitar desbordes en contenedores */
+        .container,
+        .container-full,
+        .main-content {
+            max-width: 100%;
+            overflow-x: hidden;
+            box-sizing: border-box;
+        }
+        
+        /* Asegurar que los elementos no se desborden */
+        * {
+            box-sizing: border-box;
+        }
+        
+        .search-filters {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .section-header h2 {
+            margin: 0;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .section-header > div {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
         
         /* Media Queries para tablets */
@@ -723,9 +1405,44 @@
                 padding: 0.5rem 0.75rem;
             }
             
+            /* Ocultar tabla en móvil, mostrar cards */
+            .table-wrapper {
+                display: none;
+            }
+            
+            .card-modern {
+                display: block;
+            }
+            
             /* Ocultar columnas secundarias en móvil */
             .hide-mobile {
                 display: none !important;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+            }
+            
+            .header-actions {
+                width: 100%;
+            }
+            
+            .header-actions .btn {
+                flex: 1;
+            }
+            
+            .search-main {
+                flex-direction: column;
+            }
+            
+            .filters-row {
+                flex-direction: column;
+            }
+            
+            .filter-select {
+                width: 100%;
             }
             
             /* Acciones en tabla */
@@ -859,6 +1576,33 @@
                 display: none !important;
             }
             
+            .card-modern {
+                display: none !important;
+            }
+            
+            .table-wrapper {
+                display: block;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .search-container {
+                padding: 1rem;
+            }
+            
+            .card-modern {
+                padding: 1rem;
+            }
+            
+            .card-actions-modern {
+                flex-direction: column;
+            }
+            
+            .card-actions-modern .btn {
+                width: 100%;
+            }
+        }
+        
             .sidebar-left .close-sidebar {
                 display: none;
             }
@@ -904,32 +1648,86 @@
                         <i class="fas fa-times"></i>
                     </button>
                     <h3 style="color: var(--color-primario); margin-bottom: 1rem; font-size: 1.1rem;">Menú</h3>
+                    {% load roles_tags %}
                     <ul class="sidebar-menu">
                         <li><a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}"><i class="fas fa-home"></i> Inicio</a></li>
+                        {% if user|puede_ver_modulo:'clientes' %}
                         <li><a href="{% url 'clientes:cliente_list' %}" class="{% if 'clientes' in request.path %}active{% endif %}"><i class="fas fa-users"></i> Clientes</a></li>
+                        {% endif %}
+                        {% if user|puede_ver_modulo:'instalaciones' %}
                         <li><a href="{% url 'instalaciones:instalacion_list' %}" class="{% if 'instalaciones' in request.path %}active{% endif %}"><i class="fas fa-wifi"></i> Instalaciones</a></li>
+                        {% endif %}
+                        {% if user|has_permiso:'gestionar_roles_permisos' or user.is_superuser %}
                         <li><a href="{% url 'core:catalogos_dashboard' %}" class="{% if 'catalogos' in request.path %}active{% endif %}"><i class="fas fa-book"></i> Catálogos</a></li>
+                        {% endif %}
+                        {% if user|puede_ver_modulo:'pagos' %}
                         <li><a href="{% url 'pagos:pago_list' %}" class="{% if 'pagos' in request.path %}active{% endif %}"><i class="fas fa-dollar-sign"></i> Pagos</a></li>
+                        {% endif %}
+                        {% if user|puede_ver_modulo:'inventario' %}
                         <li><a href="{% url 'inventario:material_list' %}" class="{% if 'inventario' in request.path %}active{% endif %}"><i class="fas fa-boxes"></i> Inventario</a></li>
+                        {% endif %}
+                        {% if user|puede_ver_modulo:'notificaciones' %}
                         <li><a href="{% url 'notificaciones:notificacion_list' %}" class="{% if 'notificaciones' in request.path %}active{% endif %}"><i class="fas fa-bell"></i> Notificaciones</a></li>
+                        {% endif %}
+                        {% if user|has_permiso:'gestionar_roles_permisos' or user.is_superuser %}
+                        <li><a href="{% url 'core:roles_dashboard' %}" class="{% if 'roles' in request.path %}active{% endif %}"><i class="fas fa-user-shield"></i> Roles y Permisos</a></li>
+                        {% endif %}
+                        {% if user|has_permiso:'configurar_sistema' or user.is_superuser %}
                         <li><a href="{% url 'core:configurar_sistema' %}" class="{% if 'configurar-sistema' in request.path %}active{% endif %}"><i class="fas fa-palette"></i> Configuración</a></li>
+                        {% endif %}
+                        {% if user.is_staff %}
                         <li><a href="/admin/" class="{% if '/admin/' in request.path and 'instalaciones' not in request.path and 'pagos' not in request.path and 'inventario' not in request.path and 'notificaciones' not in request.path %}active{% endif %}"><i class="fas fa-cog"></i> Administración</a></li>
+                        {% endif %}
                     </ul>
+                    
+                    <!-- Toggle de modo oscuro en el sidebar -->
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 2px solid var(--border-color);">
+                        <button class="dark-mode-toggle-sidebar" onclick="toggleDarkMode()" id="darkModeToggle" title="Cambiar modo">
+                            <i class="fas fa-moon" id="darkModeIcon"></i>
+                            <span id="darkModeText">Modo Oscuro</span>
+                        </button>
+                    </div>
                 </aside>
                 <div class="main-content">
                     <div class="container">
         {% elif user.is_authenticated and not 'portal' in request.path and sidebar_position == 'top' and not es_cliente %}
             <div class="sidebar-top">
+                {% load roles_tags %}
                 <ul class="sidebar-menu">
                     <li><a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}"><i class="fas fa-home"></i> Inicio</a></li>
+                    {% if user|puede_ver_modulo:'clientes' %}
                     <li><a href="{% url 'clientes:cliente_list' %}" class="{% if 'clientes' in request.path %}active{% endif %}"><i class="fas fa-users"></i> Clientes</a></li>
+                    {% endif %}
+                    {% if user|puede_ver_modulo:'instalaciones' %}
                     <li><a href="{% url 'instalaciones:instalacion_list' %}" class="{% if 'instalaciones' in request.path %}active{% endif %}"><i class="fas fa-wifi"></i> Instalaciones</a></li>
+                    {% endif %}
+                    {% if user|has_permiso:'gestionar_roles_permisos' or user.is_superuser %}
                     <li><a href="{% url 'core:catalogos_dashboard' %}" class="{% if 'catalogos' in request.path %}active{% endif %}"><i class="fas fa-book"></i> Catálogos</a></li>
+                    {% endif %}
+                    {% if user|puede_ver_modulo:'pagos' %}
                     <li><a href="{% url 'pagos:pago_list' %}" class="{% if 'pagos' in request.path %}active{% endif %}"><i class="fas fa-dollar-sign"></i> Pagos</a></li>
+                    {% endif %}
+                    {% if user|puede_ver_modulo:'inventario' %}
                     <li><a href="{% url 'inventario:material_list' %}" class="{% if 'inventario' in request.path %}active{% endif %}"><i class="fas fa-boxes"></i> Inventario</a></li>
+                    {% endif %}
+                    {% if user|puede_ver_modulo:'notificaciones' %}
                     <li><a href="{% url 'notificaciones:notificacion_list' %}" class="{% if 'notificaciones' in request.path %}active{% endif %}"><i class="fas fa-bell"></i> Notificaciones</a></li>
+                    {% endif %}
+                    {% if user|has_permiso:'gestionar_roles_permisos' or user.is_superuser %}
+                    <li><a href="{% url 'core:roles_dashboard' %}" class="{% if 'roles' in request.path %}active{% endif %}"><i class="fas fa-user-shield"></i> Roles y Permisos</a></li>
+                    {% endif %}
+                    {% if user|has_permiso:'configurar_sistema' or user.is_superuser %}
                     <li><a href="{% url 'core:configurar_sistema' %}" class="{% if 'configurar-sistema' in request.path %}active{% endif %}"><i class="fas fa-palette"></i> Configuración</a></li>
+                    {% endif %}
+                    {% if user.is_staff %}
                     <li><a href="/admin/" class="{% if '/admin/' in request.path and 'instalaciones' not in request.path and 'pagos' not in request.path and 'inventario' not in request.path and 'notificaciones' not in request.path %}active{% endif %}"><i class="fas fa-cog"></i> Administración</a></li>
+                    {% endif %}
+                    <li style="margin-left: auto;">
+                        <button class="dark-mode-toggle-top" onclick="toggleDarkMode()" id="darkModeToggleTop" title="Cambiar modo">
+                            <i class="fas fa-moon" id="darkModeIconTop"></i>
+                            <span id="darkModeTextTop">Modo Oscuro</span>
+                        </button>
+                    </li>
                 </ul>
             </div>
             <div class="container-full">
@@ -965,11 +1763,78 @@
     {% endif %}
     
     <footer class="footer">
-        <p>&copy; {% now "Y" %} {{ sistema_config.nombre_empresa|default:"AdminiRed" }} - Sistema para el control total de instalaciones de internet.</p>
+        <p>&copy; {% now "Y" %} {{ sistema_config.nombre_empresa|default:"AdminiRed" }} - {{ sistema_config.descripcion_sistema|default:"Sistema para el control total de instalaciones de internet" }}.</p>
     </footer>
     
     {% block extra_js %}{% endblock %}
     <script>
+        // JavaScript para el modo oscuro
+        function initDarkMode() {
+            // Verificar preferencia guardada
+            const darkMode = localStorage.getItem('darkMode') === 'true';
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            // Aplicar modo oscuro si está guardado o si el sistema prefiere oscuro (solo en primera carga)
+            if (darkMode || (!localStorage.getItem('darkMode') && prefersDark)) {
+                document.body.classList.add('dark-mode');
+                updateDarkModeIcon(true);
+            } else {
+                document.body.classList.remove('dark-mode');
+                updateDarkModeIcon(false);
+            }
+        }
+        
+        function toggleDarkMode() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', isDark);
+            updateDarkModeIcon(isDark);
+        }
+        
+        function updateDarkModeIcon(isDark) {
+            // Actualizar icono y texto en sidebar izquierdo
+            const icon = document.getElementById('darkModeIcon');
+            const text = document.getElementById('darkModeText');
+            if (icon) {
+                icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+            }
+            if (text) {
+                text.textContent = isDark ? 'Modo Claro' : 'Modo Oscuro';
+            }
+            
+            // Actualizar icono y texto en sidebar superior
+            const iconTop = document.getElementById('darkModeIconTop');
+            const textTop = document.getElementById('darkModeTextTop');
+            if (iconTop) {
+                iconTop.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+            }
+            if (textTop) {
+                textTop.textContent = isDark ? 'Modo Claro' : 'Modo Oscuro';
+            }
+        }
+        
+        // Inicializar modo oscuro al cargar
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initDarkMode);
+        } else {
+            initDarkMode();
+        }
+        
+        // Escuchar cambios en la preferencia del sistema (opcional)
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                // Solo aplicar si el usuario no ha establecido una preferencia manual
+                if (!localStorage.getItem('darkMode')) {
+                    if (e.matches) {
+                        document.body.classList.add('dark-mode');
+                        updateDarkModeIcon(true);
+                    } else {
+                        document.body.classList.remove('dark-mode');
+                        updateDarkModeIcon(false);
+                    }
+                }
+            });
+        }
+        
         function goToSidebarConfig() {
             window.location.href = '{% url "config_sidebar" %}';
         }
@@ -1039,6 +1904,169 @@
                 });
             });
         });
+        
+        // ============================================
+        // SISTEMA DE ACTUALIZACIONES EN TIEMPO REAL
+        // ============================================
+        (function() {
+            // Configuración
+            const AUTO_REFRESH_ENABLED = true; // Cambiar a false para desactivar
+            const CHECK_INTERVAL = 30000; // 30 segundos
+            const REFRESH_ON_UPDATE = true; // Recargar página automáticamente si hay cambios
+            
+            let lastCheckTime = new Date().toISOString();
+            let updateCheckInterval = null;
+            let isChecking = false;
+            
+            // Crear indicador de actualización
+            function createUpdateIndicator() {
+                const indicator = document.createElement('div');
+                indicator.id = 'realtime-update-indicator';
+                indicator.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #10b981;
+                    color: white;
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    z-index: 10000;
+                    display: none;
+                    align-items: center;
+                    gap: 0.75rem;
+                    cursor: pointer;
+                    font-size: 0.875rem;
+                    font-weight: 500;
+                    transition: all 0.3s ease;
+                `;
+                indicator.innerHTML = `
+                    <i class="fas fa-sync-alt fa-spin"></i>
+                    <span id="update-message">Hay actualizaciones disponibles</span>
+                    <button onclick="location.reload()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">
+                        Actualizar
+                    </button>
+                `;
+                document.body.appendChild(indicator);
+                return indicator;
+            }
+            
+            // Verificar actualizaciones
+            async function checkForUpdates() {
+                if (isChecking) return;
+                isChecking = true;
+                
+                try {
+                    const response = await fetch(`{% url 'core:check_updates' %}?last_check=${encodeURIComponent(lastCheckTime)}`, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'ngrok-skip-browser-warning': 'true'
+                        },
+                        credentials: 'same-origin'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Error al verificar actualizaciones');
+                    }
+                    
+                    const data = await response.json();
+                    lastCheckTime = data.timestamp;
+                    
+                    if (data.has_updates) {
+                        showUpdateIndicator(data.changes);
+                        
+                        if (REFRESH_ON_UPDATE && !document.hidden) {
+                            // Esperar 2 segundos antes de recargar para que el usuario vea el mensaje
+                            setTimeout(() => {
+                                if (confirm('Hay actualizaciones disponibles. ¿Deseas recargar la página ahora?')) {
+                                    location.reload();
+                                }
+                            }, 2000);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Error al verificar actualizaciones:', error);
+                } finally {
+                    isChecking = false;
+                }
+            }
+            
+            // Mostrar indicador de actualización
+            function showUpdateIndicator(changes) {
+                let indicator = document.getElementById('realtime-update-indicator');
+                if (!indicator) {
+                    indicator = createUpdateIndicator();
+                }
+                
+                // Construir mensaje
+                const changeMessages = Object.values(changes).map(c => c.message);
+                const message = changeMessages.join(', ');
+                
+                const messageEl = document.getElementById('update-message');
+                if (messageEl) {
+                    messageEl.textContent = message;
+                }
+                
+                // Mostrar indicador
+                indicator.style.display = 'flex';
+                
+                // Ocultar después de 10 segundos
+                setTimeout(() => {
+                    if (indicator) {
+                        indicator.style.display = 'none';
+                    }
+                }, 10000);
+            }
+            
+            // Iniciar sistema de actualizaciones
+            function startAutoRefresh() {
+                if (!AUTO_REFRESH_ENABLED) return;
+                
+                // Verificar inmediatamente
+                checkForUpdates();
+                
+                // Configurar intervalo
+                updateCheckInterval = setInterval(checkForUpdates, CHECK_INTERVAL);
+                
+                // Verificar cuando la ventana vuelve a estar visible
+                document.addEventListener('visibilitychange', function() {
+                    if (!document.hidden) {
+                        checkForUpdates();
+                    }
+                });
+                
+                // Verificar cuando la ventana recupera el foco
+                window.addEventListener('focus', function() {
+                    checkForUpdates();
+                });
+            }
+            
+            // Detener sistema de actualizaciones
+            function stopAutoRefresh() {
+                if (updateCheckInterval) {
+                    clearInterval(updateCheckInterval);
+                    updateCheckInterval = null;
+                }
+            }
+            
+            // Iniciar cuando el DOM esté listo
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', startAutoRefresh);
+            } else {
+                startAutoRefresh();
+            }
+            
+            // Limpiar al salir
+            window.addEventListener('beforeunload', stopAutoRefresh);
+            
+            // Exponer funciones globalmente para control manual
+            window.realtimeUpdates = {
+                check: checkForUpdates,
+                start: startAutoRefresh,
+                stop: stopAutoRefresh
+            };
+        })();
         
         // JavaScript para evitar la página de advertencia de ngrok
         (function() {

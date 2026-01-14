@@ -72,6 +72,7 @@ def catalogos_dashboard(request):
 def catalogo_tipo_instalacion_list(request):
     """Lista todos los tipos de instalación."""
     from instalaciones.models import Instalacion
+    from django.core.paginator import Paginator
     
     tipos = TipoInstalacion.objects.all().order_by('nombre')
     
@@ -82,9 +83,14 @@ def catalogo_tipo_instalacion_list(request):
             Q(descripcion__icontains=query)
         )
     
+    # Paginación
+    paginator = Paginator(tipos, 15)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
     # Agregar estadísticas de uso para cada tipo
     tipos_con_estadisticas = []
-    for tipo in tipos:
+    for tipo in page_obj:
         count_instalaciones = Instalacion.objects.filter(tipo_instalacion=tipo).count()
         tipos_con_estadisticas.append({
             'tipo': tipo,
@@ -92,8 +98,9 @@ def catalogo_tipo_instalacion_list(request):
         })
     
     context = {
-        'tipos': tipos,
+        'tipos': page_obj,
         'tipos_con_estadisticas': tipos_con_estadisticas,
+        'page_obj': page_obj,
         'query': query,
         'catalogo_nombre': 'Tipos de Instalación',
         'modelo': 'tipo_instalacion',
@@ -182,6 +189,8 @@ def catalogo_tipo_instalacion_delete(request, pk):
 @login_required
 def catalogo_categoria_material_list(request):
     """Lista todas las categorías de material."""
+    from django.core.paginator import Paginator
+    
     categorias = CategoriaMaterial.objects.all().order_by('nombre')
     
     query = request.GET.get('q', '')
@@ -191,8 +200,14 @@ def catalogo_categoria_material_list(request):
             Q(descripcion__icontains=query)
         )
     
+    # Paginación
+    paginator = Paginator(categorias, 15)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
     context = {
-        'tipos': categorias,
+        'tipos': page_obj,
+        'page_obj': page_obj,
         'query': query,
         'catalogo_nombre': 'Categorías de Material',
         'modelo': 'categoria_material',
@@ -272,6 +287,8 @@ def catalogo_categoria_material_delete(request, pk):
 @login_required
 def catalogo_tipo_notificacion_list(request):
     """Lista todos los tipos de notificación."""
+    from django.core.paginator import Paginator
+    
     tipos = TipoNotificacion.objects.all().order_by('nombre')
     
     query = request.GET.get('q', '')
@@ -281,8 +298,14 @@ def catalogo_tipo_notificacion_list(request):
             Q(descripcion__icontains=query)
         )
     
+    # Paginación
+    paginator = Paginator(tipos, 15)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
     context = {
-        'tipos': tipos,
+        'tipos': page_obj,
+        'page_obj': page_obj,
         'query': query,
         'catalogo_nombre': 'Tipos de Notificación',
         'modelo': 'tipo_notificacion',
@@ -370,6 +393,8 @@ def catalogo_tipo_notificacion_delete(request, pk):
 @login_required
 def catalogo_plan_internet_list(request):
     """Lista todos los planes de internet."""
+    from django.core.paginator import Paginator
+    
     planes = PlanInternet.objects.all().order_by('precio_mensual', 'velocidad_descarga')
     
     query = request.GET.get('q', '')
@@ -379,8 +404,14 @@ def catalogo_plan_internet_list(request):
             Q(descripcion__icontains=query)
         )
     
+    # Paginación
+    paginator = Paginator(planes, 15)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
     context = {
-        'tipos': planes,
+        'tipos': page_obj,
+        'page_obj': page_obj,
         'query': query,
         'catalogo_nombre': 'Planes de Internet',
         'modelo': 'plan_internet',

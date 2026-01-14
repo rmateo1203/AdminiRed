@@ -61,3 +61,5 @@ Ahora el auto-return funcionará. Mercado Pago redirigirá automáticamente desp
 **Nota:** Mantén ngrok corriendo mientras desarrollas. Si lo cierras, actualiza la URL en `.env`.
 
 
+
+

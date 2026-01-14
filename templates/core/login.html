@@ -14,7 +14,11 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            {% if sistema_config.imagen_hero %}
+            background-image: url('{{ sistema_config.imagen_hero.url }}?v={{ sistema_config.fecha_actualizacion|date:"U" }}');
+            {% else %}
             background-image: url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');
+            {% endif %}
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -45,8 +49,30 @@
             z-index: 1;
         }
         
+        :root {
+            --bg-primary: #f5f7fa;
+            --bg-secondary: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+        }
+        
+        body.dark-mode {
+            --bg-primary: #111827;
+            --bg-secondary: #1f2937;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --border-color: #4b5563;
+        }
+        
+        body.dark-mode::before {
+            background: linear-gradient(135deg, 
+                rgba(0, 0, 0, 0.7) 0%, 
+                rgba(0, 0, 0, 0.8) 100%) !important;
+        }
+        
         .login-container {
-            background: white;
+            background: var(--bg-secondary);
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.5);
             width: 100%;
@@ -55,6 +81,7 @@
             animation: slideUp 0.5s ease-out;
             position: relative;
             z-index: 2;
+            transition: background-color 0.3s ease;
         }
         
         @keyframes slideUp {
@@ -86,7 +113,7 @@
         }
         
         .login-header p {
-            color: #666;
+            color: var(--text-secondary);
             font-size: 0.95rem;
         }
         
@@ -96,7 +123,7 @@
         
         .form-group label {
             display: block;
-            color: #333;
+            color: var(--text-primary);
             font-weight: 600;
             margin-bottom: 0.5rem;
             font-size: 0.9rem;
@@ -105,22 +132,23 @@
         .form-group input {
             width: 100%;
             padding: 0.875rem 1rem;
-            border: 2px solid #e0e0e0;
+            border: 2px solid var(--border-color);
             border-radius: 10px;
             font-size: 1rem;
             transition: all 0.3s;
-            background-color: #f8f9fa;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
         }
         
         .form-group input:focus {
             outline: none;
             border-color: {{ sistema_config.color_primario|default:"#667eea" }};
-            background-color: white;
+            background-color: var(--bg-secondary);
             box-shadow: 0 0 0 3px {{ sistema_config.color_primario|default:"#667eea" }}1A;
         }
         
         .form-group input::placeholder {
-            color: #999;
+            color: var(--text-secondary);
         }
         
         .error-message {
@@ -129,6 +157,11 @@
             padding: 0.75rem 1rem;
             border-radius: 8px;
             margin-bottom: 1rem;
+        }
+        
+        body.dark-mode .error-message {
+            background-color: #7f1d1d;
+            color: #fca5a5;
             border-left: 4px solid #ef4444;
             font-size: 0.9rem;
         }
@@ -204,11 +237,11 @@
             text-align: center;
             margin-top: 2rem;
             padding-top: 2rem;
-            border-top: 1px solid #e0e0e0;
+            border-top: 1px solid var(--border-color);
         }
         
         .login-footer p {
-            color: #666;
+            color: var(--text-secondary);
             font-size: 0.9rem;
         }
         
@@ -249,6 +282,41 @@
             content: '🔒';
         }
         
+        .password-wrapper {
+            position: relative;
+        }
+        
+        .password-wrapper input {
+            padding-right: 3rem;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            font-size: 1.1rem;
+            padding: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.3s;
+            z-index: 10;
+        }
+        
+        .toggle-password:hover {
+            color: {{ sistema_config.color_primario|default:"#667eea" }};
+        }
+        
+        .toggle-password:focus {
+            outline: none;
+            color: {{ sistema_config.color_primario|default:"#667eea" }};
+        }
+        
         @media (max-width: 480px) {
             body {
                 padding: 1rem;
@@ -282,6 +350,23 @@
             }
         }
     </style>
+    <script>
+        // JavaScript para el modo oscuro en login
+        function initDarkMode() {
+            const darkMode = localStorage.getItem('darkMode') === 'true';
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (darkMode || (!localStorage.getItem('darkMode') && prefersDark)) {
+                document.body.classList.add('dark-mode');
+            }
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initDarkMode);
+        } else {
+            initDarkMode();
+        }
+    </script>
 </head>
 <body>
     {% comment %}
@@ -298,7 +383,7 @@
                 {% endif %}
             </div>
             <h1>{{ sistema_config.nombre_empresa|default:"AdminiRed" }}</h1>
-            <p>Sistema de Gestión de Instalaciones</p>
+            <p>{{ sistema_config.descripcion_sistema|default:"Sistema de Gestión de Instalaciones" }}</p>
         </div>
         
         {% if messages %}
@@ -336,8 +421,11 @@
             
             <div class="form-group">
                 <label for="{{ form.password.id_for_label }}">Contraseña</label>
-                <div class="icon-input icon-password">
+                <div class="icon-input icon-password password-wrapper">
                     {{ form.password }}
+                    <button type="button" class="toggle-password" id="togglePassword" aria-label="Mostrar contraseña">
+                        <i class="fas fa-eye" id="eyeIcon"></i>
+                    </button>
                 </div>
                 {% if form.password.errors %}
                     <ul class="errorlist">
@@ -373,6 +461,50 @@
             <p>¿Necesitas ayuda? <a href="/admin/">Contacta al administrador</a></p>
         </div>
     </div>
+    
+    <script>
+        // JavaScript para el modo oscuro en login
+        function initDarkMode() {
+            const darkMode = localStorage.getItem('darkMode') === 'true';
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (darkMode || (!localStorage.getItem('darkMode') && prefersDark)) {
+                document.body.classList.add('dark-mode');
+            }
+        }
+        
+        // Funcionalidad para mostrar/ocultar contraseña
+        document.addEventListener('DOMContentLoaded', function() {
+            initDarkMode();
+            const togglePassword = document.getElementById('togglePassword');
+            // Buscar el input de contraseña dentro del password-wrapper
+            const passwordWrapper = document.querySelector('.password-wrapper');
+            const passwordInput = passwordWrapper ? passwordWrapper.querySelector('input[type="password"]') : null;
+            const eyeIcon = document.getElementById('eyeIcon');
+            
+            if (togglePassword && passwordInput && eyeIcon) {
+                togglePassword.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Cambiar el tipo de input
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    
+                    // Cambiar el icono
+                    if (type === 'password') {
+                        eyeIcon.classList.remove('fa-eye-slash');
+                        eyeIcon.classList.add('fa-eye');
+                        togglePassword.setAttribute('aria-label', 'Mostrar contraseña');
+                    } else {
+                        eyeIcon.classList.remove('fa-eye');
+                        eyeIcon.classList.add('fa-eye-slash');
+                        togglePassword.setAttribute('aria-label', 'Ocultar contraseña');
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
 

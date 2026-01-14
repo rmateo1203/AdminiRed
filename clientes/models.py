@@ -233,6 +233,16 @@ class Cliente(models.Model):
         self.usuario = usuario
         self.save()
         
+        # Asignar rol "Cliente" al usuario
+        try:
+            from core.roles_utils import asignar_rol_usuario
+            asignar_rol_usuario(usuario, 'cliente')
+        except Exception as e:
+            # Si hay error al asignar el rol, registrar pero no fallar
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f'No se pudo asignar el rol "Cliente" al usuario {usuario.username}: {str(e)}')
+        
         # Enviar email con credenciales si está habilitado y el cliente tiene email
         if enviar_email and self.email:
             try:

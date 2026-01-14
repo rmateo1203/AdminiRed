@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} - {{ sistema_config.nombre_empresa|default:"AdminiRed" }}{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2><i class="fas fa-users-cog"></i> {{ titulo }}</h2>
+        <a href="{% url 'core:roles_list' %}" class="btn btn-admin">
+            <i class="fas fa-arrow-left"></i> Volver a Lista
+        </a>
+    </div>
+    
+    <div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <form method="post">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                <p style="margin: 0;">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <div class="form-group">
+                <label for="{{ form.nombre.id_for_label }}">{{ form.nombre.label }}</label>
+                {{ form.nombre }}
+                {% if form.nombre.errors %}
+                <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">
+                    {% for error in form.nombre.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.codigo.id_for_label }}">{{ form.codigo.label }}</label>
+                {{ form.codigo }}
+                {% if form.codigo.help_text %}
+                <small style="color: #6b7280; font-size: 0.875rem; display: block; margin-top: 0.25rem;">
+                    {{ form.codigo.help_text }}
+                </small>
+                {% endif %}
+                {% if form.codigo.errors %}
+                <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">
+                    {% for error in form.codigo.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.descripcion.id_for_label }}">{{ form.descripcion.label }}</label>
+                {{ form.descripcion }}
+                {% if form.descripcion.errors %}
+                <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">
+                    {% for error in form.descripcion.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div class="form-group">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        {{ form.activo }}
+                        <label for="{{ form.activo.id_for_label }}" style="margin: 0; font-weight: 600;">
+                            {{ form.activo.label }}
+                        </label>
+                    </div>
+                    {% if form.activo.errors %}
+                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">
+                        {% for error in form.activo.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        {{ form.es_sistema }}
+                        <label for="{{ form.es_sistema.id_for_label }}" style="margin: 0; font-weight: 600;">
+                            {{ form.es_sistema.label }}
+                        </label>
+                    </div>
+                    {% if form.es_sistema.help_text %}
+                    <small style="color: #6b7280; font-size: 0.875rem; display: block; margin-top: 0.25rem;">
+                        {{ form.es_sistema.help_text }}
+                    </small>
+                    {% endif %}
+                    {% if form.es_sistema.errors %}
+                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">
+                        {% for error in form.es_sistema.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+                <a href="{% url 'core:roles_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    {% if rol %}
+    <div style="margin-top: 2rem; padding: 1.5rem; background: #f8f9fa; border-radius: 12px;">
+        <h3 style="color: #111827; margin-bottom: 1rem;">Acciones adicionales</h3>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="{% url 'core:rol_permisos_update' rol.pk %}" class="btn btn-admin">
+                <i class="fas fa-key"></i> Gestionar Permisos
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+

@@ -309,8 +309,14 @@ def categoria_list(request):
             Q(descripcion__icontains=query)
         )
     
+    # Paginación
+    paginator = Paginator(categorias, 12)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
     context = {
-        'categorias': categorias,
+        'categorias': page_obj,
+        'page_obj': page_obj,
         'query': query,
     }
     

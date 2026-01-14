@@ -1,4 +1,4 @@
-# 🔧 Solución: Error 404 "Not found 'card_token_id'"
+en# 🔧 Solución: Error 404 "Not found 'card_token_id'"
 
 ## ❌ Error Completo
 
@@ -252,6 +252,7 @@ Si después de seguir todos los pasos el error persiste:
 **¡Sigue los pasos del checklist y el error debería resolverse!** 🎉
 
 La clave es: **limpiar todo y empezar desde cero con una tarjeta nueva**.
+
 
 
 

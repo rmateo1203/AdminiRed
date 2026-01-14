@@ -18,30 +18,56 @@ class CustomLoginView(LoginView):
     
     def form_valid(self, form):
         """Redirige según el tipo de usuario después del login."""
-        # Autenticar al usuario
-        username = form.cleaned_data.get('username')
-        password = form.cleaned_data.get('password')
-        user = authenticate(self.request, username=username, password=password)
+        from django.contrib.auth import login
         
-        if user is not None:
-            login(self.request, user)
-            
-            # Verificar si es un cliente
-            try:
-                cliente = user.cliente_perfil
-                if cliente and not cliente.is_deleted and cliente.estado_cliente == 'activo':
-                    # Verificar si debe cambiar la contraseña
-                    if cliente.debe_cambiar_password:
-                        messages.warning(self.request, 'Por seguridad, debes cambiar tu contraseña antes de continuar.')
-                        return redirect('clientes:portal_cambiar_password')
-                    # Redirigir al portal de clientes
-                    messages.success(self.request, f'¡Bienvenido, {cliente.nombre_completo}!')
-                    return redirect('clientes:portal_mis_pagos')
-            except:
-                pass  # No es un cliente, continuar con redirección normal
+        # Obtener el usuario del formulario
+        user = form.get_user()
+        
+        # Verificar que el usuario esté activo
+        if not user.is_active:
+            messages.error(self.request, 'Tu cuenta está inactiva. Contacta al administrador.')
+            return self.form_invalid(form)
+        
+        # Hacer el login manualmente
+        login(self.request, user)
+        
+        # Verificar si es un cliente y redirigir apropiadamente
+        try:
+            cliente = user.cliente_perfil
+            if cliente and not cliente.is_deleted and cliente.estado_cliente == 'activo':
+                # Verificar si debe cambiar la contraseña
+                if cliente.debe_cambiar_password:
+                    messages.warning(self.request, 'Por seguridad, debes cambiar tu contraseña antes de continuar.')
+                    return redirect('clientes:portal_cambiar_password')
+                # Redirigir al portal de clientes
+                messages.success(self.request, f'¡Bienvenido, {cliente.nombre_completo}!')
+                return redirect('clientes:portal_mis_pagos')
+        except AttributeError:
+            # No es un cliente, continuar con redirección normal
+            pass
+        except Exception as e:
+            # Log del error pero continuar
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Error al verificar perfil de cliente: {e}")
         
         # Para usuarios normales (staff), usar la redirección por defecto
-        return super().form_valid(form)
+        # Obtener la URL de redirección del parámetro 'next' o usar la configuración por defecto
+        redirect_to = self.get_success_url()
+        return redirect(redirect_to)
+    
+    def get_success_url(self):
+        """Obtiene la URL de redirección después del login exitoso."""
+        from django.conf import settings
+        redirect_to = self.request.GET.get('next', None)
+        if redirect_to:
+            return redirect_to
+        return settings.LOGIN_REDIRECT_URL
+
+
+def sin_permisos(request):
+    """Vista para mostrar mensaje cuando el usuario no tiene permisos."""
+    return render(request, 'core/sin_permisos.html')
 
 
 def home(request):
@@ -170,15 +196,29 @@ def configurar_sistema(request):
     """Vista para configurar el sistema (logo, colores, nombre de empresa)."""
     from .models import ConfiguracionSistema
     from .forms import ConfiguracionSistemaForm
+    from django.core.cache import cache
     
     config = ConfiguracionSistema.get_activa()
     
     if request.method == 'POST':
         form = ConfiguracionSistemaForm(request.POST, request.FILES, instance=config)
         if form.is_valid():
-            form.save()
+            config = form.save(commit=False)
+            # Asegurar que los archivos se guarden correctamente
+            if 'imagen_hero' in request.FILES:
+                config.imagen_hero = request.FILES['imagen_hero']
+            if 'logo' in request.FILES:
+                config.logo = request.FILES['logo']
+            config.save()
+            # Limpiar cache después de guardar
+            cache.delete('config_sistema')
             messages.success(request, 'Configuración del sistema actualizada exitosamente.')
             return redirect('core:configurar_sistema')
+        else:
+            # Mostrar errores del formulario
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'Error en {field}: {error}')
     else:
         form = ConfiguracionSistemaForm(instance=config)
     

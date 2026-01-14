@@ -131,3 +131,5 @@ Para verificar que todo está configurado correctamente:
    - Deberías ver: `✅ Origen agregado a CSRF_TRUSTED_ORIGINS: ...`
 
 
+
+

@@ -164,26 +164,22 @@
             </tbody>
         </table>
         
-        <!-- Paginación -->
-        {% if page_obj.has_other_pages %}
-        <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 0.5rem;">
-            {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if categoria_filter %}&categoria={{ categoria_filter }}{% endif %}{% if stock_bajo %}&stock_bajo={{ stock_bajo }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-secondary">
-                    <i class="fas fa-chevron-left"></i> Anterior
-                </a>
-            {% endif %}
-            
-            <span style="padding: 0.5rem 1rem; background: white; border-radius: 6px; display: flex; align-items: center;">
-                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-            </span>
-            
-            {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if categoria_filter %}&categoria={{ categoria_filter }}{% endif %}{% if stock_bajo %}&stock_bajo={{ stock_bajo }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-secondary">
-                    Siguiente <i class="fas fa-chevron-right"></i>
-                </a>
-            {% endif %}
-        </div>
+    <!-- Paginación -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-modern">
+        {% if page_obj.has_previous %}
+            <a href="?page=1{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if categoria_filter %}&categoria={{ categoria_filter }}{% endif %}{% if unidad_filter %}&unidad={{ unidad_filter }}{% endif %}{% if stock_bajo %}&stock_bajo={{ stock_bajo }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">« Primera</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if categoria_filter %}&categoria={{ categoria_filter }}{% endif %}{% if unidad_filter %}&unidad={{ unidad_filter }}{% endif %}{% if stock_bajo %}&stock_bajo={{ stock_bajo }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">‹ Anterior</a>
         {% endif %}
+        <span class="current">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if categoria_filter %}&categoria={{ categoria_filter }}{% endif %}{% if unidad_filter %}&unidad={{ unidad_filter }}{% endif %}{% if stock_bajo %}&stock_bajo={{ stock_bajo }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">Siguiente ›</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if categoria_filter %}&categoria={{ categoria_filter }}{% endif %}{% if unidad_filter %}&unidad={{ unidad_filter }}{% endif %}{% if stock_bajo %}&stock_bajo={{ stock_bajo }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">Última »</a>
+        {% endif %}
+    </div>
+    {% endif %}
     </div>
     {% else %}
     <div class="empty-state" style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 8px; margin-top: 2rem;">

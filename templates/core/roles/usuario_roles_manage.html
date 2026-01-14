@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestionar Roles: {{ usuario.username }} - {{ sistema_config.nombre_empresa|default:"AdminiRed" }}{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2><i class="fas fa-user-cog"></i> Gestionar Roles de {{ usuario.username }}</h2>
+        <a href="{% url 'core:usuarios_roles_list' %}" class="btn btn-admin">
+            <i class="fas fa-arrow-left"></i> Volver a Lista
+        </a>
+    </div>
+    
+    <!-- Información del Usuario -->
+    <div style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div>
+                <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Usuario</div>
+                <div style="font-weight: 600; color: #111827;">{{ usuario.username }}</div>
+            </div>
+            {% if usuario.email %}
+            <div>
+                <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Email</div>
+                <div style="color: #374151;">{{ usuario.email }}</div>
+            </div>
+            {% endif %}
+            {% if usuario.is_superuser %}
+            <div>
+                <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Tipo</div>
+                <div>
+                    <span style="background: #fef3c7; color: #92400e; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.875rem; font-weight: 600;">
+                        <i class="fas fa-crown"></i> Superusuario
+                    </span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Formulario de Roles -->
+    <div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <form method="post">
+            {% csrf_token %}
+            
+            <h3 style="color: #111827; margin-bottom: 1.5rem;">Roles Asignados</h3>
+            
+            {% if todos_los_roles %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                {% for rol in todos_los_roles %}
+                <div style="padding: 1rem; border: 2px solid {% if rol.id in ids_roles_activos %}#667eea{% else %}#e5e7eb{% endif %}; border-radius: 8px; background: {% if rol.id in ids_roles_activos %}#f0f4ff{% else %}white{% endif %};">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+                        <input type="checkbox" name="roles" value="{{ rol.id }}" 
+                               {% if rol.id in ids_roles_activos %}checked{% endif %}
+                               style="width: 1.25rem; height: 1.25rem; cursor: pointer;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: #111827; margin-bottom: 0.25rem;">{{ rol.nombre }}</div>
+                            {% if rol.descripcion %}
+                            <div style="color: #6b7280; font-size: 0.875rem;">{{ rol.descripcion|truncatewords:10 }}</div>
+                            {% endif %}
+                            <div style="margin-top: 0.5rem;">
+                                <code style="background: #f3f4f6; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">{{ rol.codigo }}</code>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6b7280;">
+                <i class="fas fa-info-circle" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                <p>No hay roles disponibles.</p>
+            </div>
+            {% endif %}
+            
+            <div class="form-actions">
+                <button type="submit" class="btn">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+                <a href="{% url 'core:usuarios_roles_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+

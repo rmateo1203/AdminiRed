@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ title }} - AdminiRed{% endblock %}
+{% block title %}{{ title }} - {{ sistema_config.nombre_empresa|default:"AdminiRed" }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -1049,14 +1049,54 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Si ya hay un cliente seleccionado (edición), cargar sus instalaciones
     if (clienteInput && clienteInput.value && instalacionSelect) {
-        // No cargar instalaciones si ya están cargadas (edición)
+        // Si estamos editando, asegurarnos de que el cliente se muestre correctamente
+        {% if cliente_pre_seleccionado %}
+        // Ya hay un cliente pre-seleccionado (modo edición)
+        const clienteId = '{{ cliente_pre_seleccionado.id }}';
+        clienteInput.value = clienteId;
+        
+        // Mostrar el card del cliente seleccionado
+        selectedName.textContent = '{{ cliente_pre_seleccionado.nombre_completo|escapejs }}';
+        selectedDetails.innerHTML = `
+            <i class="fas fa-phone"></i> {{ cliente_pre_seleccionado.telefono|escapejs }}
+            {% if cliente_pre_seleccionado.email %}
+                &nbsp;|&nbsp; <i class="fas fa-envelope"></i> {{ cliente_pre_seleccionado.email|escapejs }}
+            {% endif %}
+            {% if cliente_pre_seleccionado.ciudad %}
+                &nbsp;|&nbsp; <i class="fas fa-map-marker-alt"></i> {{ cliente_pre_seleccionado.ciudad|escapejs }}
+            {% endif %}
+        `;
+        searchInput.style.display = 'none';
+        selectedCard.classList.add('active');
+        
+        // Cargar instalaciones del cliente
+        if (instalacionSelect.options.length <= 1) {
+            cargarInstalaciones(clienteId);
+        } else {
+            // Si ya hay instalaciones cargadas, verificar si hay PlanPago
+            manejarCambioInstalacion();
+        }
+        {% else %}
+        // Modo creación - cargar instalaciones si hay cliente seleccionado
         if (instalacionSelect.options.length <= 1) {
             cargarInstalaciones(clienteInput.value);
         } else {
             // Si ya hay instalaciones cargadas, verificar si hay PlanPago
             manejarCambioInstalacion();
         }
+        {% endif %}
     }
+    
+    // Si estamos editando, asegurarnos de que los valores se muestren correctamente
+    {% if pago %}
+    // Estamos editando un pago existente
+    // El formulario ya debería tener los valores, pero verificamos que se muestren
+    
+    // Si hay una instalación seleccionada, verificar si hay PlanPago
+    if (instalacionSelect && instalacionSelect.value) {
+        manejarCambioInstalacion();
+    }
+    {% endif %}
 });
 </script>
 {% endblock %}

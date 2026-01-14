@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from core.roles_decorators import permiso_required
 from django.db.models import Q, Sum, Count, Avg
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 @login_required
+@permiso_required('ver_pagos')
 def pago_list(request):
     """Lista todos los pagos con búsqueda y filtros."""
     # Actualizar automáticamente pagos vencidos
@@ -97,6 +99,7 @@ def pago_list(request):
 
 
 @login_required
+@permiso_required('ver_pagos')
 def pago_detail(request, pk):
     """Muestra los detalles de un pago."""
     pago = get_object_or_404(Pago.objects.select_related('cliente', 'instalacion'), pk=pk)
@@ -125,6 +128,7 @@ def pago_detail(request, pk):
 
 
 @login_required
+@permiso_required('crear_pagos')
 def pago_create(request, cliente_id=None):
     """Crea un nuevo pago."""
     cliente_pre_seleccionado = None
@@ -157,6 +161,7 @@ def pago_create(request, cliente_id=None):
 
 
 @login_required
+@permiso_required('editar_pagos')
 def pago_update(request, pk):
     """Actualiza un pago existente."""
     pago = get_object_or_404(Pago, pk=pk)
@@ -184,6 +189,7 @@ def pago_update(request, pk):
 
 
 @login_required
+@permiso_required('eliminar_pagos')
 def pago_delete(request, pk):
     """Elimina un pago."""
     pago = get_object_or_404(Pago, pk=pk)
@@ -202,6 +208,7 @@ def pago_delete(request, pk):
 
 
 @login_required
+@permiso_required('marcar_pagos_pagados')
 def pago_marcar_pagado(request, pk):
     """Marca un pago como pagado."""
     pago = get_object_or_404(Pago, pk=pk)
@@ -405,6 +412,7 @@ def pago_exportar_excel(request):
 
 
 @login_required
+@permiso_required('ver_pagos')
 def pago_exportar_pdf(request):
     """Exporta los pagos filtrados a PDF."""
     try:
@@ -522,6 +530,7 @@ def pago_exportar_pdf(request):
 # ============================================
 
 @login_required
+@permiso_required('ver_pagos')
 def pago_calendario(request):
     """Vista de calendario mensual de pagos."""
     # Obtener mes y año de la URL o usar el actual
@@ -611,6 +620,7 @@ def pago_calendario(request):
 # ============================================
 
 @login_required
+@permiso_required('ver_reportes_pagos')
 def pago_reportes(request):
     """Vista de reportes financieros."""
     # Obtener año de la URL o usar el actual
@@ -711,9 +721,12 @@ def pago_procesar_online(request, pk):
             if pago.instalacion and pago.instalacion.cliente != cliente:
                 messages.error(request, 'No tienes permiso para acceder a este pago.')
                 return redirect('clientes:portal_mis_pagos')
-        elif not request.user.is_staff:
-            messages.error(request, 'No tienes permiso para acceder a esta página.')
-            return redirect('login')
+        else:
+            # Si no es cliente, verificar que tenga permiso para ver pagos
+            from core.roles_utils import usuario_tiene_permiso
+            if not usuario_tiene_permiso(request.user, 'ver_pagos'):
+                messages.error(request, 'No tienes permiso para acceder a esta página.')
+                return redirect('login')
     else:
         messages.error(request, 'Debes iniciar sesión para realizar un pago.')
         return redirect('clientes:portal_login')
@@ -869,9 +882,12 @@ def pago_exitoso(request, pk):
             if pago.instalacion and pago.instalacion.cliente != cliente:
                 messages.error(request, 'No tienes permiso para acceder a este pago.')
                 return redirect('clientes:portal_mis_pagos')
-        elif not request.user.is_staff:
-            messages.error(request, 'No tienes permiso para acceder a esta página.')
-            return redirect('login')
+        else:
+            # Si no es cliente, verificar que tenga permiso para ver pagos
+            from core.roles_utils import usuario_tiene_permiso
+            if not usuario_tiene_permiso(request.user, 'ver_pagos'):
+                messages.error(request, 'No tienes permiso para acceder a esta página.')
+                return redirect('login')
     
     # Verificar si el pago ya está pagado (evitar procesamiento duplicado)
     if pago.estado == 'pagado':
@@ -1254,9 +1270,10 @@ def pago_exitoso(request, pk):
     transacciones = pago.transacciones.all().order_by('-fecha_creacion')
     
     # Determinar la URL de redirección según el tipo de usuario
+    from core.roles_utils import usuario_tiene_permiso
     redirect_url = None
     if request.user.is_authenticated:
-        if request.user.is_staff:
+        if usuario_tiene_permiso(request.user, 'ver_pagos'):
             # Redirigir al detalle del pago en el admin
             redirect_url = 'pagos:pago_detail'
     

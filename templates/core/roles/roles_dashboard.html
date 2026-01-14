@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Roles y Permisos - {{ sistema_config.nombre_empresa|default:"AdminiRed" }}{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2><i class="fas fa-user-shield"></i> Gestión de Roles y Permisos</h2>
+    </div>
+    
+    <!-- Estadísticas -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.5rem;">Total de Roles</div>
+            <div style="font-size: 2rem; font-weight: 700; color: #667eea;">{{ total_roles }}</div>
+            <div style="color: #10b981; font-size: 0.875rem; margin-top: 0.5rem;">{{ roles_activos }} activos</div>
+        </div>
+        
+        <div style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.5rem;">Total de Permisos</div>
+            <div style="font-size: 2rem; font-weight: 700; color: #667eea;">{{ total_permisos }}</div>
+            <div style="color: #10b981; font-size: 0.875rem; margin-top: 0.5rem;">{{ permisos_activos }} activos</div>
+        </div>
+        
+        <div style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.5rem;">Asignaciones Activas</div>
+            <div style="font-size: 2rem; font-weight: 700; color: #667eea;">{{ total_asignaciones }}</div>
+        </div>
+    </div>
+    
+    <!-- Accesos Rápidos -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <a href="{% url 'core:roles_list' %}" style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-decoration: none; color: inherit; display: block; transition: transform 0.2s, box-shadow 0.2s;" 
+           onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'"
+           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'">
+            <div style="width: 60px; height: 60px; border-radius: 12px; background: #667eea; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+                <i class="fas fa-users-cog" style="font-size: 2rem; color: white;"></i>
+            </div>
+            <h3 style="color: #111827; margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 600;">Gestionar Roles</h3>
+            <p style="color: #6b7280; margin: 0; line-height: 1.6;">Ver y editar roles del sistema</p>
+        </a>
+        
+        <a href="{% url 'core:usuarios_roles_list' %}" style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-decoration: none; color: inherit; display: block; transition: transform 0.2s, box-shadow 0.2s;" 
+           onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'"
+           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'">
+            <div style="width: 60px; height: 60px; border-radius: 12px; background: #10b981; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+                <i class="fas fa-user-tag" style="font-size: 2rem; color: white;"></i>
+            </div>
+            <h3 style="color: #111827; margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 600;">Gestionar Usuarios</h3>
+            <p style="color: #6b7280; margin: 0; line-height: 1.6;">Ver usuarios y asignar roles</p>
+        </a>
+        
+        <a href="{% url 'core:usuario_create' %}" style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-decoration: none; color: inherit; display: block; transition: transform 0.2s, box-shadow 0.2s;" 
+           onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'"
+           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'">
+            <div style="width: 60px; height: 60px; border-radius: 12px; background: #3b82f6; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+                <i class="fas fa-user-plus" style="font-size: 2rem; color: white;"></i>
+            </div>
+            <h3 style="color: #111827; margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 600;">Crear Usuario</h3>
+            <p style="color: #6b7280; margin: 0; line-height: 1.6;">Crear nuevo usuario del sistema</p>
+        </a>
+        
+        <a href="{% url 'core:permisos_list' %}" style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-decoration: none; color: inherit; display: block; transition: transform 0.2s, box-shadow 0.2s;" 
+           onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'"
+           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'">
+            <div style="width: 60px; height: 60px; border-radius: 12px; background: #f59e0b; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+                <i class="fas fa-key" style="font-size: 2rem; color: white;"></i>
+            </div>
+            <h3 style="color: #111827; margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 600;">Gestionar Permisos</h3>
+            <p style="color: #6b7280; margin: 0; line-height: 1.6;">Ver y editar permisos del sistema</p>
+        </a>
+    </div>
+    
+    <!-- Roles más usados -->
+    {% if roles_populares %}
+    <div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+        <h3 style="color: #111827; margin: 0 0 1.5rem 0; font-size: 1.5rem; font-weight: 600;">Roles más utilizados</h3>
+        <div style="display: grid; gap: 1rem;">
+            {% for rol in roles_populares %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <div>
+                    <div style="font-weight: 600; color: #111827;">{{ rol.nombre }}</div>
+                    <div style="color: #6b7280; font-size: 0.875rem;">{{ rol.cantidad_usuarios }} usuario{{ rol.cantidad_usuarios|pluralize }}</div>
+                </div>
+                <a href="{% url 'core:rol_detail' rol.pk %}" class="btn btn-action">Ver Detalle</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Permisos por categoría -->
+    {% if permisos_por_categoria %}
+    <div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="color: #111827; margin: 0 0 1.5rem 0; font-size: 1.5rem; font-weight: 600;">Permisos por Categoría</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            {% for item in permisos_por_categoria %}
+            <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <div style="font-weight: 600; color: #111827; margin-bottom: 0.25rem;">{{ item.categoria|title }}</div>
+                <div style="color: #6b7280; font-size: 0.875rem;">{{ item.total }} permiso{{ item.total|pluralize }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

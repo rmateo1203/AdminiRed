@@ -82,22 +82,31 @@
 {% endblock %}
 
 {% block content %}
-<!-- Hero Section con Imagen de Torres -->
+<!-- Hero Section con Imagen Configurable -->
 <div class="hero-section">
-    {% comment %}
-    Para usar una imagen local, descomenta la siguiente línea y comenta la de Unsplash:
-    <img src="{% static 'images/torres-hero.jpg' %}" alt="Torres de telecomunicaciones e internet" class="hero-image" loading="lazy">
-    {% endcomment %}
-    <img 
-        src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" 
-        alt="Torres de telecomunicaciones e internet" 
-        class="hero-image"
-        loading="lazy"
-        onerror="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.display='none';"
-    >
+    {% if sistema_config.imagen_hero %}
+        <img 
+            src="{{ sistema_config.imagen_hero.url }}?v={{ sistema_config.fecha_actualizacion|date:'U' }}" 
+            alt="{{ sistema_config.nombre_empresa|default:'AdminiRed' }}" 
+            class="hero-image"
+            loading="lazy"
+            onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80';"
+        >
+    {% else %}
+        {% comment %}
+        Imagen por defecto si no hay imagen configurada
+        {% endcomment %}
+        <img 
+            src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" 
+            alt="Torres de telecomunicaciones e internet" 
+            class="hero-image"
+            loading="lazy"
+            onerror="this.style.background='linear-gradient(135deg, var(--color-primario) 0%, var(--color-secundario) 100%)'; this.style.display='none';"
+        >
+    {% endif %}
     <div class="hero-overlay">
         <h1 class="hero-title">{{ sistema_config.nombre_empresa|default:"AdminiRed" }}</h1>
-        <p class="hero-subtitle">Sistema para el control total de instalaciones de internet</p>
+        <p class="hero-subtitle">{{ sistema_config.descripcion_sistema|default:"Sistema para el control total de instalaciones de internet" }}</p>
     </div>
 </div>
 
@@ -176,84 +185,142 @@
 
 <!-- Próximos Vencimientos -->
 <div class="section">
-    <h2>Próximos Vencimientos (Próximos 7 días)</h2>
+    <div class="page-header" style="border-bottom: 2px solid #f0f0f0; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+        <h2 style="margin: 0; font-size: 1.5rem;"><i class="fas fa-calendar-alt"></i> Próximos Vencimientos (Próximos 7 días)</h2>
+        <a href="{% url 'pagos:pago_list' %}" class="btn btn-secondary">
+            <i class="fas fa-list"></i> Ver Todos
+        </a>
+    </div>
     {% if proximos_vencimientos %}
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Cliente</th>
-                <th>Concepto</th>
-                <th>Monto</th>
-                <th>Fecha Vencimiento</th>
-                <th>Estado</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for pago in proximos_vencimientos %}
-            <tr>
-                <td>{{ pago.cliente.nombre }}</td>
-                <td>{{ pago.concepto }}</td>
-                <td>${{ pago.monto|floatformat:2 }}</td>
-                <td>{{ pago.fecha_vencimiento|date:"d/m/Y" }}</td>
-                <td>
-                    {% if pago.estado == 'vencido' %}
-                        <span class="badge badge-danger">Vencido</span>
-                    {% elif pago.estado == 'pendiente' %}
-                        <span class="badge badge-warning">Pendiente</span>
-                    {% else %}
-                        <span class="badge badge-info">{{ pago.get_estado_display }}</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-wrapper">
+        <div class="table-responsive">
+            <table class="table-modern">
+                <thead>
+                    <tr>
+                        <th style="width: 25%; min-width: 180px;">Cliente</th>
+                        <th style="width: 25%; min-width: 150px;">Concepto</th>
+                        <th style="width: 15%; min-width: 100px;">Monto</th>
+                        <th style="width: 20%; min-width: 130px;">Fecha Vencimiento</th>
+                        <th style="width: 15%; min-width: 100px;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pago in proximos_vencimientos %}
+                    <tr>
+                        <td>
+                            <span class="client-name" style="display: block; font-weight: 600; color: #1f2937; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                {{ pago.cliente.nombre_completo }}
+                            </span>
+                        </td>
+                        <td>
+                            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;">{{ pago.concepto }}</span>
+                        </td>
+                        <td>
+                            <strong style="color: #10b981; white-space: nowrap;">${{ pago.monto|floatformat:2 }}</strong>
+                        </td>
+                        <td>
+                            <span style="white-space: nowrap;">{{ pago.fecha_vencimiento|date:"d/m/Y" }}</span>
+                        </td>
+                        <td>
+                            {% if pago.estado == 'vencido' %}
+                                <span class="badge-modern badge-danger-modern">
+                                    <i class="fas fa-exclamation-triangle"></i> Vencido
+                                </span>
+                            {% elif pago.estado == 'pendiente' %}
+                                <span class="badge-modern badge-warning-modern">
+                                    <i class="fas fa-clock"></i> Pendiente
+                                </span>
+                            {% else %}
+                                <span class="badge-modern badge-info-modern">
+                                    {{ pago.get_estado_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
     {% else %}
-    <div class="empty-state">
-        <p>No hay pagos próximos a vencer en los próximos 7 días.</p>
+    <div class="empty-state-modern">
+        <i class="fas fa-calendar-check"></i>
+        <p>No hay pagos próximos a vencer en los próximos 7 días</p>
     </div>
     {% endif %}
 </div>
 
 <!-- Instalaciones Recientes -->
 <div class="section">
-    <h2>Instalaciones Recientes</h2>
+    <div class="page-header" style="border-bottom: 2px solid #f0f0f0; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+        <h2 style="margin: 0; font-size: 1.5rem;"><i class="fas fa-wifi"></i> Instalaciones Recientes</h2>
+        <a href="{% url 'instalaciones:instalacion_list' %}" class="btn btn-secondary">
+            <i class="fas fa-list"></i> Ver Todas
+        </a>
+    </div>
     {% if instalaciones_recientes %}
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Cliente</th>
-                <th>Plan</th>
-                <th>Velocidad</th>
-                <th>Estado</th>
-                <th>Fecha Solicitud</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for instalacion in instalaciones_recientes %}
-            <tr>
-                <td>{{ instalacion.cliente.nombre }}</td>
-                <td>{{ instalacion.plan_nombre }}</td>
-                <td>{{ instalacion.velocidad_descarga }} Mbps</td>
-                <td>
-                    {% if instalacion.estado == 'activa' %}
-                        <span class="badge badge-success">{{ instalacion.get_estado_display }}</span>
-                    {% elif instalacion.estado == 'pendiente' %}
-                        <span class="badge badge-warning">{{ instalacion.get_estado_display }}</span>
-                    {% elif instalacion.estado == 'programada' %}
-                        <span class="badge badge-info">{{ instalacion.get_estado_display }}</span>
-                    {% else %}
-                        <span class="badge">{{ instalacion.get_estado_display }}</span>
-                    {% endif %}
-                </td>
-                <td>{{ instalacion.fecha_solicitud|date:"d/m/Y H:i" }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-wrapper">
+        <div class="table-responsive">
+            <table class="table-modern">
+                <thead>
+                    <tr>
+                        <th style="width: 25%; min-width: 180px;">Cliente</th>
+                        <th style="width: 25%; min-width: 150px;">Plan</th>
+                        <th style="width: 15%; min-width: 120px;">Velocidad</th>
+                        <th style="width: 15%; min-width: 100px;">Estado</th>
+                        <th style="width: 20%; min-width: 150px;">Fecha Solicitud</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for instalacion in instalaciones_recientes %}
+                    <tr>
+                        <td>
+                            <span class="client-name" style="display: block; font-weight: 600; color: #1f2937; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                {{ instalacion.cliente.nombre_completo }}
+                            </span>
+                        </td>
+                        <td>
+                            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;">{{ instalacion.plan_nombre }}</span>
+                        </td>
+                        <td>
+                            <strong style="color: #1f2937; white-space: nowrap;">{{ instalacion.velocidad_descarga }} Mbps</strong>
+                            {% if instalacion.velocidad_subida %}
+                                <br><small style="color: #6b7280;">↑ {{ instalacion.velocidad_subida }} Mbps</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if instalacion.estado == 'activa' %}
+                                <span class="badge-modern badge-success-modern">
+                                    <i class="fas fa-check-circle"></i> {{ instalacion.get_estado_display }}
+                                </span>
+                            {% elif instalacion.estado == 'pendiente' %}
+                                <span class="badge-modern badge-warning-modern">
+                                    <i class="fas fa-clock"></i> {{ instalacion.get_estado_display }}
+                                </span>
+                            {% elif instalacion.estado == 'programada' %}
+                                <span class="badge-modern badge-info-modern">
+                                    <i class="fas fa-calendar-check"></i> {{ instalacion.get_estado_display }}
+                                </span>
+                            {% else %}
+                                <span class="badge-modern badge-danger-modern">
+                                    {{ instalacion.get_estado_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span style="white-space: nowrap;">{{ instalacion.fecha_solicitud|date:"d/m/Y" }}</span>
+                            <br><small style="color: #6b7280; font-size: 0.875rem;">{{ instalacion.fecha_solicitud|date:"H:i" }}</small>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
     {% else %}
-    <div class="empty-state">
-        <p>No hay instalaciones recientes.</p>
+    <div class="empty-state-modern">
+        <i class="fas fa-wifi"></i>
+        <p>No hay instalaciones recientes</p>
     </div>
     {% endif %}
 </div>

@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Rol: {{ rol.nombre }} - {{ sistema_config.nombre_empresa|default:"AdminiRed" }}{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2><i class="fas fa-users-cog"></i> {{ rol.nombre }}</h2>
+        <div style="display: flex; gap: 1rem;">
+            <a href="{% url 'core:rol_update' rol.pk %}" class="btn" style="background: #f59e0b;">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            <a href="{% url 'core:roles_list' %}" class="btn btn-admin">
+                <i class="fas fa-arrow-left"></i> Volver a Lista
+            </a>
+        </div>
+    </div>
+    
+    <!-- Información del Rol -->
+    <div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+        <h3 style="color: #111827; margin-bottom: 1.5rem;">Información del Rol</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+            <div>
+                <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Nombre</div>
+                <div style="font-weight: 600; color: #111827; font-size: 1.125rem;">{{ rol.nombre }}</div>
+            </div>
+            
+            <div>
+                <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Código</div>
+                <div><code style="background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 4px;">{{ rol.codigo }}</code></div>
+            </div>
+            
+            <div>
+                <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Estado</div>
+                <div>
+                    {% if rol.activo %}
+                    <span style="background: #d1fae5; color: #065f46; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.875rem; font-weight: 600;">Activo</span>
+                    {% else %}
+                    <span style="background: #fee2e2; color: #991b1b; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.875rem; font-weight: 600;">Inactivo</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if rol.descripcion %}
+            <div style="grid-column: 1 / -1;">
+                <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Descripción</div>
+                <div style="color: #374151; line-height: 1.6;">{{ rol.descripcion|linebreaks }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Permisos del Rol -->
+    <div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h3 style="color: #111827; margin: 0;">Permisos Asignados</h3>
+            <a href="{% url 'core:rol_permisos_update' rol.pk %}" class="btn btn-admin">
+                <i class="fas fa-key"></i> Gestionar Permisos
+            </a>
+        </div>
+        
+        {% if permisos %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
+            {% regroup permisos by categoria as permisos_por_categoria %}
+            {% for categoria_group in permisos_por_categoria %}
+            <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <div style="font-weight: 600; color: #667eea; margin-bottom: 0.75rem; text-transform: capitalize;">
+                    {{ categoria_group.grouper }}
+                </div>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    {% for permiso in categoria_group.list %}
+                    <li style="padding: 0.5rem 0; color: #374151;">
+                        <i class="fas fa-check-circle" style="color: #10b981; margin-right: 0.5rem;"></i>
+                        {{ permiso.nombre }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 3rem; color: #6b7280;">
+            <i class="fas fa-key" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+            <p>Este rol no tiene permisos asignados.</p>
+            <a href="{% url 'core:rol_permisos_update' rol.pk %}" class="btn" style="margin-top: 1rem;">
+                <i class="fas fa-plus"></i> Asignar Permisos
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Usuarios con este Rol -->
+    <div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="color: #111827; margin-bottom: 1.5rem;">Usuarios con este Rol ({{ usuarios_con_rol|length }})</h3>
+        
+        {% if usuarios_con_rol %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
+            {% for usuario in usuarios_con_rol %}
+            <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <div style="font-weight: 600; color: #111827; margin-bottom: 0.25rem;">
+                    {{ usuario.username }}
+                </div>
+                {% if usuario.email %}
+                <div style="color: #6b7280; font-size: 0.875rem;">{{ usuario.email }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 3rem; color: #6b7280;">
+            <i class="fas fa-users" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+            <p>No hay usuarios asignados a este rol.</p>
+            <a href="{% url 'core:usuarios_roles_list' %}" class="btn" style="margin-top: 1rem;">
+                <i class="fas fa-user-plus"></i> Asignar a Usuarios
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+

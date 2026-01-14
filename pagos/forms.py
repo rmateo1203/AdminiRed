@@ -7,6 +7,22 @@ from clientes.models import Cliente
 from instalaciones.models import Instalacion
 
 
+class DateInput(forms.DateInput):
+    """Widget personalizado para campos de fecha que asegura el formato correcto para HTML5 date input."""
+    input_type = 'date'
+    
+    def format_value(self, value):
+        """Formatea el valor de fecha en formato YYYY-MM-DD para el input type='date'."""
+        if value is None:
+            return ''
+        if isinstance(value, str):
+            return value
+        # Si es un objeto date o datetime, formatearlo como YYYY-MM-DD
+        if hasattr(value, 'strftime'):
+            return value.strftime('%Y-%m-%d')
+        return value
+
+
 class PagoForm(forms.ModelForm):
     """Formulario para crear y editar pagos."""
     
@@ -51,9 +67,8 @@ class PagoForm(forms.ModelForm):
                 'max': 2100,
                 'placeholder': '2024'
             }),
-            'fecha_vencimiento': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
+            'fecha_vencimiento': DateInput(attrs={
+                'class': 'form-control'
             }),
             'fecha_pago': forms.DateTimeInput(attrs={
                 'class': 'form-control',
@@ -89,7 +104,17 @@ class PagoForm(forms.ModelForm):
             self.fields['instalacion'].queryset = Instalacion.objects.filter(cliente_id=cliente_id)
         elif self.instance and self.instance.pk and self.instance.cliente:
             # Modo edición: cargar instalaciones del cliente actual
+            self.fields['cliente'].initial = self.instance.cliente.pk
             self.fields['instalacion'].queryset = Instalacion.objects.filter(cliente=self.instance.cliente)
+            # Asegurar que la instalación actual esté en el queryset si existe
+            if self.instance.instalacion:
+                # Agregar la instalación actual si no está en el queryset (por ejemplo, si fue eliminada)
+                if not self.fields['instalacion'].queryset.filter(pk=self.instance.instalacion.pk).exists():
+                    # Crear un queryset que incluya la instalación actual
+                    from django.db.models import Q
+                    self.fields['instalacion'].queryset = Instalacion.objects.filter(
+                        Q(cliente=self.instance.cliente) | Q(pk=self.instance.instalacion.pk)
+                    )
         else:
             self.fields['instalacion'].queryset = Instalacion.objects.all()
         
@@ -109,6 +134,12 @@ class PagoForm(forms.ModelForm):
             ahora = timezone.now()
             max_datetime = ahora + timedelta(hours=1)
             self.fields['fecha_pago'].widget.attrs['max'] = max_datetime.strftime('%Y-%m-%dT%H:%M')
+            
+            # Si estamos editando y hay una fecha_pago, formatearla correctamente para datetime-local
+            if self.instance and self.instance.pk and self.instance.fecha_pago:
+                # Convertir a formato datetime-local (YYYY-MM-DDTHH:MM)
+                fecha_pago_str = self.instance.fecha_pago.strftime('%Y-%m-%dT%H:%M')
+                self.fields['fecha_pago'].widget.attrs['value'] = fecha_pago_str
     
     def clean(self):
         cleaned_data = super().clean()
@@ -164,12 +195,19 @@ class PagoForm(forms.ModelForm):
             
             if existing.exists():
                 pago_duplicado = existing.first()
-                mensaje = f'Ya existe un pago activo para este cliente'
+                mensaje = "Ya existe un pago activo para este cliente"
                 if instalacion:
-                    mensaje += f' e instalación ({instalacion.numero_contrato})'
-                mensaje += f' en el período {dict(Pago.PERIODO_MES_CHOICES).get(periodo_mes, periodo_mes)} {periodo_anio}.'
+                    mensaje += " e instalacion ({})".format(instalacion.numero_contrato)
+                mensaje += " en el periodo {} {}.".format(
+                    dict(Pago.PERIODO_MES_CHOICES).get(periodo_mes, periodo_mes),
+                    periodo_anio
+                )
                 if pago_duplicado:
-                    mensaje += f' Pago existente: {pago_duplicado.concepto} (${pago_duplicado.monto}) - Estado: {pago_duplicado.get_estado_display()}'
+                    mensaje += " Pago existente: {} (${}) - Estado: {}".format(
+                        pago_duplicado.concepto,
+                        pago_duplicado.monto,
+                        pago_duplicado.get_estado_display()
+                    )
                 
                 raise ValidationError({
                     'periodo_mes': mensaje,
@@ -204,7 +242,7 @@ class PagoForm(forms.ModelForm):
             # Permitir hasta 1 hora en el futuro para ajustes de zona horaria
             if fecha_pago > (ahora + timedelta(hours=1)):
                 raise ValidationError({
-                    'fecha_pago': f'La fecha de pago no puede ser futura. La fecha/hora actual es {ahora.strftime("%d/%m/%Y %H:%M")}.'
+                    'fecha_pago': 'La fecha de pago no puede ser futura. La fecha/hora actual es {}.'.format(ahora.strftime("%d/%m/%Y %H:%M"))
                 })
         
         # Validación de estado
