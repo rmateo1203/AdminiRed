@@ -5,22 +5,9 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 import logging
-from .models import Instalacion, PlanInternet, CambioEstadoInstalacion
-from .forms import InstalacionForm
-try:
-    from .models import ConfiguracionNumeroContrato
-    from .forms import ConfiguracionNumeroContratoForm
-    HAS_CONFIG_NUMERO_CONTRATO = True
-except ImportError:
-    HAS_CONFIG_NUMERO_CONTRATO = False
-
-try:
-    from .services import NumeroContratoService
-    HAS_NUMERO_CONTRATO_SERVICE = True
-except ImportError:
-    HAS_NUMERO_CONTRATO_SERVICE = False
-    NumeroContratoService = None
-
+from .models import Instalacion, PlanInternet, ConfiguracionNumeroContrato
+from .forms import InstalacionForm, ConfiguracionNumeroContratoForm
+from .services import NumeroContratoService
 from clientes.models import Cliente
 
 logger = logging.getLogger(__name__)
@@ -90,17 +77,9 @@ def instalacion_detail(request, pk):
     # Obtener pagos relacionados si existen
     pagos = instalacion.pagos.all() if hasattr(instalacion, 'pagos') else []
     
-    # Obtener historial de cambios de estado
-    cambios_estado = CambioEstadoInstalacion.objects.filter(instalacion=instalacion).select_related('usuario').order_by('-fecha_cambio')[:10]
-    
-    # Obtener historial completo (simple-history)
-    historial = instalacion.history.all()[:10] if hasattr(instalacion, 'history') else []
-    
     context = {
         'instalacion': instalacion,
         'pagos': pagos,
-        'cambios_estado': cambios_estado,
-        'historial': historial,
     }
     
     return render(request, 'instalaciones/instalacion_detail.html', context)
@@ -128,8 +107,7 @@ def instalacion_create(request, cliente_id=None):
         
         if form.is_valid():
             try:
-                instalacion = form.save(commit=False)
-                instalacion.save(user=request.user)  # Pasar usuario para historial
+                instalacion = form.save()
                 messages.success(request, f'Instalación "{instalacion}" creada exitosamente.')
                 return redirect('instalaciones:instalacion_detail', pk=instalacion.pk)
             except Exception as e:
@@ -161,8 +139,7 @@ def instalacion_update(request, pk):
         form = InstalacionForm(request.POST, instance=instalacion)
         if form.is_valid():
             try:
-                instalacion = form.save(commit=False)
-                instalacion.save(user=request.user)
+                instalacion = form.save()
                 messages.success(request, f'Instalación "{instalacion}" actualizada exitosamente.')
                 return redirect('instalaciones:instalacion_detail', pk=instalacion.pk)
             except Exception as e:
@@ -199,76 +176,6 @@ def instalacion_delete(request, pk):
     }
     
     return render(request, 'instalaciones/instalacion_confirm_delete.html', context)
-
-
-@login_required
-def instalacion_cambiar_estado(request, pk):
-    """Cambia el estado de una instalación."""
-    from django.utils import timezone
-    
-    instalacion = get_object_or_404(Instalacion.objects.select_related('cliente'), pk=pk)
-    nuevo_estado = request.POST.get('nuevo_estado')
-    notas = request.POST.get('notas', '').strip()
-    
-    if request.method != 'POST':
-        messages.error(request, 'Método no permitido.')
-        return redirect('instalaciones:instalacion_detail', pk=pk)
-    
-    if not nuevo_estado:
-        messages.error(request, 'Debes especificar un nuevo estado.')
-        return redirect('instalaciones:instalacion_detail', pk=pk)
-    
-    # Validar que el estado sea válido
-    estados_validos = [choice[0] for choice in Instalacion.ESTADO_CHOICES]
-    if nuevo_estado not in estados_validos:
-        messages.error(request, 'Estado inválido.')
-        return redirect('instalaciones:instalacion_detail', pk=pk)
-    
-    estado_anterior = instalacion.estado
-    
-    # Si el estado no cambia, no hacer nada
-    if estado_anterior == nuevo_estado:
-        messages.info(request, 'La instalación ya se encuentra en ese estado.')
-        return redirect('instalaciones:instalacion_detail', pk=pk)
-    
-    try:
-        # Actualizar el estado
-        instalacion.estado = nuevo_estado
-        
-        # Actualizar fechas según el nuevo estado
-        ahora = timezone.now()
-        
-        if nuevo_estado == 'en_proceso' and not instalacion.fecha_instalacion:
-            instalacion.fecha_instalacion = ahora
-        
-        if nuevo_estado == 'activa':
-            if not instalacion.fecha_instalacion:
-                instalacion.fecha_instalacion = ahora
-            if not instalacion.fecha_activacion:
-                instalacion.fecha_activacion = ahora
-        
-        # Guardar con el usuario para el historial
-        instalacion._usuario_cambio = request.user
-        instalacion.save(user=request.user)
-        
-        # Registrar el cambio manualmente si hay notas personalizadas
-        if notas:
-            CambioEstadoInstalacion.objects.create(
-                instalacion=instalacion,
-                estado_anterior=estado_anterior,
-                estado_nuevo=nuevo_estado,
-                usuario=request.user,
-                notas=notas
-            )
-        
-        estado_display = dict(Instalacion.ESTADO_CHOICES).get(nuevo_estado, nuevo_estado)
-        messages.success(request, f'Estado de la instalación cambiado a "{estado_display}" exitosamente.')
-        
-    except Exception as e:
-        messages.error(request, f'Error al cambiar el estado: {str(e)}')
-        logger.error(f'Error al cambiar estado de instalación {instalacion.pk}: {str(e)}')
-    
-    return redirect('instalaciones:instalacion_detail', pk=pk)
 
 
 @login_required
@@ -356,9 +263,6 @@ def get_cliente_instalaciones_api(request, cliente_id):
 
 @login_required
 def configurar_numero_contrato(request):
-    if not HAS_CONFIG_NUMERO_CONTRATO:
-        messages.error(request, 'La configuración de número de contrato no está disponible.')
-        return redirect('instalaciones:instalacion_list')
     """Vista para configurar la generación automática de números de contrato."""
     config = ConfiguracionNumeroContrato.get_activa()
     
@@ -373,7 +277,7 @@ def configurar_numero_contrato(request):
     
     # Generar preview del formato
     preview = None
-    if (form.is_valid() or request.method == 'GET') and HAS_NUMERO_CONTRATO_SERVICE:
+    if form.is_valid() or request.method == 'GET':
         try:
             preview = NumeroContratoService.obtener_preview(
                 formato=form['formato'].value() or config.formato,
@@ -422,9 +326,6 @@ def configurar_numero_contrato(request):
 @login_required
 def preview_numero_contrato(request):
     """API para obtener preview del número de contrato."""
-    if not HAS_NUMERO_CONTRATO_SERVICE:
-        return JsonResponse({'error': 'Servicio no disponible', 'success': False}, status=400)
-    
     formato = request.GET.get('formato', '')
     prefijo = request.GET.get('prefijo', 'INST')
     numero_inicial = int(request.GET.get('numero_inicial', 1))

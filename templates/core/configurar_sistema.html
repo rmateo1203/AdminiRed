@@ -109,27 +109,6 @@
                     {{ form.logo.help_text }}
                 </small>
             </div>
-            
-            <div class="form-group">
-                <label for="{{ form.imagen_hero.id_for_label }}">
-                    <i class="fas fa-image"></i> {{ form.imagen_hero.label }}
-                </label>
-                {% if config.imagen_hero %}
-                    <div style="margin-bottom: 0.5rem;">
-                        <img src="{{ config.imagen_hero.url }}" alt="Imagen hero actual" style="max-width: 100%; max-height: 200px; border: 1px solid #e5e7eb; padding: 0.5rem; border-radius: 4px; background: white; object-fit: cover;">
-                        <p style="color: #6b7280; font-size: 0.875rem; margin-top: 0.25rem;">Imagen hero actual</p>
-                    </div>
-                {% endif %}
-                {{ form.imagen_hero }}
-                {% if form.imagen_hero.errors %}
-                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">
-                        {{ form.imagen_hero.errors }}
-                    </div>
-                {% endif %}
-                <small style="color: #6b7280; display: block; margin-top: 0.25rem;">
-                    {{ form.imagen_hero.help_text }}
-                </small>
-            </div>
         </div>
         
         <!-- Colores del Sistema -->

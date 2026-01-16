@@ -170,29 +170,11 @@
             </tbody>
         </table>
     </div>
-    
-    <!-- Paginación -->
-    {% if page_obj.has_other_pages %}
-    <div class="pagination-modern">
-        {% if page_obj.has_previous %}
-            <a href="?page=1{% if query %}&q={{ query }}{% endif %}">« Primera</a>
-            <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">‹ Anterior</a>
-        {% endif %}
-        <span class="current">
-            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-        </span>
-        {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}">Siguiente ›</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}">Última »</a>
-        {% endif %}
-    </div>
-    {% endif %}
-    
     {% else %}
-    <div class="empty-state-modern">
-        <i class="fas fa-inbox"></i>
-        <p>No hay registros</p>
-        <p style="font-size: 0.9rem; color: #9ca3af;">Comienza creando tu primer registro</p>
+    <div style="text-align: center; padding: 3rem; background: white; border-radius: 12px;">
+        <i class="fas fa-inbox" style="font-size: 4rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+        <p style="font-size: 1.25rem; color: #6b7280; margin-bottom: 0.5rem;">No hay registros</p>
+        <p style="color: #9ca3af;">Comienza creando tu primer registro</p>
     </div>
     {% endif %}
 </div>

@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import logout, authenticate, login
+from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import LoginView
 from django.contrib import messages
 from django.db.models import Count, Q, F
 from django.utils import timezone
@@ -13,80 +12,14 @@ from inventario.models import Material
 from notificaciones.models import Notificacion
 
 
-class CustomLoginView(LoginView):
-    """Vista personalizada de login que redirige a clientes al portal."""
-    
-    def form_valid(self, form):
-        """Redirige según el tipo de usuario después del login."""
-        from django.contrib.auth import login
-        
-        # Obtener el usuario del formulario
-        user = form.get_user()
-        
-        # Verificar que el usuario esté activo
-        if not user.is_active:
-            messages.error(self.request, 'Tu cuenta está inactiva. Contacta al administrador.')
-            return self.form_invalid(form)
-        
-        # Hacer el login manualmente
-        login(self.request, user)
-        
-        # Verificar si es un cliente y redirigir apropiadamente
-        try:
-            cliente = user.cliente_perfil
-            if cliente and not cliente.is_deleted and cliente.estado_cliente == 'activo':
-                # Verificar si debe cambiar la contraseña
-                if cliente.debe_cambiar_password:
-                    messages.warning(self.request, 'Por seguridad, debes cambiar tu contraseña antes de continuar.')
-                    return redirect('clientes:portal_cambiar_password')
-                # Redirigir al portal de clientes
-                messages.success(self.request, f'¡Bienvenido, {cliente.nombre_completo}!')
-                return redirect('clientes:portal_mis_pagos')
-        except AttributeError:
-            # No es un cliente, continuar con redirección normal
-            pass
-        except Exception as e:
-            # Log del error pero continuar
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Error al verificar perfil de cliente: {e}")
-        
-        # Para usuarios normales (staff), usar la redirección por defecto
-        # Obtener la URL de redirección del parámetro 'next' o usar la configuración por defecto
-        redirect_to = self.get_success_url()
-        return redirect(redirect_to)
-    
-    def get_success_url(self):
-        """Obtiene la URL de redirección después del login exitoso."""
-        from django.conf import settings
-        redirect_to = self.request.GET.get('next', None)
-        if redirect_to:
-            return redirect_to
-        return settings.LOGIN_REDIRECT_URL
-
-
-def sin_permisos(request):
-    """Vista para mostrar mensaje cuando el usuario no tiene permisos."""
-    return render(request, 'core/sin_permisos.html')
-
-
 def home(request):
     """Vista para la página de inicio con estadísticas del sistema."""
-    
-    # Si el usuario es un cliente, redirigir al portal de clientes
-    if request.user.is_authenticated:
-        try:
-            cliente = request.user.cliente_perfil
-            if cliente and not cliente.is_deleted and cliente.estado_cliente == 'activo':
-                return redirect('clientes:portal_mis_pagos')
-        except:
-            pass  # No es un cliente, continuar normalmente
     
     # Estadísticas de clientes
     total_clientes = Cliente.objects.count()
     clientes_activos = Cliente.objects.filter(estado_cliente='activo').count()
     clientes_nuevos_mes = Cliente.objects.filter(
-        created_at__gte=timezone.now() - timedelta(days=30)
+        fecha_registro__gte=timezone.now() - timedelta(days=30)
     ).count()
     
     # Estadísticas de instalaciones
@@ -196,29 +129,15 @@ def configurar_sistema(request):
     """Vista para configurar el sistema (logo, colores, nombre de empresa)."""
     from .models import ConfiguracionSistema
     from .forms import ConfiguracionSistemaForm
-    from django.core.cache import cache
     
     config = ConfiguracionSistema.get_activa()
     
     if request.method == 'POST':
         form = ConfiguracionSistemaForm(request.POST, request.FILES, instance=config)
         if form.is_valid():
-            config = form.save(commit=False)
-            # Asegurar que los archivos se guarden correctamente
-            if 'imagen_hero' in request.FILES:
-                config.imagen_hero = request.FILES['imagen_hero']
-            if 'logo' in request.FILES:
-                config.logo = request.FILES['logo']
-            config.save()
-            # Limpiar cache después de guardar
-            cache.delete('config_sistema')
+            form.save()
             messages.success(request, 'Configuración del sistema actualizada exitosamente.')
             return redirect('core:configurar_sistema')
-        else:
-            # Mostrar errores del formulario
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f'Error en {field}: {error}')
     else:
         form = ConfiguracionSistemaForm(instance=config)
     

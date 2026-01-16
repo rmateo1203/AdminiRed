@@ -1,7 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.core.paginator import Paginator
 from django.db.models import Q
 from .models import Notificacion
 from .forms import NotificacionForm
@@ -38,19 +37,13 @@ def notificacion_list(request):
     orden = request.GET.get('orden', '-fecha_creacion')
     notificaciones = notificaciones.order_by(orden)
     
-    # Calcular estadísticas (antes de paginación)
+    # Calcular estadísticas
     total_notificaciones = notificaciones.count()
     pendientes = notificaciones.filter(estado='pendiente').count()
     enviadas = notificaciones.filter(estado='enviada').count()
     
-    # Paginación
-    paginator = Paginator(notificaciones, 20)
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
-    
     context = {
-        'notificaciones': page_obj,
-        'page_obj': page_obj,
+        'notificaciones': notificaciones,
         'query': query,
         'estado_filter': estado_filter,
         'canal_filter': canal_filter,

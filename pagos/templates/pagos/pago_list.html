@@ -4,33 +4,25 @@
 
 {% block content %}
 <div class="section">
-    <!-- Header -->
-    <div class="page-header">
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <h2><i class="fas fa-dollar-sign"></i> Lista de Pagos</h2>
-        <div class="header-actions">
-            <a href="{% url 'pagos:pago_calendario' %}" class="btn btn-secondary">
-                <i class="fas fa-calendar"></i> <span class="desktop-only">Calendario</span>
-            </a>
-            <a href="{% url 'pagos:pago_reportes' %}" class="btn btn-secondary">
-                <i class="fas fa-chart-bar"></i> <span class="desktop-only">Reportes</span>
-            </a>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="{% url 'pagos:pago_calendario' %}" class="btn btn-secondary"><i class="fas fa-calendar"></i> <span class="desktop-only">Calendario</span></a>
+            <a href="{% url 'pagos:pago_reportes' %}" class="btn btn-secondary"><i class="fas fa-chart-bar"></i> <span class="desktop-only">Reportes</span></a>
             <div style="position: relative; display: inline-block;">
-                <button class="btn btn-secondary" onclick="toggleExportMenu()">
-                    <i class="fas fa-download"></i> <span class="desktop-only">Exportar</span>
-                    <i class="fas fa-chevron-down" style="font-size: 0.7rem; margin-left: 0.25rem;"></i>
+                <button class="btn btn-secondary" onclick="toggleExportMenu()" style="position: relative;">
+                    <i class="fas fa-download"></i> <span class="desktop-only">Exportar</span> <i class="fas fa-chevron-down" style="font-size: 0.7rem; margin-left: 0.25rem;"></i>
                 </button>
-                <div id="exportMenu" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 0.5rem; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 180px; overflow: hidden;">
-                    <a href="{% url 'pagos:pago_exportar_excel' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" style="display: block; padding: 0.875rem 1.25rem; text-decoration: none; color: #374151; transition: background 0.2s; border-bottom: 1px solid #f3f4f6;">
-                        <i class="fas fa-file-excel" style="color: #10b981; margin-right: 0.5rem;"></i> Exportar a Excel
+                <div id="exportMenu" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 0.25rem; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 150px;">
+                    <a href="{% url 'pagos:pago_exportar_excel' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn" style="display: block; text-align: left; border: none; border-radius: 0; background: none; color: #374151; padding: 0.75rem 1rem; text-decoration: none; width: 100%;">
+                        <i class="fas fa-file-excel" style="color: #10b981;"></i> Exportar a Excel
                     </a>
-                    <a href="{% url 'pagos:pago_exportar_pdf' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" style="display: block; padding: 0.875rem 1.25rem; text-decoration: none; color: #374151; transition: background 0.2s;">
-                        <i class="fas fa-file-pdf" style="color: #ef4444; margin-right: 0.5rem;"></i> Exportar a PDF
+                    <a href="{% url 'pagos:pago_exportar_pdf' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn" style="display: block; text-align: left; border: none; border-radius: 0; background: none; color: #374151; padding: 0.75rem 1rem; text-decoration: none; width: 100%; border-top: 1px solid #e5e7eb;">
+                        <i class="fas fa-file-pdf" style="color: #ef4444;"></i> Exportar a PDF
                     </a>
                 </div>
             </div>
-            <a href="{% url 'pagos:pago_create' %}" class="btn">
-                <i class="fas fa-plus"></i> Nuevo Pago
-            </a>
+            <a href="{% url 'pagos:pago_create' %}" class="btn"><i class="fas fa-plus"></i> <span class="desktop-only">Nuevo </span>Pago</a>
         </div>
     </div>
     
@@ -42,282 +34,210 @@
     
     // Cerrar menú al hacer clic fuera
     document.addEventListener('click', function(e) {
-        const exportMenu = document.getElementById('exportMenu');
-        const exportBtn = e.target.closest('button[onclick="toggleExportMenu()"]');
-        if (exportMenu && !exportMenu.contains(e.target) && !exportBtn) {
-            exportMenu.style.display = 'none';
+        const menu = document.getElementById('exportMenu');
+        const button = e.target.closest('button');
+        if (!button || !button.onclick || button.onclick.toString().includes('toggleExportMenu')) {
+            return;
+        }
+        if (menu && !menu.contains(e.target) && !button) {
+            menu.style.display = 'none';
         }
     });
     </script>
     
-    <!-- Búsqueda -->
-    <div class="search-container">
-        <form method="get" id="searchForm">
-            <div class="search-main">
-                <div class="search-input-wrapper">
-                    <i class="fas fa-search"></i>
-                    <input 
-                        type="text" 
-                        name="q" 
-                        value="{{ query }}" 
-                        placeholder="Buscar por cliente, concepto o referencia..."
-                    >
-                </div>
-            </div>
-            
-            <div class="filters-row">
-                <select name="estado" class="filter-select">
-                    <option value="">Todos los estados</option>
-                    {% for estado_code, estado_name in estados %}
-                        <option value="{{ estado_code }}" {% if estado_filter == estado_code %}selected{% endif %}>
-                            {{ estado_name }}
-                        </option>
-                    {% endfor %}
-                </select>
-                <select name="metodo" class="filter-select">
-                    <option value="">Todos los métodos</option>
-                    {% for metodo_code, metodo_name in metodos %}
-                        <option value="{{ metodo_code }}" {% if metodo_filter == metodo_code %}selected{% endif %}>
-                            {{ metodo_name }}
-                        </option>
-                    {% endfor %}
-                </select>
-                <input 
-                    type="number" 
-                    name="anio" 
-                    value="{{ periodo_anio }}" 
-                    placeholder="Año"
-                    class="filter-select"
-                    min="2000"
-                    max="2100"
-                >
-                <select name="mes" class="filter-select">
-                    <option value="">Todos los meses</option>
-                    <option value="1" {% if periodo_mes == "1" %}selected{% endif %}>Enero</option>
-                    <option value="2" {% if periodo_mes == "2" %}selected{% endif %}>Febrero</option>
-                    <option value="3" {% if periodo_mes == "3" %}selected{% endif %}>Marzo</option>
-                    <option value="4" {% if periodo_mes == "4" %}selected{% endif %}>Abril</option>
-                    <option value="5" {% if periodo_mes == "5" %}selected{% endif %}>Mayo</option>
-                    <option value="6" {% if periodo_mes == "6" %}selected{% endif %}>Junio</option>
-                    <option value="7" {% if periodo_mes == "7" %}selected{% endif %}>Julio</option>
-                    <option value="8" {% if periodo_mes == "8" %}selected{% endif %}>Agosto</option>
-                    <option value="9" {% if periodo_mes == "9" %}selected{% endif %}>Septiembre</option>
-                    <option value="10" {% if periodo_mes == "10" %}selected{% endif %}>Octubre</option>
-                    <option value="11" {% if periodo_mes == "11" %}selected{% endif %}>Noviembre</option>
-                    <option value="12" {% if periodo_mes == "12" %}selected{% endif %}>Diciembre</option>
-                </select>
-                <select name="orden" class="filter-select">
-                    <option value="-fecha_vencimiento" {% if orden == '-fecha_vencimiento' %}selected{% endif %}>Vencimiento (próximos)</option>
-                    <option value="fecha_vencimiento" {% if orden == 'fecha_vencimiento' %}selected{% endif %}>Vencimiento (antiguos)</option>
-                    <option value="-fecha_registro" {% if orden == '-fecha_registro' %}selected{% endif %}>Más recientes</option>
-                    <option value="-monto" {% if orden == '-monto' %}selected{% endif %}>Monto (mayor)</option>
-                </select>
-            </div>
-            
-            <div class="search-actions">
-                <button type="submit" class="btn"><i class="fas fa-search"></i> Buscar</button>
-                {% if query or estado_filter or metodo_filter or periodo_anio or periodo_mes %}
-                    <a href="{% url 'pagos:pago_list' %}" class="btn btn-secondary">Limpiar</a>
-                {% endif %}
-            </div>
+    <!-- Búsqueda y Filtros -->
+    <div class="search-filters">
+        <form method="get" class="search-form">
+            <input 
+                type="text" 
+                name="q" 
+                value="{{ query }}" 
+                placeholder="Buscar por cliente, concepto o referencia..."
+                class="form-control"
+            >
+            <select name="estado" class="form-control">
+                <option value="">Todos los estados</option>
+                {% for estado_code, estado_name in estados %}
+                    <option value="{{ estado_code }}" {% if estado_filter == estado_code %}selected{% endif %}>
+                        {{ estado_name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <select name="metodo" class="form-control">
+                <option value="">Todos los métodos</option>
+                {% for metodo_code, metodo_name in metodos %}
+                    <option value="{{ metodo_code }}" {% if metodo_filter == metodo_code %}selected{% endif %}>
+                        {{ metodo_name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <input 
+                type="number" 
+                name="anio" 
+                value="{{ periodo_anio }}" 
+                placeholder="Año"
+                class="form-control"
+                min="2000"
+                max="2100"
+            >
+            <select name="mes" class="form-control">
+                <option value="">Todos los meses</option>
+                <option value="1" {% if periodo_mes == "1" %}selected{% endif %}>Enero</option>
+                <option value="2" {% if periodo_mes == "2" %}selected{% endif %}>Febrero</option>
+                <option value="3" {% if periodo_mes == "3" %}selected{% endif %}>Marzo</option>
+                <option value="4" {% if periodo_mes == "4" %}selected{% endif %}>Abril</option>
+                <option value="5" {% if periodo_mes == "5" %}selected{% endif %}>Mayo</option>
+                <option value="6" {% if periodo_mes == "6" %}selected{% endif %}>Junio</option>
+                <option value="7" {% if periodo_mes == "7" %}selected{% endif %}>Julio</option>
+                <option value="8" {% if periodo_mes == "8" %}selected{% endif %}>Agosto</option>
+                <option value="9" {% if periodo_mes == "9" %}selected{% endif %}>Septiembre</option>
+                <option value="10" {% if periodo_mes == "10" %}selected{% endif %}>Octubre</option>
+                <option value="11" {% if periodo_mes == "11" %}selected{% endif %}>Noviembre</option>
+                <option value="12" {% if periodo_mes == "12" %}selected{% endif %}>Diciembre</option>
+            </select>
+            <select name="orden" class="form-control">
+                <option value="-fecha_vencimiento" {% if orden == '-fecha_vencimiento' %}selected{% endif %}>Vencimiento (próximos)</option>
+                <option value="fecha_vencimiento" {% if orden == 'fecha_vencimiento' %}selected{% endif %}>Vencimiento (antiguos)</option>
+                <option value="-fecha_registro" {% if orden == '-fecha_registro' %}selected{% endif %}>Más recientes</option>
+                <option value="-monto" {% if orden == '-monto' %}selected{% endif %}>Monto (mayor)</option>
+            </select>
+            <button type="submit" class="btn"><i class="fas fa-search"></i> Buscar</button>
+            {% if query or estado_filter or metodo_filter or periodo_anio or periodo_mes %}
+                <a href="{% url 'pagos:pago_list' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
         </form>
     </div>
     
     <!-- Estadísticas Rápidas -->
-    <div class="stats-grid" style="margin-bottom: 2rem;">
-        <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-            <h3 style="color: rgba(255,255,255,0.9);">Total Pagos</h3>
-            <div class="value" style="color: white;">{{ total_pagos }}</div>
-            <div class="subtitle" style="color: rgba(255,255,255,0.9);"><i class="fas fa-list"></i> Total</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ total_pagos }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-list"></i> Total Pagos</div>
         </div>
-        <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">
-            <h3 style="color: rgba(255,255,255,0.9);">Pendientes</h3>
-            <div class="value" style="color: white;">{{ pagos_pendientes }}</div>
-            <div class="subtitle" style="color: rgba(255,255,255,0.9);"><i class="fas fa-clock"></i> Pendientes</div>
+        <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ pagos_pendientes }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-clock"></i> Pendientes</div>
         </div>
-        <div class="stat-card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;">
-            <h3 style="color: rgba(255,255,255,0.9);">Vencidos</h3>
-            <div class="value" style="color: white;">{{ pagos_vencidos }}</div>
-            <div class="subtitle" style="color: rgba(255,255,255,0.9);"><i class="fas fa-exclamation-triangle"></i> Vencidos</div>
+        <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ pagos_vencidos }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-exclamation-triangle"></i> Vencidos</div>
         </div>
-        <div class="stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
-            <h3 style="color: rgba(255,255,255,0.9);">Total Monto</h3>
-            <div class="value" style="color: white;">${{ total_monto|floatformat:2 }}</div>
-            <div class="subtitle" style="color: rgba(255,255,255,0.9);"><i class="fas fa-dollar-sign"></i> Total</div>
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">${{ total_monto|floatformat:2 }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-dollar-sign"></i> Total Monto</div>
         </div>
     </div>
     
-    <!-- Tabla Desktop -->
+    <!-- Tabla de Pagos -->
     {% if page_obj %}
-    <div class="table-wrapper">
-        <div class="table-responsive">
-            <table class="table-modern">
-                <thead>
-                    <tr>
-                        <th style="width: 20%; min-width: 180px;">Cliente</th>
-                        <th class="hide-mobile" style="width: 18%; min-width: 150px;">Concepto</th>
-                        <th style="width: 12%; min-width: 100px;">Monto</th>
-                        <th class="hide-mobile" style="width: 12%; min-width: 120px;">Período</th>
-                        <th class="hide-mobile" style="width: 15%; min-width: 130px;">Vencimiento</th>
-                        <th style="width: 12%; min-width: 100px;">Estado</th>
-                        <th style="width: 11%; min-width: 100px;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for pago in page_obj %}
-                    <tr>
-                        <td>
-                            <a href="{% url 'clientes:cliente_detail' pago.cliente.pk %}" class="client-name" style="display: block; font-weight: 600; color: var(--color-primario); text-decoration: none; margin-bottom: 0.25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                {{ pago.cliente.nombre_completo }}
-                            </a>
-                            {% if pago.instalacion %}
-                                <small style="color: #6b7280; font-size: 0.875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;">{{ pago.instalacion.plan_nombre }}</small>
-                            {% endif %}
-                        </td>
-                        <td class="hide-mobile">
-                            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;">{{ pago.concepto }}</span>
-                        </td>
-                        <td>
-                            <strong style="color: #10b981; font-size: 1rem; white-space: nowrap;">${{ pago.monto|floatformat:2 }}</strong>
-                        </td>
-                        <td class="hide-mobile">
-                            <span style="white-space: nowrap;">{{ pago.get_periodo_mes_display }} {{ pago.periodo_anio }}</span>
-                        </td>
-                        <td class="hide-mobile">
-                            <span style="white-space: nowrap;">{{ pago.fecha_vencimiento|date:"d/m/Y" }}</span>
-                            {% if pago.esta_vencido and pago.estado != 'pagado' %}
-                                <br><small style="color: #ef4444; font-weight: 600;">{{ pago.dias_vencido }} día(s) vencido</small>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if pago.estado == 'pagado' %}
-                                <span class="badge-modern badge-success-modern">
-                                    <i class="fas fa-check-circle"></i> Pagado
-                                </span>
-                            {% elif pago.estado == 'vencido' %}
-                                <span class="badge-modern badge-danger-modern">
-                                    <i class="fas fa-exclamation-triangle"></i> Vencido
-                                </span>
-                            {% elif pago.estado == 'pendiente' %}
-                                <span class="badge-modern badge-warning-modern">
-                                    <i class="fas fa-clock"></i> Pendiente
-                                </span>
-                            {% else %}
-                                <span class="badge-modern" style="background: #e5e7eb; color: #374151;">
-                                    <i class="fas fa-ban"></i> {{ pago.get_estado_display }}
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="action-buttons">
-                                <a href="{% url 'pagos:pago_detail' pago.pk %}" class="btn-icon btn-icon-primary" title="Ver">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{% url 'pagos:pago_update' pago.pk %}" class="btn-icon btn-icon-secondary" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                {% if pago.estado != 'pagado' %}
-                                    <a href="{% url 'pagos:pago_marcar_pagado' pago.pk %}" class="btn-icon" style="background: var(--color-exito); color: white;" title="Marcar como pagado" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='var(--color-exito)'">
-                                        <i class="fas fa-check"></i>
-                                    </a>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    
-    <!-- Cards Móvil -->
-    <div class="pagos-cards">
-        {% for pago in page_obj %}
-        <div class="card-modern">
-            <div class="card-header-modern">
-                <div style="flex: 1;">
-                    <a href="{% url 'clientes:cliente_detail' pago.cliente.pk %}" style="text-decoration: none;">
-                        <strong style="display: block; color: var(--color-primario); margin-bottom: 0.25rem; font-size: 1.1rem;">{{ pago.cliente.nombre_completo }}</strong>
-                    </a>
-                    {% if pago.instalacion %}
-                        <small style="color: #6b7280; font-size: 0.875rem;">{{ pago.instalacion.plan_nombre }}</small>
-                    {% endif %}
-                </div>
-                <div>
-                    {% if pago.estado == 'pagado' %}
-                        <span class="badge-modern badge-success-modern">Pagado</span>
-                    {% elif pago.estado == 'vencido' %}
-                        <span class="badge-modern badge-danger-modern">Vencido</span>
-                    {% elif pago.estado == 'pendiente' %}
-                        <span class="badge-modern badge-warning-modern">Pendiente</span>
-                    {% else %}
-                        <span class="badge-modern" style="background: #e5e7eb; color: #374151;">{{ pago.get_estado_display }}</span>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="card-body-modern">
-                <div class="card-field">
-                    <span class="card-field-label">Concepto:</span>
-                    <span class="card-field-value">{{ pago.concepto }}</span>
-                </div>
-                <div class="card-field">
-                    <span class="card-field-label">Monto:</span>
-                    <span class="card-field-value" style="color: #10b981; font-weight: 600; font-size: 1.2rem;">${{ pago.monto|floatformat:2 }}</span>
-                </div>
-                <div class="card-field">
-                    <span class="card-field-label">Período:</span>
-                    <span class="card-field-value">{{ pago.get_periodo_mes_display }} {{ pago.periodo_anio }}</span>
-                </div>
-                <div class="card-field">
-                    <span class="card-field-label">Vencimiento:</span>
-                    <span class="card-field-value">
+    <div class="table-responsive">
+        <table class="table data-table" style="width: 100%; background: white; border-radius: 12px; overflow: hidden;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Cliente</th>
+                    <th class="hide-mobile" style="padding: 1rem; text-align: left; font-weight: 600;">Concepto</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Monto</th>
+                    <th class="hide-mobile" style="padding: 1rem; text-align: left; font-weight: 600;">Período</th>
+                    <th class="hide-mobile" style="padding: 1rem; text-align: left; font-weight: 600;">Vencimiento</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Estado</th>
+                    <th style="padding: 1rem; text-align: center; font-weight: 600;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pago in page_obj %}
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 0.75rem;">
+                        <a href="{% url 'clientes:cliente_detail' pago.cliente.pk %}" style="color: #667eea; text-decoration: none;">
+                            <strong>{{ pago.cliente.nombre_completo }}</strong>
+                        </a>
+                        {% if pago.instalacion %}
+                            <br><small style="color: #6b7280; font-size: 0.8rem;">{{ pago.instalacion.plan_nombre }}</small>
+                        {% endif %}
+                        <span class="mobile-only" style="display: block; font-size: 0.75rem; color: #6b7280;">{{ pago.get_periodo_mes_display }} {{ pago.periodo_anio }}</span>
+                    </td>
+                    <td class="hide-mobile" style="padding: 0.75rem;">{{ pago.concepto }}</td>
+                    <td style="padding: 0.75rem;">
+                        <strong style="color: #10b981; font-size: 1rem;">${{ pago.monto|floatformat:2 }}</strong>
+                    </td>
+                    <td class="hide-mobile" style="padding: 0.75rem; color: #374151;">
+                        {{ pago.get_periodo_mes_display }} {{ pago.periodo_anio }}
+                    </td>
+                    <td class="hide-mobile" style="padding: 0.75rem; color: #374151;">
                         {{ pago.fecha_vencimiento|date:"d/m/Y" }}
                         {% if pago.esta_vencido and pago.estado != 'pagado' %}
-                            <span style="color: #ef4444; font-weight: 600; margin-left: 0.5rem;">({{ pago.dias_vencido }} día(s) vencido)</span>
+                            <br><small style="color: #ef4444; font-weight: 600;">{{ pago.dias_vencido }} día(s) vencido</small>
                         {% endif %}
-                    </span>
-                </div>
-            </div>
-            <div class="card-actions-modern">
-                <a href="{% url 'pagos:pago_detail' pago.pk %}" class="btn" style="flex: 1;">
-                    <i class="fas fa-eye"></i> Ver Detalles
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        {% if pago.estado == 'pagado' %}
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #10b981; color: white; white-space: nowrap;">
+                                <i class="fas fa-check-circle"></i> <span class="desktop-only">Pagado</span>
+                            </span>
+                        {% elif pago.estado == 'vencido' %}
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #ef4444; color: white; white-space: nowrap;">
+                                <i class="fas fa-exclamation-triangle"></i> <span class="desktop-only">Vencido</span>
+                            </span>
+                        {% elif pago.estado == 'pendiente' %}
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #f59e0b; color: white; white-space: nowrap;">
+                                <i class="fas fa-clock"></i> <span class="desktop-only">Pendiente</span>
+                            </span>
+                        {% else %}
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #9ca3af; color: white; white-space: nowrap;">
+                                <i class="fas fa-ban"></i> <span class="desktop-only">{{ pago.get_estado_display }}</span>
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem; text-align: center;">
+                        <div style="display: flex; gap: 0.25rem; justify-content: center; flex-wrap: wrap;">
+                            <a href="{% url 'pagos:pago_detail' pago.pk %}" class="btn btn-action" title="Ver detalles">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{% url 'pagos:pago_update' pago.pk %}" class="btn btn-secondary btn-action" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if pago.estado != 'pagado' %}
+                                <a href="{% url 'pagos:pago_marcar_pagado' pago.pk %}" class="btn btn-success btn-action" title="Marcar como pagado">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Paginación -->
+        {% if page_obj.has_other_pages %}
+        <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 0.5rem;">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if metodo_filter %}&metodo={{ metodo_filter }}{% endif %}{% if periodo_anio %}&anio={{ periodo_anio }}{% endif %}{% if periodo_mes %}&mes={{ periodo_mes }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-secondary">
+                    <i class="fas fa-chevron-left"></i> Anterior
                 </a>
-                <a href="{% url 'pagos:pago_update' pago.pk %}" class="btn btn-secondary" style="flex: 1;">
-                    <i class="fas fa-edit"></i> Editar
+            {% endif %}
+            
+            <span style="padding: 0.5rem 1rem; background: white; border-radius: 6px; display: flex; align-items: center;">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+            
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if metodo_filter %}&metodo={{ metodo_filter }}{% endif %}{% if periodo_anio %}&anio={{ periodo_anio }}{% endif %}{% if periodo_mes %}&mes={{ periodo_mes }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-secondary">
+                    Siguiente <i class="fas fa-chevron-right"></i>
                 </a>
-                {% if pago.estado != 'pagado' %}
-                    <a href="{% url 'pagos:pago_marcar_pagado' pago.pk %}" class="btn" style="flex: 1; background: var(--color-exito);" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='var(--color-exito)'">
-                        <i class="fas fa-check"></i> Pagado
-                    </a>
-                {% endif %}
-            </div>
+            {% endif %}
         </div>
-        {% endfor %}
-    </div>
-    
-    <!-- Paginación -->
-    {% if page_obj.has_other_pages %}
-    <div class="pagination-modern">
-        {% if page_obj.has_previous %}
-            <a href="?page=1{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if metodo_filter %}&metodo={{ metodo_filter }}{% endif %}{% if periodo_anio %}&anio={{ periodo_anio }}{% endif %}{% if periodo_mes %}&mes={{ periodo_mes }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">« Primera</a>
-            <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if metodo_filter %}&metodo={{ metodo_filter }}{% endif %}{% if periodo_anio %}&anio={{ periodo_anio }}{% endif %}{% if periodo_mes %}&mes={{ periodo_mes }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">‹ Anterior</a>
-        {% endif %}
-        <span class="current">
-            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-        </span>
-        {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if metodo_filter %}&metodo={{ metodo_filter }}{% endif %}{% if periodo_anio %}&anio={{ periodo_anio }}{% endif %}{% if periodo_mes %}&mes={{ periodo_mes }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">Siguiente ›</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if metodo_filter %}&metodo={{ metodo_filter }}{% endif %}{% if periodo_anio %}&anio={{ periodo_anio }}{% endif %}{% if periodo_mes %}&mes={{ periodo_mes }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">Última »</a>
         {% endif %}
     </div>
-    {% endif %}
-    
     {% else %}
-    <div class="empty-state-modern">
-        <i class="fas fa-dollar-sign"></i>
-        <p>No se encontraron pagos</p>
-        <a href="{% url 'pagos:pago_create' %}" class="btn">Crear primer pago</a>
+    <div class="empty-state" style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 8px; margin-top: 2rem;">
+        <i class="fas fa-dollar-sign" style="font-size: 4rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+        <p style="font-size: 1.25rem; color: #6b7280; margin-bottom: 0.5rem;">No se encontraron pagos</p>
+        <p style="color: #9ca3af; margin-bottom: 1.5rem;">Comienza registrando tu primer pago</p>
+        <a href="{% url 'pagos:pago_create' %}" class="btn" style="margin-top: 1rem;">
+            <i class="fas fa-plus"></i> Crear Primer Pago
+        </a>
     </div>
     {% endif %}
 </div>
 {% endblock %}
+

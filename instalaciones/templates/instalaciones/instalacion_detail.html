@@ -25,49 +25,6 @@
         </div>
     </div>
     
-    <!-- Acciones Rápidas de Estado -->
-    {% if instalacion.estado == 'programada' or instalacion.estado == 'en_proceso' or instalacion.estado == 'pendiente' %}
-    <div style="background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-        <h3 style="color: #667eea; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-            <i class="fas fa-bolt"></i> Acciones Rápidas
-        </h3>
-        <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
-            {% if instalacion.estado == 'programada' %}
-                <form method="post" action="{% url 'instalaciones:instalacion_cambiar_estado' instalacion.pk %}" style="display: inline;" onsubmit="return confirmarCambioEstado('En Proceso', '¿Deseas marcar esta instalación como "En Proceso"? Esto actualizará la fecha de instalación.')">
-                    {% csrf_token %}
-                    <input type="hidden" name="nuevo_estado" value="en_proceso">
-                    <button type="submit" class="btn" style="background: #f59e0b; color: white; border: none;">
-                        <i class="fas fa-play-circle"></i> Marcar como En Proceso
-                    </button>
-                </form>
-                <form method="post" action="{% url 'instalaciones:instalacion_cambiar_estado' instalacion.pk %}" style="display: inline;" onsubmit="return confirmarCambioEstado('Activa', '¿Deseas marcar esta instalación como "Activa"? Esto actualizará las fechas de instalación y activación.')">
-                    {% csrf_token %}
-                    <input type="hidden" name="nuevo_estado" value="activa">
-                    <button type="submit" class="btn" style="background: #10b981; color: white; border: none;">
-                        <i class="fas fa-check-circle"></i> Marcar como Instalada/Activa
-                    </button>
-                </form>
-            {% elif instalacion.estado == 'en_proceso' %}
-                <form method="post" action="{% url 'instalaciones:instalacion_cambiar_estado' instalacion.pk %}" style="display: inline;" onsubmit="return confirmarCambioEstado('Activa', '¿Deseas marcar esta instalación como "Activa"? Esto actualizará la fecha de activación.')">
-                    {% csrf_token %}
-                    <input type="hidden" name="nuevo_estado" value="activa">
-                    <button type="submit" class="btn" style="background: #10b981; color: white; border: none;">
-                        <i class="fas fa-check-circle"></i> Marcar como Instalada/Activa
-                    </button>
-                </form>
-            {% elif instalacion.estado == 'pendiente' %}
-                <form method="post" action="{% url 'instalaciones:instalacion_cambiar_estado' instalacion.pk %}" style="display: inline;" onsubmit="return confirmarCambioEstado('Programada', '¿Deseas marcar esta instalación como "Programada"?')">
-                    {% csrf_token %}
-                    <input type="hidden" name="nuevo_estado" value="programada">
-                    <button type="submit" class="btn" style="background: #3b82f6; color: white; border: none;">
-                        <i class="fas fa-calendar-check"></i> Marcar como Programada
-                    </button>
-                </form>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
-    
     <!-- Información de la Instalación -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
         <div>
@@ -268,7 +225,7 @@
                     <tr>
                         <td>{{ cambio.fecha_cambio|date:"d/m/Y H:i" }}</td>
                         <td>
-                            <span class="badge badge-secondary">{% if cambio.estado_anterior %}{{ cambio.get_estado_anterior_display }}{% else %}N/A{% endif %}</span>
+                            <span class="badge badge-secondary">{{ cambio.get_estado_anterior_display }}</span>
                         </td>
                         <td>
                             <span class="badge badge-primary">{{ cambio.get_estado_nuevo_display }}</span>
@@ -339,11 +296,5 @@
         <a href="{% url 'instalaciones:instalacion_delete' instalacion.pk %}" class="btn btn-danger"><i class="fas fa-trash"></i> Eliminar Instalación</a>
     </div>
 </div>
-
-<script>
-function confirmarCambioEstado(estado, mensaje) {
-    return confirm(mensaje || `¿Deseas cambiar el estado a "${estado}"?`);
-}
-</script>
 {% endblock %}
 

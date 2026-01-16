@@ -133,3 +133,5 @@ def remover_rol_usuario(user, codigo_rol):
         return False
 
 
+
+

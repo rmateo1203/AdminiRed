@@ -14,11 +14,7 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            {% if sistema_config.imagen_hero %}
-            background-image: url('{{ sistema_config.imagen_hero.url }}?v={{ sistema_config.fecha_actualizacion|date:"U" }}');
-            {% else %}
             background-image: url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');
-            {% endif %}
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -49,30 +45,8 @@
             z-index: 1;
         }
         
-        :root {
-            --bg-primary: #f5f7fa;
-            --bg-secondary: #ffffff;
-            --text-primary: #1f2937;
-            --text-secondary: #6b7280;
-            --border-color: #e5e7eb;
-        }
-        
-        body.dark-mode {
-            --bg-primary: #111827;
-            --bg-secondary: #1f2937;
-            --text-primary: #f9fafb;
-            --text-secondary: #d1d5db;
-            --border-color: #4b5563;
-        }
-        
-        body.dark-mode::before {
-            background: linear-gradient(135deg, 
-                rgba(0, 0, 0, 0.7) 0%, 
-                rgba(0, 0, 0, 0.8) 100%) !important;
-        }
-        
         .login-container {
-            background: var(--bg-secondary);
+            background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.5);
             width: 100%;
@@ -81,7 +55,6 @@
             animation: slideUp 0.5s ease-out;
             position: relative;
             z-index: 2;
-            transition: background-color 0.3s ease;
         }
         
         @keyframes slideUp {
@@ -113,7 +86,7 @@
         }
         
         .login-header p {
-            color: var(--text-secondary);
+            color: #666;
             font-size: 0.95rem;
         }
         
@@ -123,7 +96,7 @@
         
         .form-group label {
             display: block;
-            color: var(--text-primary);
+            color: #333;
             font-weight: 600;
             margin-bottom: 0.5rem;
             font-size: 0.9rem;
@@ -132,23 +105,22 @@
         .form-group input {
             width: 100%;
             padding: 0.875rem 1rem;
-            border: 2px solid var(--border-color);
+            border: 2px solid #e0e0e0;
             border-radius: 10px;
             font-size: 1rem;
             transition: all 0.3s;
-            background-color: var(--bg-secondary);
-            color: var(--text-primary);
+            background-color: #f8f9fa;
         }
         
         .form-group input:focus {
             outline: none;
             border-color: {{ sistema_config.color_primario|default:"#667eea" }};
-            background-color: var(--bg-secondary);
+            background-color: white;
             box-shadow: 0 0 0 3px {{ sistema_config.color_primario|default:"#667eea" }}1A;
         }
         
         .form-group input::placeholder {
-            color: var(--text-secondary);
+            color: #999;
         }
         
         .error-message {
@@ -157,11 +129,6 @@
             padding: 0.75rem 1rem;
             border-radius: 8px;
             margin-bottom: 1rem;
-        }
-        
-        body.dark-mode .error-message {
-            background-color: #7f1d1d;
-            color: #fca5a5;
             border-left: 4px solid #ef4444;
             font-size: 0.9rem;
         }
@@ -237,11 +204,11 @@
             text-align: center;
             margin-top: 2rem;
             padding-top: 2rem;
-            border-top: 1px solid var(--border-color);
+            border-top: 1px solid #e0e0e0;
         }
         
         .login-footer p {
-            color: var(--text-secondary);
+            color: #666;
             font-size: 0.9rem;
         }
         
@@ -350,23 +317,6 @@
             }
         }
     </style>
-    <script>
-        // JavaScript para el modo oscuro en login
-        function initDarkMode() {
-            const darkMode = localStorage.getItem('darkMode') === 'true';
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            
-            if (darkMode || (!localStorage.getItem('darkMode') && prefersDark)) {
-                document.body.classList.add('dark-mode');
-            }
-        }
-        
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initDarkMode);
-        } else {
-            initDarkMode();
-        }
-    </script>
 </head>
 <body>
     {% comment %}
@@ -463,19 +413,8 @@
     </div>
     
     <script>
-        // JavaScript para el modo oscuro en login
-        function initDarkMode() {
-            const darkMode = localStorage.getItem('darkMode') === 'true';
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            
-            if (darkMode || (!localStorage.getItem('darkMode') && prefersDark)) {
-                document.body.classList.add('dark-mode');
-            }
-        }
-        
         // Funcionalidad para mostrar/ocultar contraseña
         document.addEventListener('DOMContentLoaded', function() {
-            initDarkMode();
             const togglePassword = document.getElementById('togglePassword');
             // Buscar el input de contraseña dentro del password-wrapper
             const passwordWrapper = document.querySelector('.password-wrapper');

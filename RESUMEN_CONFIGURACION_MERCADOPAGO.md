@@ -110,3 +110,5 @@ print('Public Key:', '✅' if settings.MERCADOPAGO_PUBLIC_KEY else '❌')
 
 
 
+
+

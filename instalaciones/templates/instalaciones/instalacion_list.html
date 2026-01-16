@@ -4,258 +4,180 @@
 
 {% block content %}
 <div class="section">
-    <!-- Header -->
-    <div class="page-header">
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <h2><i class="fas fa-wifi"></i> Lista de Instalaciones</h2>
-        <div class="header-actions">
-            <a href="{% url 'instalaciones:instalacion_create' %}" class="btn">
-                <i class="fas fa-plus"></i> Nueva Instalación
-            </a>
-        </div>
+        <a href="{% url 'instalaciones:instalacion_create' %}" class="btn"><i class="fas fa-plus"></i> <span class="desktop-only">Nueva </span>Instalación</a>
     </div>
     
-    <!-- Búsqueda -->
-    <div class="search-container">
-        <form method="get" id="searchForm">
-            <div class="search-main">
-                <div class="search-input-wrapper">
-                    <i class="fas fa-search"></i>
-                    <input 
-                        type="text" 
-                        name="q" 
-                        value="{{ query }}" 
-                        placeholder="Buscar por cliente, plan, contrato o dirección..."
-                    >
-                </div>
-            </div>
-            
-            <div class="filters-row">
-                <select name="estado" class="filter-select">
-                    <option value="">Todos los estados</option>
-                    {% for estado_code, estado_name in estados %}
-                        <option value="{{ estado_code }}" {% if estado_filter == estado_code %}selected{% endif %}>
-                            {{ estado_name }}
-                        </option>
-                    {% endfor %}
-                </select>
-                <select name="orden" class="filter-select">
-                    <option value="-fecha_solicitud" {% if orden == '-fecha_solicitud' %}selected{% endif %}>Más recientes</option>
-                    <option value="fecha_solicitud" {% if orden == 'fecha_solicitud' %}selected{% endif %}>Más antiguos</option>
-                    <option value="plan_nombre" {% if orden == 'plan_nombre' %}selected{% endif %}>Plan A-Z</option>
-                    <option value="-plan_nombre" {% if orden == '-plan_nombre' %}selected{% endif %}>Plan Z-A</option>
-                </select>
-            </div>
-            
-            <div class="search-actions">
-                <button type="submit" class="btn"><i class="fas fa-search"></i> Buscar</button>
-                {% if query or estado_filter %}
-                    <a href="{% url 'instalaciones:instalacion_list' %}" class="btn btn-secondary">Limpiar</a>
-                {% endif %}
-            </div>
+    <!-- Búsqueda y Filtros -->
+    <div class="search-filters">
+        <form method="get" class="search-form">
+            <input 
+                type="text" 
+                name="q" 
+                value="{{ query }}" 
+                placeholder="Buscar por cliente, plan, contrato o dirección..."
+                class="form-control"
+            >
+            <select name="estado" class="form-control">
+                <option value="">Todos los estados</option>
+                {% for estado_code, estado_name in estados %}
+                    <option value="{{ estado_code }}" {% if estado_filter == estado_code %}selected{% endif %}>
+                        {{ estado_name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <select name="orden" class="form-control">
+                <option value="-fecha_solicitud" {% if orden == '-fecha_solicitud' %}selected{% endif %}>Más recientes</option>
+                <option value="fecha_solicitud" {% if orden == 'fecha_solicitud' %}selected{% endif %}>Más antiguos</option>
+                <option value="plan_nombre" {% if orden == 'plan_nombre' %}selected{% endif %}>Plan A-Z</option>
+                <option value="-plan_nombre" {% if orden == '-plan_nombre' %}selected{% endif %}>Plan Z-A</option>
+            </select>
+            <button type="submit" class="btn"><i class="fas fa-search"></i> Buscar</button>
+            {% if query or estado_filter %}
+                <a href="{% url 'instalaciones:instalacion_list' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
         </form>
     </div>
     
     <!-- Estadísticas Rápidas -->
     {% if page_obj %}
-    <div class="stats-grid" style="margin-bottom: 2rem;">
-        <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-            <h3 style="color: rgba(255,255,255,0.9);">Total Instalaciones</h3>
-            <div class="value" style="color: white;">{{ total_instalaciones }}</div>
-            <div class="subtitle" style="color: rgba(255,255,255,0.9);"><i class="fas fa-wifi"></i> Total</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ total_instalaciones }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-wifi"></i> Total Instalaciones</div>
         </div>
-        <div class="stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
-            <h3 style="color: rgba(255,255,255,0.9);">Instalaciones Activas</h3>
-            <div class="value" style="color: white;">{{ activas }}</div>
-            <div class="subtitle" style="color: rgba(255,255,255,0.9);"><i class="fas fa-check-circle"></i> Activas</div>
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ activas }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-check-circle"></i> Instalaciones Activas</div>
         </div>
-        <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">
-            <h3 style="color: rgba(255,255,255,0.9);">Pendientes</h3>
-            <div class="value" style="color: white;">{{ pendientes }}</div>
-            <div class="subtitle" style="color: rgba(255,255,255,0.9);"><i class="fas fa-clock"></i> Pendientes</div>
+        <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ pendientes }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-clock"></i> Pendientes</div>
         </div>
     </div>
     {% endif %}
     
-    <!-- Tabla Desktop -->
+    <!-- Tabla de Instalaciones -->
     {% if page_obj %}
-    <div class="table-wrapper">
-        <div class="table-responsive">
-            <table class="table-modern">
-                <thead>
-                    <tr>
-                        <th style="width: 18%; min-width: 180px;">Cliente</th>
-                        <th style="width: 15%; min-width: 150px;">Plan</th>
-                        <th class="hide-mobile" style="width: 12%; min-width: 120px;">Velocidad</th>
-                        <th class="hide-mobile" style="width: 12%; min-width: 120px;">Tipo</th>
-                        <th style="width: 12%; min-width: 100px;">Estado</th>
-                        <th class="hide-mobile" style="width: 12%; min-width: 120px;">Fecha</th>
-                        <th class="hide-mobile" style="width: 12%; min-width: 120px;">Contrato</th>
-                        <th style="width: 10%; min-width: 100px;">Precio</th>
-                        <th style="width: 7%; min-width: 100px;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for instalacion in page_obj %}
-                    <tr>
-                        <td>
-                            <span class="client-name" style="display: block; font-weight: 600; color: #1f2937; margin-bottom: 0.25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                {{ instalacion.cliente.nombre_completo }}
+    <div class="table-responsive">
+        <table class="table data-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa; border-bottom: 2px solid #e5e7eb;">
+                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Cliente</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Plan</th>
+                    <th class="hide-mobile" style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Velocidad</th>
+                    <th class="hide-mobile" style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Tipo</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Estado</th>
+                    <th class="hide-mobile" style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Fecha</th>
+                    <th class="hide-mobile" style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Contrato</th>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: #374151;">Precio</th>
+                    <th style="padding: 1rem; text-align: center; font-weight: 600; color: #374151;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for instalacion in page_obj %}
+                <tr style="border-bottom: 1px solid #e5e7eb; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f9fafb'" onmouseout="this.style.backgroundColor=''">
+                    <td style="padding: 1rem;">
+                        <strong style="color: #111827;">{{ instalacion.cliente.nombre_completo }}</strong><br>
+                        <small style="color: #6b7280; font-size: 0.875rem;">
+                            <a href="tel:{{ instalacion.cliente.telefono }}" style="color: #667eea; text-decoration: none;">{{ instalacion.cliente.telefono }}</a>
+                        </small>
+                    </td>
+                    <td style="padding: 1rem; color: #374151;">
+                        {{ instalacion.plan_nombre }}
+                        <span class="mobile-only" style="display: block; font-size: 0.8rem; color: #10b981; font-weight: bold;">${{ instalacion.precio_mensual|floatformat:0 }}/mes</span>
+                    </td>
+                    <td class="hide-mobile" style="padding: 1rem; color: #374151;">
+                        <strong>{{ instalacion.velocidad_descarga }} Mbps</strong>
+                        {% if instalacion.velocidad_subida %}
+                            <br><small style="color: #6b7280;">↑ {{ instalacion.velocidad_subida }} Mbps</small>
+                        {% endif %}
+                    </td>
+                    <td class="hide-mobile" style="padding: 1rem; color: #374151;">{{ instalacion.tipo_instalacion|default:"—" }}</td>
+                    <td style="padding: 1rem;">
+                        {% if instalacion.estado == 'activa' %}
+                            <span class="badge badge-success" style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">
+                                <i class="fas fa-check-circle"></i> <span class="desktop-only">{{ instalacion.get_estado_display }}</span>
                             </span>
-                            <small style="color: #6b7280; font-size: 0.875rem;">
-                                <a href="tel:{{ instalacion.cliente.telefono }}" class="client-contact">{{ instalacion.cliente.telefono }}</a>
-                            </small>
-                        </td>
-                        <td>
-                            <span style="display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ instalacion.plan_nombre }}</span>
-                        </td>
-                        <td class="hide-mobile">
-                            <strong style="color: #1f2937;">{{ instalacion.velocidad_descarga }} Mbps</strong>
-                            {% if instalacion.velocidad_subida %}
-                                <br><small style="color: #6b7280;">↑ {{ instalacion.velocidad_subida }} Mbps</small>
-                            {% endif %}
-                        </td>
-                        <td class="hide-mobile">
-                            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;">{{ instalacion.tipo_instalacion|default:"—" }}</span>
-                        </td>
-                        <td>
-                            {% if instalacion.estado == 'activa' %}
-                                <span class="badge-modern badge-success-modern">
-                                    <i class="fas fa-check-circle"></i> {{ instalacion.get_estado_display }}
-                                </span>
-                            {% elif instalacion.estado == 'pendiente' %}
-                                <span class="badge-modern badge-info-modern">
-                                    <i class="fas fa-clock"></i> {{ instalacion.get_estado_display }}
-                                </span>
-                            {% elif instalacion.estado == 'programada' or instalacion.estado == 'en_proceso' %}
-                                <span class="badge-modern badge-warning-modern">
-                                    <i class="fas fa-calendar-check"></i> {{ instalacion.get_estado_display }}
-                                </span>
-                            {% else %}
-                                <span class="badge-modern badge-danger-modern">
-                                    <i class="fas fa-times-circle"></i> {{ instalacion.get_estado_display }}
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td class="hide-mobile">
-                            <span style="white-space: nowrap;">{{ instalacion.fecha_solicitud|date:"d/m/Y" }}</span>
-                            <br><small style="color: #6b7280; font-size: 0.875rem;">{{ instalacion.fecha_solicitud|date:"H:i" }}</small>
-                        </td>
-                        <td class="hide-mobile">
-                            <code style="background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; color: #667eea; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">
-                                {{ instalacion.numero_contrato|default:"Sin número" }}
-                            </code>
-                        </td>
-                        <td>
-                            <strong style="color: #10b981; white-space: nowrap;">${{ instalacion.precio_mensual|floatformat:2 }}</strong>
-                        </td>
-                        <td>
-                            <div class="action-buttons">
-                                <a href="{% url 'instalaciones:instalacion_detail' instalacion.pk %}" class="btn-icon btn-icon-primary" title="Ver">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{% url 'instalaciones:instalacion_update' instalacion.pk %}" class="btn-icon btn-icon-secondary" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    
-    <!-- Cards Móvil -->
-    <div class="instalaciones-cards">
-        {% for instalacion in page_obj %}
-        <div class="card-modern">
-            <div class="card-header-modern">
-                <div style="flex: 1;">
-                    <strong style="display: block; color: #1f2937; margin-bottom: 0.25rem; font-size: 1.1rem;">{{ instalacion.cliente.nombre_completo }}</strong>
-                    <small style="color: #6b7280;">
-                        <a href="tel:{{ instalacion.cliente.telefono }}" class="client-contact">{{ instalacion.cliente.telefono }}</a>
-                    </small>
-                </div>
-                <div>
-                    {% if instalacion.estado == 'activa' %}
-                        <span class="badge-modern badge-success-modern">{{ instalacion.get_estado_display }}</span>
-                    {% elif instalacion.estado == 'pendiente' %}
-                        <span class="badge-modern badge-info-modern">{{ instalacion.get_estado_display }}</span>
-                    {% elif instalacion.estado == 'programada' or instalacion.estado == 'en_proceso' %}
-                        <span class="badge-modern badge-warning-modern">{{ instalacion.get_estado_display }}</span>
-                    {% else %}
-                        <span class="badge-modern badge-danger-modern">{{ instalacion.get_estado_display }}</span>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="card-body-modern">
-                <div class="card-field">
-                    <span class="card-field-label">Plan:</span>
-                    <span class="card-field-value">{{ instalacion.plan_nombre }}</span>
-                </div>
-                <div class="card-field">
-                    <span class="card-field-label">Velocidad:</span>
-                    <span class="card-field-value">
-                        {{ instalacion.velocidad_descarga }} Mbps
-                        {% if instalacion.velocidad_subida %}↑ {{ instalacion.velocidad_subida }} Mbps{% endif %}
-                    </span>
-                </div>
-                <div class="card-field">
-                    <span class="card-field-label">Tipo:</span>
-                    <span class="card-field-value">{{ instalacion.tipo_instalacion|default:"—" }}</span>
-                </div>
-                <div class="card-field">
-                    <span class="card-field-label">Fecha:</span>
-                    <span class="card-field-value">{{ instalacion.fecha_solicitud|date:"d/m/Y H:i" }}</span>
-                </div>
-                <div class="card-field">
-                    <span class="card-field-label">Contrato:</span>
-                    <span class="card-field-value">
+                        {% elif instalacion.estado == 'pendiente' %}
+                            <span class="badge badge-info" style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #3b82f6; color: white;">
+                                <i class="fas fa-clock"></i> <span class="desktop-only">{{ instalacion.get_estado_display }}</span>
+                            </span>
+                        {% elif instalacion.estado == 'programada' or instalacion.estado == 'en_proceso' %}
+                            <span class="badge badge-warning" style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #f59e0b; color: white;">
+                                <i class="fas fa-calendar-check"></i> <span class="desktop-only">{{ instalacion.get_estado_display }}</span>
+                            </span>
+                        {% else %}
+                            <span class="badge badge-danger" style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #ef4444; color: white;">
+                                <i class="fas fa-times-circle"></i> <span class="desktop-only">{{ instalacion.get_estado_display }}</span>
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="hide-mobile" style="padding: 1rem; color: #374151;">
+                        {{ instalacion.fecha_solicitud|date:"d/m/Y" }}<br>
+                        <small style="color: #6b7280; font-size: 0.875rem;">{{ instalacion.fecha_solicitud|date:"H:i" }}</small>
+                    </td>
+                    <td class="hide-mobile" style="padding: 1rem;">
                         <code style="background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; color: #667eea; font-weight: 600;">
                             {{ instalacion.numero_contrato|default:"Sin número" }}
                         </code>
-                    </span>
-                </div>
-                <div class="card-field">
-                    <span class="card-field-label">Precio:</span>
-                    <span class="card-field-value" style="color: #10b981; font-weight: 600; font-size: 1.1rem;">${{ instalacion.precio_mensual|floatformat:2 }}</span>
-                </div>
-            </div>
-            <div class="card-actions-modern">
-                <a href="{% url 'instalaciones:instalacion_detail' instalacion.pk %}" class="btn" style="flex: 1;">
-                    <i class="fas fa-eye"></i> Ver Detalles
-                </a>
-                <a href="{% url 'instalaciones:instalacion_update' instalacion.pk %}" class="btn btn-secondary" style="flex: 1;">
-                    <i class="fas fa-edit"></i> Editar
-                </a>
-            </div>
-        </div>
-        {% endfor %}
+                    </td>
+                    <td class="hide-mobile" style="padding: 1rem; color: #374151;">
+                        <strong style="color: #10b981;">${{ instalacion.precio_mensual|floatformat:2 }}</strong>
+                    </td>
+                    <td style="padding: 1rem; text-align: center;">
+                        <div style="display: flex; gap: 0.25rem; justify-content: center; flex-wrap: wrap;">
+                            <a href="{% url 'instalaciones:instalacion_detail' instalacion.pk %}" class="btn btn-action" title="Ver detalles">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{% url 'instalaciones:instalacion_update' instalacion.pk %}" class="btn btn-secondary btn-action" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
     
     <!-- Paginación -->
     {% if page_obj.has_other_pages %}
-    <div class="pagination-modern">
+    <div class="pagination" style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 2rem; flex-wrap: wrap;">
         {% if page_obj.has_previous %}
-            <a href="?page=1{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">« Primera</a>
-            <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">‹ Anterior</a>
+            <a href="?page=1{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-action" title="Primera página">
+                <i class="fas fa-angle-double-left"></i>
+            </a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-action" title="Página anterior">
+                <i class="fas fa-angle-left"></i>
+            </a>
         {% endif %}
-        <span class="current">
+        
+        <span style="padding: 0.5rem 1rem; color: #374151; font-weight: 600;">
             Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
         </span>
+        
         {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">Siguiente ›</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">Última »</a>
+            <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-action" title="Página siguiente">
+                <i class="fas fa-angle-right"></i>
+            </a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-action" title="Última página">
+                <i class="fas fa-angle-double-right"></i>
+            </a>
         {% endif %}
     </div>
     {% endif %}
-    
     {% else %}
-    <div class="empty-state-modern">
-        <i class="fas fa-wifi"></i>
-        <p>No se encontraron instalaciones</p>
-        <a href="{% url 'instalaciones:instalacion_create' %}" class="btn">Crear primera instalación</a>
+    <div class="empty-state" style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 8px; margin-top: 2rem;">
+        <i class="fas fa-wifi" style="font-size: 4rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+        <p style="font-size: 1.25rem; color: #6b7280; margin-bottom: 0.5rem;">No se encontraron instalaciones</p>
+        <p style="color: #9ca3af; margin-bottom: 1.5rem;">Comienza creando tu primera instalación</p>
+        <a href="{% url 'instalaciones:instalacion_create' %}" class="btn" style="margin-top: 1rem;">
+            <i class="fas fa-plus"></i> Crear Primera Instalación
+        </a>
     </div>
     {% endif %}
 </div>
 {% endblock %}
+

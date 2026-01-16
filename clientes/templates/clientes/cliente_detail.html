@@ -34,53 +34,6 @@
         </div>
     </div>
     
-    <!-- Mostrar credenciales si se acaban de crear -->
-    {% if request.session.credenciales_cliente %}
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <h3 style="margin-bottom: 1rem; color: white;">
-            <i class="fas fa-key"></i> Credenciales de Acceso Creadas
-        </h3>
-        <div style="background: rgba(255,255,255,0.2); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-            <p style="margin: 0.5rem 0;"><strong>Cliente:</strong> {{ request.session.credenciales_cliente.cliente }}</p>
-            <p style="margin: 0.5rem 0;"><strong>Username:</strong> <code style="background: rgba(0,0,0,0.2); padding: 0.25rem 0.5rem; border-radius: 4px;">{{ request.session.credenciales_cliente.username }}</code></p>
-            <p style="margin: 0.5rem 0;"><strong>Contraseña:</strong> <code style="background: rgba(0,0,0,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 1.1rem; font-weight: bold;">{{ request.session.credenciales_cliente.password }}</code></p>
-            <p style="margin: 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">
-                <i class="fas fa-info-circle"></i> 
-                URL de acceso: <a href="{% url 'clientes:portal_login' %}" style="color: white; text-decoration: underline;">{{ request.scheme }}://{{ request.get_host }}{% url 'clientes:portal_login' %}</a>
-            </p>
-        </div>
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <button onclick="copiarCredenciales()" class="btn" style="background: white; color: #667eea; border: none; padding: 0.5rem 1rem;">
-                <i class="fas fa-copy"></i> Copiar Credenciales
-            </button>
-            {% if request.session.credenciales_cliente.email != 'N/A' %}
-            <a href="mailto:{{ request.session.credenciales_cliente.email }}?subject=Acceso al Portal de Cliente - AdminiRed&body=Hola,%0D%0A%0D%0ATus credenciales de acceso son:%0D%0AUsuario: {{ request.session.credenciales_cliente.username }}%0D%0AContraseña: {{ request.session.credenciales_cliente.password }}%0D%0A%0D%0AAccede en: {{ request.scheme }}://{{ request.get_host }}{% url 'clientes:portal_login' %}" class="btn" style="background: white; color: #667eea; text-decoration: none; border: none; padding: 0.5rem 1rem;">
-                <i class="fas fa-envelope"></i> Enviar por Email
-            </a>
-            {% endif %}
-        </div>
-    </div>
-    <script>
-        function copiarCredenciales() {
-            const texto = `Cliente: {{ request.session.credenciales_cliente.cliente }}\nUsername: {{ request.session.credenciales_cliente.username }}\nContraseña: {{ request.session.credenciales_cliente.password }}\nURL: {{ request.scheme }}://{{ request.get_host }}{% url 'clientes:portal_login' %}`;
-            navigator.clipboard.writeText(texto).then(() => {
-                alert('✅ Credenciales copiadas al portapapeles');
-            }).catch(() => {
-                const textarea = document.createElement('textarea');
-                textarea.value = texto;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                alert('✅ Credenciales copiadas al portapapeles');
-            });
-        }
-        setTimeout(function() {
-            fetch('{% url "clientes:cliente_detail" cliente.pk %}?limpiar_credenciales=1', {method: 'GET'});
-        }, 60000);
-    </script>
-    {% endif %}
-    
     <!-- Información del Cliente -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
         <div>
@@ -118,25 +71,6 @@
             <h3 style="color: #667eea; margin-bottom: 1rem;">Información Adicional</h3>
             <p><strong>Fecha de Registro:</strong> {{ cliente.created_at|date:"d/m/Y H:i" }}</p>
             <p><strong>Última Actualización:</strong> {{ cliente.updated_at|date:"d/m/Y H:i" }}</p>
-            <p><strong>Acceso al Portal:</strong> 
-                {% if cliente.usuario %}
-                    <span class="badge badge-success">
-                        <i class="fas fa-check-circle"></i> Usuario: {{ cliente.usuario.username }}
-                    </span>
-                {% else %}
-                    <span class="badge badge-warning">
-                        <i class="fas fa-exclamation-triangle"></i> Sin usuario
-                    </span>
-                    {% if not cliente.is_deleted %}
-                        <form method="post" action="{% url 'clientes:cliente_crear_usuario_portal' cliente.pk %}" style="display: inline-block; margin-left: 0.5rem;">
-                            {% csrf_token %}
-                            <button type="submit" class="btn" style="padding: 0.25rem 0.75rem; font-size: 0.875rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                <i class="fas fa-key"></i> Crear Usuario
-                            </button>
-                        </form>
-                    {% endif %}
-                {% endif %}
-            </p>
             {% if cliente.created_by %}
                 <p><strong>Creado por:</strong> {{ cliente.created_by.get_full_name|default:cliente.created_by.username }}</p>
             {% endif %}
