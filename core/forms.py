@@ -11,6 +11,7 @@ class ConfiguracionSistemaForm(forms.ModelForm):
             'activa',
             'nombre_empresa',
             'logo',
+            'pagos_online_habilitados',
             'color_primario',
             'color_secundario',
             'color_exito',
@@ -20,6 +21,9 @@ class ConfiguracionSistemaForm(forms.ModelForm):
         ]
         widgets = {
             'activa': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'pagos_online_habilitados': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             }),
             'nombre_empresa': forms.TextInput(attrs={

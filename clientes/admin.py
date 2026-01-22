@@ -55,28 +55,18 @@ class ClienteAdmin(SimpleHistoryAdmin):
         'email',
         'ciudad',
         'estado_cliente',
-        'created_at',
-        'is_deleted_display',
-        'auditoria_display'
+        'fecha_registro',
     ]
     list_filter = [
         'estado_cliente',
         'ciudad',
         'estado',
-        'created_at',
-        'is_deleted',
-        'created_by',
+        'fecha_registro',
     ]
     search_fields = ['nombre', 'apellido1', 'apellido2', 'telefono', 'email', 'direccion']
     readonly_fields = [
-        'created_at',
-        'updated_at',
-        'created_by',
-        'updated_by',
-        'deleted_at',
-        'deleted_by',
-        'is_deleted',
-        'usuario',
+        'fecha_registro',
+        'fecha_actualizacion',
     ]
     fieldsets = (
         ('Información Personal', {
@@ -91,29 +81,15 @@ class ClienteAdmin(SimpleHistoryAdmin):
         ('Información Adicional', {
             'fields': ('notas',)
         }),
-        ('Auditoría', {
-            'fields': ('created_by', 'updated_by', 'created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-        ('Portal de Cliente', {
-            'fields': ('usuario', 'debe_cambiar_password', 'nueva_password', 'confirmar_password'),
-            'classes': ('collapse',),
-            'description': 'Usuario que puede acceder al portal de cliente. Para cambiar la contraseña, ingresa la nueva contraseña en los campos correspondientes.'
-        }),
-        ('Soft Delete', {
-            'fields': ('is_deleted', 'deleted_at', 'deleted_by'),
+        ('Información del Sistema', {
+            'fields': ('fecha_registro', 'fecha_actualizacion'),
             'classes': ('collapse',)
         }),
     )
     
     def get_queryset(self, request):
-        """Filtrar eliminados por defecto, pero permitir verlos con filtro."""
-        qs = super().get_queryset(request)
-        # Si hay filtro de is_deleted, mostrar todos
-        if 'is_deleted__exact' in request.GET:
-            return qs
-        # Por defecto, mostrar solo no eliminados
-        return qs.filter(is_deleted=False)
+        """Obtener el queryset de clientes."""
+        return super().get_queryset(request)
     
     def nombre_completo_display(self, obj):
         """Muestra el nombre completo del cliente."""
@@ -121,87 +97,29 @@ class ClienteAdmin(SimpleHistoryAdmin):
     nombre_completo_display.short_description = 'Cliente'
     nombre_completo_display.admin_order_field = 'nombre'
     
-    def is_deleted_display(self, obj):
-        """Muestra si el cliente está eliminado."""
-        if obj.is_deleted:
-            return format_html(
-                '<span style="color: red; font-weight: bold;">✓ Eliminado</span>'
-            )
-        return format_html('<span style="color: green;">Activo</span>')
-    is_deleted_display.short_description = 'Estado'
-    is_deleted_display.admin_order_field = 'is_deleted'
-    
-    def auditoria_display(self, obj):
-        """Muestra información de auditoría."""
-        info = []
-        if obj.created_by:
-            info.append(f'Creado por: {obj.created_by.username}')
-        if obj.updated_by:
-            info.append(f'Actualizado por: {obj.updated_by.username}')
-        if obj.deleted_by:
-            info.append(f'Eliminado por: {obj.deleted_by.username}')
-        return format_html('<br>'.join(info)) if info else '-'
-    auditoria_display.short_description = 'Auditoría'
     
     def save_model(self, request, obj, form, change):
-        """Sobrescribe save_model para agregar auditoría y manejar cambio de contraseña."""
-        if change:
-            obj.updated_by = request.user
-        else:
-            obj.created_by = request.user
-        
+        """Sobrescribe save_model para manejar cambio de contraseña si existe."""
         # Guardar el modelo primero
         super().save_model(request, obj, form, change)
         
-        # Manejar cambio de contraseña si se proporcionó
+        # Manejar cambio de contraseña si se proporcionó y el modelo tiene el método
         nueva_password = form.cleaned_data.get('nueva_password')
-        if nueva_password and obj.usuario:
+        if nueva_password and hasattr(obj, 'usuario') and obj.usuario:
             try:
-                obj.resetear_password_portal(password=nueva_password, enviar_email=False)
-                messages.success(
-                    request,
-                    f'Contraseña del portal actualizada para {obj.nombre_completo}.'
-                )
+                if hasattr(obj, 'resetear_password_portal'):
+                    obj.resetear_password_portal(password=nueva_password, enviar_email=False)
+                    messages.success(
+                        request,
+                        f'Contraseña del portal actualizada para {obj.nombre_completo}.'
+                    )
             except Exception as e:
                 messages.error(
                     request,
                     f'Error al cambiar la contraseña: {str(e)}'
                 )
     
-    def delete_model(self, request, obj):
-        """Sobrescribe delete_model para usar soft delete."""
-        obj.soft_delete(user=request.user)
-    
-    def delete_queryset(self, request, queryset):
-        """Sobrescribe delete_queryset para usar soft delete."""
-        for obj in queryset:
-            obj.soft_delete(user=request.user)
-    
-    actions = ['restaurar_clientes', 'eliminar_permanentemente', 'crear_usuario_portal', 'forzar_cambio_password', 'resetear_password', 'establecer_password']
-    
-    def restaurar_clientes(self, request, queryset):
-        """Acción para restaurar clientes eliminados."""
-        restaurados = 0
-        for cliente in queryset.filter(is_deleted=True):
-            cliente.restore(user=request.user)
-            restaurados += 1
-        self.message_user(
-            request,
-            f'{restaurados} cliente(s) restaurado(s) exitosamente.'
-        )
-    restaurar_clientes.short_description = 'Restaurar clientes seleccionados'
-    
-    def eliminar_permanentemente(self, request, queryset):
-        """Acción para eliminar permanentemente (hard delete)."""
-        eliminados = 0
-        for cliente in queryset:
-            cliente.delete(hard_delete=True)
-            eliminados += 1
-        self.message_user(
-            request,
-            f'{eliminados} cliente(s) eliminado(s) permanentemente.'
-        )
-    eliminar_permanentemente.short_description = 'Eliminar permanentemente (¡CUIDADO!)'
+    actions = ['crear_usuario_portal', 'forzar_cambio_password', 'resetear_password', 'establecer_password']
     
     def crear_usuario_portal(self, request, queryset):
         """Acción para crear usuarios del portal para clientes seleccionados."""
@@ -213,17 +131,17 @@ class ClienteAdmin(SimpleHistoryAdmin):
         errores = 0
         
         for cliente in queryset:
-            if cliente.usuario:
+            if hasattr(cliente, 'usuario') and cliente.usuario:
                 ya_tienen += 1
                 continue  # Ya tiene usuario
             
-            if cliente.is_deleted:
-                continue  # No crear usuarios para eliminados
-            
             try:
                 # Crear usuario (generará contraseña automáticamente y enviará email)
-                usuario = cliente.crear_usuario_portal(enviar_email=True)
-                creados += 1
+                if hasattr(cliente, 'crear_usuario_portal'):
+                    usuario = cliente.crear_usuario_portal(enviar_email=True)
+                    creados += 1
+                else:
+                    continue
                 
                 # Obtener la contraseña generada (si fue generada automáticamente)
                 # Nota: No podemos obtener la contraseña después de crearla por seguridad
@@ -260,12 +178,19 @@ class ClienteAdmin(SimpleHistoryAdmin):
     
     def forzar_cambio_password(self, request, queryset):
         """Acción para forzar el cambio de contraseña a los clientes seleccionados."""
-        count = queryset.update(debe_cambiar_password=True)
-        self.message_user(
-            request,
-            f'{count} cliente(s) deberán cambiar su contraseña en el próximo inicio de sesión.',
-            messages.SUCCESS
-        )
+        if hasattr(Cliente, 'debe_cambiar_password'):
+            count = queryset.update(debe_cambiar_password=True)
+            self.message_user(
+                request,
+                f'{count} cliente(s) deberán cambiar su contraseña en el próximo inicio de sesión.',
+                messages.SUCCESS
+            )
+        else:
+            self.message_user(
+                request,
+                'Esta funcionalidad no está disponible en este modelo.',
+                messages.WARNING
+            )
     forzar_cambio_password.short_description = '🔒 Forzar cambio de contraseña'
     
     def resetear_password(self, request, queryset):
@@ -276,14 +201,17 @@ class ClienteAdmin(SimpleHistoryAdmin):
         contraseñas_no_enviadas = []
         
         for cliente in queryset:
-            if not cliente.usuario:
+            if not hasattr(cliente, 'usuario') or not cliente.usuario:
                 clientes_sin_usuario.append(cliente.nombre_completo)
                 continue
             
             try:
                 # Resetear contraseña (se generará automáticamente y se enviará por email)
-                nueva_password = cliente.resetear_password_portal(enviar_email=True)
-                reseteados += 1
+                if hasattr(cliente, 'resetear_password_portal'):
+                    nueva_password = cliente.resetear_password_portal(enviar_email=True)
+                    reseteados += 1
+                else:
+                    continue
                 
                 self.message_user(
                     request,
@@ -377,13 +305,16 @@ class ClienteAdmin(SimpleHistoryAdmin):
             clientes_seleccionados = queryset.filter(id__in=cliente_ids)
             
             for cliente in clientes_seleccionados:
-                if not cliente.usuario:
+                if not hasattr(cliente, 'usuario') or not cliente.usuario:
                     clientes_sin_usuario.append(cliente.nombre_completo)
                     continue
                 
                 try:
-                    cliente.resetear_password_portal(password=password, enviar_email=False)
-                    establecidas += 1
+                    if hasattr(cliente, 'resetear_password_portal'):
+                        cliente.resetear_password_portal(password=password, enviar_email=False)
+                        establecidas += 1
+                    else:
+                        continue
                     self.message_user(
                         request,
                         f'✅ Contraseña establecida para {cliente.nombre_completo} (Usuario: {cliente.usuario.username}).',
@@ -417,7 +348,7 @@ class ClienteAdmin(SimpleHistoryAdmin):
         # Si no se envió el formulario, mostrar la página de confirmación
         if queryset.count() == 1:
             cliente = queryset.first()
-            if not cliente.usuario:
+            if not hasattr(cliente, 'usuario') or not cliente.usuario:
                 self.message_user(
                     request,
                     f'⚠️ El cliente "{cliente.nombre_completo}" no tiene usuario del portal. '

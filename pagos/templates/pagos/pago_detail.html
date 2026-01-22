@@ -126,9 +126,14 @@
                         <i class="fas fa-edit"></i> Editar Pago
                     </a>
                     {% if pago.estado != 'pagado' %}
-                        {% if tiene_pasarela and pago.estado != 'pagado' %}
+                        {% if pagos_online_habilitados and tiene_pasarela %}
                         <a href="{% url 'pagos:pago_procesar_online' pago.pk %}" class="btn" style="text-decoration: none; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin-bottom: 0.5rem;">
                             <i class="fas fa-credit-card"></i> Pagar en Línea
+                        </a>
+                        {% endif %}
+                        {% if not pagos_online_habilitados %}
+                        <a href="{% url 'pagos:pago_registro_manual_for_cliente' pago.cliente.pk %}" class="btn" style="text-decoration: none; text-align: center; background: linear-gradient(135deg, #10b981 0%, #059669 100%); margin-bottom: 0.5rem;">
+                            <i class="fas fa-receipt"></i> Registrar Pago Manual (Depósito/Comprobante)
                         </a>
                         {% endif %}
                         <a href="{% url 'pagos:pago_marcar_pagado' pago.pk %}" class="btn" style="text-decoration: none; text-align: center; background: #10b981;">

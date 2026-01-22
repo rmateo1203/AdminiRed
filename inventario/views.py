@@ -13,13 +13,15 @@ def material_list(request):
     """Lista todos los materiales con búsqueda y filtros."""
     materiales = Material.objects.select_related('categoria').all()
     
-    # Búsqueda
+    # Búsqueda mejorada
     query = request.GET.get('q', '')
     if query:
         materiales = materiales.filter(
             Q(nombre__icontains=query) |
             Q(codigo__icontains=query) |
-            Q(descripcion__icontains=query)
+            Q(descripcion__icontains=query) |
+            Q(ubicacion__icontains=query) |
+            Q(categoria__nombre__icontains=query)
         )
     
     # Filtro por estado
@@ -417,6 +419,40 @@ def api_buscar_categorias(request):
                 'num_materiales': c.num_materiales,
             }
             for c in categorias
+        ]
+    }
+    
+    return JsonResponse(data)
+
+
+@login_required
+def api_buscar_materiales(request):
+    """API para búsqueda rápida de materiales con autocompletado."""
+    query = request.GET.get('q', '').strip()
+    
+    if not query or len(query) < 2:
+        return JsonResponse({'materiales': []})
+    
+    materiales = Material.objects.select_related('categoria').filter(
+        Q(nombre__icontains=query) |
+        Q(codigo__icontains=query) |
+        Q(descripcion__icontains=query) |
+        Q(ubicacion__icontains=query) |
+        Q(categoria__nombre__icontains=query)
+    ).order_by('nombre')[:10]
+    
+    data = {
+        'materiales': [
+            {
+                'id': m.id,
+                'nombre': m.nombre,
+                'codigo': m.codigo,
+                'categoria': m.categoria.nombre if m.categoria else '',
+                'stock_actual': m.stock_actual,
+                'estado': m.get_estado_display(),
+                'unidad_medida': m.get_unidad_medida_display(),
+            }
+            for m in materiales
         ]
     }
     

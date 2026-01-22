@@ -207,13 +207,28 @@ class Pago(models.Model):
     
     @classmethod
     def actualizar_pagos_vencidos(cls):
-        """Marca automáticamente como vencidos todos los pagos pendientes cuya fecha de vencimiento ya pasó."""
+        """
+        Marca automáticamente como vencidos todos los pagos pendientes cuya fecha de vencimiento ya pasó.
+        
+        Este método se ejecuta automáticamente cuando:
+        - Se lista pagos (pago_list, pago_vencidos_list, pago_pendientes_list)
+        - Se guarda un pago (método save())
+        
+        También se puede ejecutar manualmente o mediante un comando de gestión periódico.
+        
+        Returns:
+            int: Cantidad de pagos actualizados a estado 'vencido'
+        """
         hoy = timezone.now().date()
         pagos_vencidos = cls.objects.filter(
             estado='pendiente',
             fecha_vencimiento__lt=hoy
         )
         cantidad = pagos_vencidos.update(estado='vencido')
+        
+        if cantidad > 0:
+            logger.info(f'✅ Se actualizaron {cantidad} pago(s) a estado vencido automáticamente.')
+        
         return cantidad
 
 

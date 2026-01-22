@@ -1,0 +1,298 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}
+    {{ block.super }}
+    
+    <!-- ALERTA VISIBLE PARA CONFIRMAR QUE EL TEMPLATE SE CARGA -->
+    <script type="text/javascript">
+        console.log('✅✅✅ TEMPLATE PERSONALIZADO CARGADO ✅✅✅');
+        alert('✅ Template personalizado cargado correctamente!');
+        
+        // Agregar un banner visible en la página
+        document.addEventListener('DOMContentLoaded', function() {
+            var banner = document.createElement('div');
+            banner.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; background: #4CAF50; color: white; padding: 15px; text-align: center; z-index: 99999; font-weight: bold; box-shadow: 0 2px 10px rgba(0,0,0,0.3);';
+            banner.textContent = '✅ Template personalizado cargado - Diseño moderno activado';
+            document.body.insertBefore(banner, document.body.firstChild);
+            
+            // Remover el banner después de 5 segundos
+            setTimeout(function() {
+                banner.style.transition = 'opacity 0.5s';
+                banner.style.opacity = '0';
+                setTimeout(function() {
+                    banner.remove();
+                }, 500);
+            }, 5000);
+        });
+    </script>
+    
+    <style>
+        /* ============================================
+           DISEÑO MODERNO PARA CONFIGURACIÓN DEL SISTEMA
+           ============================================ */
+        
+        /* Forzar visibilidad del contenedor */
+        #configuracionsistema_form,
+        .form-row,
+        fieldset {
+            background: #fff !important;
+        }
+        
+        /* Estilos para las pestañas */
+        .config-admin-tabs {
+            background: #fff !important;
+            border-bottom: 3px solid #e0e0e0 !important;
+            margin: 20px 0 30px 0 !important;
+            padding: 0 !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+            border-radius: 8px !important;
+        }
+        
+        .config-admin-tabs ul {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: flex !important;
+            gap: 0 !important;
+            padding-left: 20px !important;
+            background: linear-gradient(to bottom, #f5f5f5 0%, #ffffff 100%) !important;
+        }
+        
+        .config-admin-tabs li {
+            margin: 0 !important;
+        }
+        
+        .config-admin-tabs a {
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            padding: 16px 24px !important;
+            background: transparent !important;
+            border: none !important;
+            border-bottom: 3px solid transparent !important;
+            text-decoration: none !important;
+            color: #666 !important;
+            font-weight: 500 !important;
+            font-size: 14px !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            position: relative !important;
+        }
+        
+        .config-admin-tabs a:hover {
+            background: rgba(65, 118, 144, 0.05) !important;
+            color: #417690 !important;
+        }
+        
+        .config-admin-tabs a.active {
+            background: #fff !important;
+            color: #417690 !important;
+            border-bottom-color: #417690 !important;
+            font-weight: 600 !important;
+        }
+        
+        /* Estilos para los fieldsets */
+        fieldset.module,
+        fieldset.collapse {
+            background: #fff !important;
+            border: 1px solid #e0e0e0 !important;
+            border-radius: 8px !important;
+            padding: 25px !important;
+            margin-bottom: 20px !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+        }
+        
+        fieldset.module h2,
+        fieldset.collapse h2 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: #fff !important;
+            padding: 15px 20px !important;
+            margin: -25px -25px 20px -25px !important;
+            border-radius: 8px 8px 0 0 !important;
+            font-size: 16px !important;
+            font-weight: 600 !important;
+            border: none !important;
+        }
+        
+        /* Ocultar fieldsets inactivos */
+        fieldset.module:not(.config-tab-active),
+        fieldset.collapse:not(.config-tab-active) {
+            display: none !important;
+        }
+        
+        /* Mostrar fieldset activo */
+        fieldset.module.config-tab-active,
+        fieldset.collapse.config-tab-active {
+            display: block !important;
+        }
+        
+        /* Mejorar el campo de pagos online */
+        .field-pagos_online_habilitados_display {
+            background: #f8f9fa !important;
+            border: 2px solid #e0e0e0 !important;
+            border-radius: 8px !important;
+            padding: 20px !important;
+            margin: 15px 0 !important;
+        }
+        
+        .field-pagos_online_habilitados_display input[type="checkbox"] {
+            width: 24px !important;
+            height: 24px !important;
+            margin-right: 12px !important;
+            cursor: pointer !important;
+        }
+        
+        .field-pagos_online_habilitados_display label {
+            font-size: 16px !important;
+            font-weight: 600 !important;
+            color: #333 !important;
+        }
+    </style>
+    
+    <script type="text/javascript">
+        (function() {
+            function initTabs() {
+                console.log('🚀 Inicializando sistema de pestañas...');
+                
+                var fieldsets = document.querySelectorAll('fieldset.module, fieldset.collapse');
+                console.log('📊 Fieldsets encontrados:', fieldsets.length);
+                
+                if (fieldsets.length === 0) {
+                    console.log('⏳ Reintentando en 300ms...');
+                    setTimeout(initTabs, 300);
+                    return;
+                }
+                
+                // Verificar si las pestañas ya existen
+                if (document.querySelector('.config-admin-tabs')) {
+                    console.log('⚠️ Las pestañas ya existen');
+                    return;
+                }
+                
+                console.log('📝 Creando pestañas...');
+                
+                // Crear HTML de las pestañas
+                var tabsHtml = '<div class="config-admin-tabs"><ul>' +
+                    '<li><a href="#" class="config-tab-link active" data-tab="empresa">🏢 Información de la Empresa</a></li>' +
+                    '<li><a href="#" class="config-tab-link" data-tab="pagos">💳 Configuración de Pagos</a></li>' +
+                    '<li><a href="#" class="config-tab-link" data-tab="colores">🎨 Colores del Sistema</a></li>' +
+                    '<li><a href="#" class="config-tab-link" data-tab="preview">👁️ Vista Previa</a></li>' +
+                    '<li><a href="#" class="config-tab-link" data-tab="info">ℹ️ Información</a></li>' +
+                    '</ul></div>';
+                
+                // Insertar pestañas antes del primer fieldset
+                if (fieldsets.length > 0) {
+                    var container = fieldsets[0].parentNode;
+                    var tabsDiv = document.createElement('div');
+                    tabsDiv.innerHTML = tabsHtml;
+                    container.insertBefore(tabsDiv.firstChild, fieldsets[0]);
+                    console.log('✅ Pestañas HTML insertadas');
+                }
+                
+                // Clasificar fieldsets por título
+                fieldsets.forEach(function(fieldset) {
+                    var h2 = fieldset.querySelector('h2');
+                    if (!h2) return;
+                    
+                    var title = h2.textContent.trim();
+                    console.log('📋 Procesando fieldset:', title);
+                    
+                    // Remover todas las clases de tab
+                    fieldset.classList.remove(
+                        'config-tab-empresa', 
+                        'config-tab-pagos', 
+                        'config-tab-colores', 
+                        'config-tab-preview', 
+                        'config-tab-info', 
+                        'config-tab-active'
+                    );
+                    
+                    // Asignar clase según el título
+                    if (title.indexOf('Información de la Empresa') !== -1) {
+                        fieldset.classList.add('config-tab-empresa');
+                    } else if (title.indexOf('Configuración de Pagos') !== -1) {
+                        fieldset.classList.add('config-tab-pagos');
+                    } else if (title.indexOf('Colores') !== -1) {
+                        fieldset.classList.add('config-tab-colores');
+                    } else if (title.indexOf('Vista previa') !== -1 || 
+                               title.indexOf('Vista Previa') !== -1 || 
+                               title.toLowerCase().indexOf('preview') !== -1) {
+                        fieldset.classList.add('config-tab-preview');
+                    } else if (title.indexOf('Información') !== -1 && 
+                              title.indexOf('Empresa') === -1) {
+                        fieldset.classList.add('config-tab-info');
+                    }
+                });
+                
+                // Ocultar todos los fieldsets
+                fieldsets.forEach(function(f) {
+                    f.style.display = 'none';
+                    f.classList.remove('config-tab-active');
+                });
+                
+                // Mostrar el primer tab (empresa) por defecto
+                var firstTab = document.querySelector('.config-tab-empresa');
+                if (!firstTab && fieldsets.length > 0) {
+                    firstTab = fieldsets[0];
+                }
+                
+                if (firstTab) {
+                    firstTab.style.display = 'block';
+                    firstTab.classList.add('config-tab-active');
+                    console.log('✅ Tab inicial activado');
+                }
+                
+                // Agregar event listeners a las pestañas
+                document.querySelectorAll('.config-tab-link').forEach(function(link) {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        var tab = this.getAttribute('data-tab');
+                        console.log('🔵 Click en pestaña:', tab);
+                        
+                        // Actualizar estado visual de las pestañas
+                        document.querySelectorAll('.config-tab-link').forEach(function(l) {
+                            l.classList.remove('active');
+                        });
+                        this.classList.add('active');
+                        
+                        // Ocultar todos los fieldsets
+                        fieldsets.forEach(function(f) {
+                            f.style.display = 'none';
+                            f.classList.remove('config-tab-active');
+                        });
+                        
+                        // Mostrar el fieldset correspondiente
+                        var target = document.querySelector('.config-tab-' + tab);
+                        if (target) {
+                            target.style.display = 'block';
+                            target.classList.add('config-tab-active');
+                            console.log('✅ Tab mostrado:', tab);
+                        }
+                    });
+                });
+                
+                console.log('✅ Sistema de pestañas configurado correctamente');
+            }
+            
+            // Inicializar cuando el DOM esté listo
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    console.log('📄 DOMContentLoaded - Inicializando...');
+                    setTimeout(initTabs, 100);
+                    setTimeout(initTabs, 500);
+                    setTimeout(initTabs, 1000);
+                });
+            } else {
+                console.log('📄 DOM ya cargado - Inicializando...');
+                setTimeout(initTabs, 100);
+                setTimeout(initTabs, 500);
+                setTimeout(initTabs, 1000);
+            }
+        })();
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+{% endblock %}

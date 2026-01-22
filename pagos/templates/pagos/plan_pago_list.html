@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block title %}Planes de Pago - AdminiRed{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2><i class="fas fa-calendar-check"></i> Planes de Pago</h2>
+            <p style="color: #6b7280; margin-top: 0.5rem;">
+                Gestión de planes de pago recurrentes mensuales
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="{% url 'pagos:pago_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver a Pagos
+            </a>
+            <a href="{% url 'pagos:plan_pago_create' %}" class="btn">
+                <i class="fas fa-plus"></i> Nuevo Plan de Pago
+            </a>
+        </div>
+    </div>
+    
+    <!-- Estadísticas -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ total_planes }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-calendar-check"></i> Total Planes</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ planes_activos }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-check-circle"></i> Activos</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%); color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; font-weight: bold;">{{ planes_inactivos }}</div>
+            <div style="opacity: 0.9; margin-top: 0.5rem;"><i class="fas fa-pause-circle"></i> Inactivos</div>
+        </div>
+    </div>
+    
+    <!-- Búsqueda y Filtros -->
+    <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <form method="get" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <input 
+                type="text" 
+                name="q" 
+                value="{{ query }}" 
+                placeholder="Buscar por cliente o número de contrato..."
+                class="form-control"
+                style="flex: 1; min-width: 200px; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;"
+            >
+            <select name="activo" class="form-control" style="padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
+                <option value="">Todos los estados</option>
+                <option value="1" {% if activo_filter == '1' %}selected{% endif %}>Solo activos</option>
+                <option value="0" {% if activo_filter == '0' %}selected{% endif %}>Solo inactivos</option>
+            </select>
+            <button type="submit" class="btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                <i class="fas fa-search"></i> Buscar
+            </button>
+            {% if query or activo_filter %}
+                <a href="{% url 'pagos:plan_pago_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Limpiar
+                </a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <!-- Lista de Planes de Pago -->
+    {% if page_obj %}
+        {% if page_obj.object_list %}
+        <div style="overflow-x: auto;">
+            <table class="table" style="width: 100%; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th style="padding: 1rem; text-align: left; font-weight: 600;">Cliente / Instalación</th>
+                        <th style="padding: 1rem; text-align: center; font-weight: 600;">Monto Mensual</th>
+                        <th style="padding: 1rem; text-align: center; font-weight: 600;">Día Vencimiento</th>
+                        <th style="padding: 1rem; text-align: center; font-weight: 600;">Estado</th>
+                        <th style="padding: 1rem; text-align: center; font-weight: 600;">Próximo Vencimiento</th>
+                        <th style="padding: 1rem; text-align: center; font-weight: 600;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plan in page_obj %}
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 1rem;">
+                            <strong>{{ plan.instalacion.cliente.nombre_completo }}</strong>
+                            <br>
+                            <small style="color: #6b7280;">Contrato: {{ plan.instalacion.numero_contrato }}</small>
+                        </td>
+                        <td style="padding: 1rem; text-align: center;">
+                            <strong style="color: #667eea; font-size: 1.1rem;">${{ plan.monto_mensual|floatformat:2 }}</strong>
+                        </td>
+                        <td style="padding: 1rem; text-align: center;">
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #e0e7ff; color: #667eea;">
+                                Día {{ plan.dia_vencimiento }}
+                            </span>
+                        </td>
+                        <td style="padding: 1rem; text-align: center;">
+                            {% if plan.activo %}
+                                <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #10b981; color: white;">
+                                    <i class="fas fa-check-circle"></i> Activo
+                                </span>
+                            {% else %}
+                                <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #9ca3af; color: white;">
+                                    <i class="fas fa-pause-circle"></i> Inactivo
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 1rem; text-align: center;">
+                            {% with proximo=plan.calcular_proximo_vencimiento %}
+                                <span style="color: #6b7280; font-size: 0.875rem;">
+                                    {{ proximo|date:"d/m/Y" }}
+                                </span>
+                            {% endwith %}
+                        </td>
+                        <td style="padding: 1rem; text-align: center;">
+                            <div style="display: flex; gap: 0.25rem; justify-content: center;">
+                                <a href="{% url 'pagos:plan_pago_detail' plan.pk %}" class="btn btn-action" title="Ver detalles">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'pagos:plan_pago_update' plan.pk %}" class="btn btn-secondary btn-action" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="padding: 2rem; text-align: center; color: #6b7280;">
+                            No se encontraron planes de pago con los filtros seleccionados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Paginación -->
+        {% if page_obj.has_other_pages %}
+        <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 0.5rem;">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if activo_filter %}&activo={{ activo_filter }}{% endif %}" class="btn btn-secondary">
+                    <i class="fas fa-chevron-left"></i> Anterior
+                </a>
+            {% endif %}
+            
+            <span style="padding: 0.5rem 1rem; background: white; border-radius: 6px; display: flex; align-items: center;">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+            
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if activo_filter %}&activo={{ activo_filter }}{% endif %}" class="btn btn-secondary">
+                    Siguiente <i class="fas fa-chevron-right"></i>
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 8px; margin-top: 2rem;">
+            <i class="fas fa-calendar-check" style="font-size: 4rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+            <p style="font-size: 1.25rem; color: #6b7280; margin-bottom: 0.5rem;">No hay planes de pago</p>
+            <p style="color: #9ca3af; margin-bottom: 1.5rem;">Crea tu primer plan de pago recurrente</p>
+            <a href="{% url 'pagos:plan_pago_create' %}" class="btn" style="margin-top: 1rem;">
+                <i class="fas fa-plus"></i> Crear Plan de Pago
+            </a>
+        </div>
+        {% endif %}
+    {% else %}
+    <div style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 8px; margin-top: 2rem;">
+        <i class="fas fa-calendar-check" style="font-size: 4rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+        <p style="font-size: 1.25rem; color: #6b7280; margin-bottom: 0.5rem;">No hay planes de pago</p>
+        <p style="color: #9ca3af; margin-bottom: 1.5rem;">Crea tu primer plan de pago recurrente</p>
+        <a href="{% url 'pagos:plan_pago_create' %}" class="btn" style="margin-top: 1rem;">
+            <i class="fas fa-plus"></i> Crear Plan de Pago
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

@@ -146,3 +146,6 @@ Aunque la última condición (`and pago.estado != 'pagado'`) es redundante dado 
 
 
 
+
+
+

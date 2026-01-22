@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Instalacion, TipoInstalacion, PlanInternet
+from .models import Instalacion, TipoInstalacion, PlanInternet, ConfiguracionNumeroContrato
 from clientes.models import Cliente
 
 
@@ -171,4 +171,67 @@ class InstalacionForm(forms.ModelForm):
             
             return mac_normalizada
         return mac
+
+
+class ConfiguracionNumeroContratoForm(forms.ModelForm):
+    """Formulario para configurar la generación automática de números de contrato."""
+    
+    class Meta:
+        model = ConfiguracionNumeroContrato
+        fields = [
+            'activa',
+            'prefijo',
+            'separador',
+            'sufijo',
+            'incluir_anio',
+            'formato_anio',
+            'incluir_mes',
+            'incluir_secuencia',
+            'longitud_secuencia',
+            'resetear_secuencia',
+        ]
+        widgets = {
+            'activa': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'prefijo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'CONT, INST, etc.'
+            }),
+            'separador': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '-',
+                'maxlength': 5
+            }),
+            'sufijo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Sufijo opcional'
+            }),
+            'incluir_anio': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'formato_anio': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'incluir_mes': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'incluir_secuencia': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'longitud_secuencia': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 1,
+                'max': 10
+            }),
+            'resetear_secuencia': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Hacer algunos campos opcionales
+        self.fields['sufijo'].required = False
+        self.fields['prefijo'].required = False
 

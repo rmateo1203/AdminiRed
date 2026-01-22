@@ -92,3 +92,6 @@ Usuario → Detalle Pago → Pagar en Línea → Seleccionar PayPal
 
 
 
+
+
+

@@ -5,17 +5,96 @@
 
 {% block extra_css %}
 <style>
-    .btn-secondary {
-        background-color: #6b7280;
-        color: white;
+    /* ============================================
+       DISEÑO MODERNO CON PESTAÑAS
+       ============================================ */
+    
+    .config-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        overflow: hidden;
     }
     
-    .btn-secondary:hover {
-        background-color: #4b5563;
+    /* Pestañas */
+    .config-tabs {
+        background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+        border-bottom: 3px solid #e0e0e0;
+        display: flex;
+        gap: 0;
+        padding: 0;
+        overflow-x: auto;
+    }
+    
+    .config-tab {
+        padding: 16px 24px;
+        background: transparent;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        font-weight: 500;
+        color: #666;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .config-tab:hover {
+        background: rgba(65, 118, 144, 0.05);
+        color: #417690;
+    }
+    
+    .config-tab.active {
+        background: #fff;
+        color: #417690;
+        border-bottom-color: #417690;
+        font-weight: 600;
+    }
+    
+    /* Contenido de las pestañas */
+    .config-tab-content {
+        display: none;
+        padding: 2rem;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    .config-tab-content.active {
+        display: block;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Secciones dentro de las pestañas */
+    .config-section {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .config-section h3 {
+        color: var(--color-primario);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
     
     .form-group {
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
     }
     
     .form-group label {
@@ -27,16 +106,132 @@
     
     .form-control {
         width: 100%;
-        padding: 0.5rem;
-        border: 1px solid #d1d5db;
-        border-radius: 4px;
+        padding: 0.75rem;
+        border: 2px solid #d1d5db;
+        border-radius: 6px;
         font-size: 1rem;
+        transition: all 0.3s ease;
     }
     
     .form-control:focus {
         outline: none;
         border-color: var(--color-primario);
-        box-shadow: 0 0 0 3px var(--color-primario)1A;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .form-check {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: #fff;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .form-check:hover {
+        border-color: var(--color-primario);
+        background: #f8f9ff;
+    }
+    
+    .form-check input[type="checkbox"] {
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        accent-color: var(--color-primario);
+    }
+    
+    .form-check label {
+        margin: 0;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+    
+    .help-text {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+        display: block;
+    }
+    
+    .alert-info {
+        background: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        padding: 1rem;
+        border-radius: 4px;
+        margin-top: 1rem;
+        color: #1565c0;
+    }
+    
+    /* Grid de colores */
+    .color-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .color-input-group {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .color-input-group input[type="color"] {
+        width: 80px;
+        height: 50px;
+        border: 2px solid #d1d5db;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+    
+    .color-input-group input[type="text"] {
+        flex: 1;
+    }
+    
+    /* Preview */
+    .preview-box {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 2px solid #e5e7eb;
+    }
+    
+    .preview-header {
+        background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-secundario) 100%);
+        padding: 1rem;
+        border-radius: 8px;
+        color: white;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .preview-badges {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    /* Botones */
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        padding-top: 1.5rem;
+        border-top: 2px solid #e5e7eb;
+        margin-top: 2rem;
+    }
+    
+    .btn-secondary {
+        background-color: #6b7280;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #4b5563;
     }
 </style>
 {% endblock %}
@@ -44,189 +239,230 @@
 {% block content %}
 <div class="section">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h2><i class="fas fa-palette"></i> Configuración del Sistema</h2>
+        <h2><i class="fas fa-cog"></i> Configuración del Sistema</h2>
         <a href="{% url 'home' %}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Volver
         </a>
     </div>
     
-    <p style="color: #6b7280; margin-bottom: 2rem;">
-        Personaliza la apariencia del sistema: nombre de la empresa, logo y colores. 
-        Los cambios se aplicarán inmediatamente en toda la aplicación, incluyendo la página de login.
-    </p>
-    
-    <form method="post" enctype="multipart/form-data" style="max-width: 800px;">
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         
-        <!-- Información de la Empresa -->
-        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
-            <h3 style="color: var(--color-primario); margin-bottom: 1rem;">
-                <i class="fas fa-building"></i> Información de la Empresa
-            </h3>
-            
-            <div class="form-group" style="margin-bottom: 1rem;">
-                <label for="{{ form.activa.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                    {{ form.activa }}
-                    <span>{{ form.activa.label }}</span>
-                </label>
-                <small style="color: #6b7280; display: block; margin-top: 0.25rem;">
-                    {{ form.activa.help_text }}
-                </small>
+        <div class="config-container">
+            <!-- Pestañas -->
+            <div class="config-tabs">
+                <button type="button" class="config-tab active" data-tab="empresa">
+                    <i class="fas fa-building"></i> Información de la Empresa
+                </button>
+                <button type="button" class="config-tab" data-tab="pagos">
+                    <i class="fas fa-credit-card"></i> Configuración de Pagos
+                </button>
+                <button type="button" class="config-tab" data-tab="colores">
+                    <i class="fas fa-paint-brush"></i> Colores del Sistema
+                </button>
+                <button type="button" class="config-tab" data-tab="preview">
+                    <i class="fas fa-eye"></i> Vista Previa
+                </button>
             </div>
             
-            <div class="form-group" style="margin-bottom: 1rem;">
-                <label for="{{ form.nombre_empresa.id_for_label }}">
-                    <i class="fas fa-signature"></i> {{ form.nombre_empresa.label }} <span style="color: #ef4444;">*</span>
-                </label>
-                {{ form.nombre_empresa }}
-                {% if form.nombre_empresa.errors %}
-                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">
-                        {{ form.nombre_empresa.errors }}
-                    </div>
-                {% endif %}
-                <small style="color: #6b7280; display: block; margin-top: 0.25rem;">
-                    {{ form.nombre_empresa.help_text }}
-                </small>
-            </div>
+            <!-- Contenido de las pestañas -->
             
-            <div class="form-group">
-                <label for="{{ form.logo.id_for_label }}">
-                    <i class="fas fa-image"></i> {{ form.logo.label }}
-                </label>
-                {% if config.logo %}
-                    <div style="margin-bottom: 0.5rem;">
-                        <img src="{{ config.logo.url }}" alt="Logo actual" style="max-height: 60px; border: 1px solid #e5e7eb; padding: 0.5rem; border-radius: 4px; background: white;">
-                        <p style="color: #6b7280; font-size: 0.875rem; margin-top: 0.25rem;">Logo actual</p>
-                    </div>
-                {% endif %}
-                {{ form.logo }}
-                {% if form.logo.errors %}
-                    <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">
-                        {{ form.logo.errors }}
-                    </div>
-                {% endif %}
-                <small style="color: #6b7280; display: block; margin-top: 0.25rem;">
-                    {{ form.logo.help_text }}
-                </small>
-            </div>
-        </div>
-        
-        <!-- Colores del Sistema -->
-        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
-            <h3 style="color: var(--color-primario); margin-bottom: 1rem;">
-                <i class="fas fa-paint-brush"></i> Colores del Sistema
-            </h3>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                <div class="form-group">
-                    <label for="{{ form.color_primario.id_for_label }}">
-                        <i class="fas fa-circle" style="color: {{ config.color_primario }};"></i> {{ form.color_primario.label }}
-                    </label>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        {{ form.color_primario }}
-                        <input type="text" value="{{ config.color_primario }}" id="color_primario_text" class="form-control" style="flex: 1;" readonly>
-                    </div>
-                    {% if form.color_primario.errors %}
-                        <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">
-                            {{ form.color_primario.errors }}
+            <!-- Pestaña 1: Información de la Empresa -->
+            <div class="config-tab-content active" id="tab-empresa">
+                <div class="config-section">
+                    <h3><i class="fas fa-building"></i> Información de la Empresa</h3>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            {{ form.activa }}
+                            <label for="{{ form.activa.id_for_label }}">{{ form.activa.label }}</label>
                         </div>
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    <label for="{{ form.color_secundario.id_for_label }}">
-                        <i class="fas fa-circle" style="color: {{ config.color_secundario }};"></i> {{ form.color_secundario.label }}
-                    </label>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        {{ form.color_secundario }}
-                        <input type="text" value="{{ config.color_secundario }}" id="color_secundario_text" class="form-control" style="flex: 1;" readonly>
+                        <span class="help-text">{{ form.activa.help_text }}</span>
                     </div>
-                    {% if form.color_secundario.errors %}
-                        <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">
-                            {{ form.color_secundario.errors }}
+                    
+                    <div class="form-group">
+                        <label for="{{ form.nombre_empresa.id_for_label }}">
+                            <i class="fas fa-signature"></i> {{ form.nombre_empresa.label }} <span style="color: #ef4444;">*</span>
+                        </label>
+                        {{ form.nombre_empresa }}
+                        {% if form.nombre_empresa.errors %}
+                            <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">
+                                {{ form.nombre_empresa.errors }}
+                            </div>
+                        {% endif %}
+                        <span class="help-text">{{ form.nombre_empresa.help_text }}</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.logo.id_for_label }}">
+                            <i class="fas fa-image"></i> {{ form.logo.label }}
+                        </label>
+                        {% if config.logo %}
+                            <div style="margin-bottom: 0.5rem;">
+                                <img src="{{ config.logo.url }}" alt="Logo actual" style="max-height: 60px; border: 2px solid #e5e7eb; padding: 0.5rem; border-radius: 6px; background: white;">
+                                <p class="help-text">Logo actual</p>
+                            </div>
+                        {% endif %}
+                        {{ form.logo }}
+                        {% if form.logo.errors %}
+                            <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">
+                                {{ form.logo.errors }}
+                            </div>
+                        {% endif %}
+                        <span class="help-text">{{ form.logo.help_text }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pestaña 2: Configuración de Pagos -->
+            <div class="config-tab-content" id="tab-pagos">
+                <div class="config-section">
+                    <h3><i class="fas fa-credit-card"></i> Configuración de Pagos</h3>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            {{ form.pagos_online_habilitados }}
+                            <label for="{{ form.pagos_online_habilitados.id_for_label }}">
+                                {{ form.pagos_online_habilitados.label }}
+                            </label>
                         </div>
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    <label for="{{ form.color_exito.id_for_label }}">
-                        <i class="fas fa-circle" style="color: {{ config.color_exito }};"></i> {{ form.color_exito.label }}
-                    </label>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        {{ form.color_exito }}
-                        <input type="text" value="{{ config.color_exito }}" id="color_exito_text" class="form-control" style="flex: 1;" readonly>
+                        <span class="help-text">
+                            {{ form.pagos_online_habilitados.help_text|default:"Si está desactivado, los clientes no podrán pagar en línea. Los administradores podrán registrar pagos manuales cuando los clientes traigan comprobantes de depósito." }}
+                        </span>
                     </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="{{ form.color_advertencia.id_for_label }}">
-                        <i class="fas fa-circle" style="color: {{ config.color_advertencia }};"></i> {{ form.color_advertencia.label }}
-                    </label>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        {{ form.color_advertencia }}
-                        <input type="text" value="{{ config.color_advertencia }}" id="color_advertencia_text" class="form-control" style="flex: 1;" readonly>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="{{ form.color_peligro.id_for_label }}">
-                        <i class="fas fa-circle" style="color: {{ config.color_peligro }};"></i> {{ form.color_peligro.label }}
-                    </label>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        {{ form.color_peligro }}
-                        <input type="text" value="{{ config.color_peligro }}" id="color_peligro_text" class="form-control" style="flex: 1;" readonly>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="{{ form.color_info.id_for_label }}">
-                        <i class="fas fa-circle" style="color: {{ config.color_info }};"></i> {{ form.color_info.label }}
-                    </label>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        {{ form.color_info }}
-                        <input type="text" value="{{ config.color_info }}" id="color_info_text" class="form-control" style="flex: 1;" readonly>
+                    
+                    <div class="alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Nota:</strong> Cuando los pagos en línea están deshabilitados, los administradores pueden registrar pagos manuales desde la sección de Pagos usando el botón "Registrar Pago Manual".
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Preview -->
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; border: 2px solid #e5e7eb; margin-bottom: 2rem;">
-            <h3 style="color: var(--color-primario); margin-bottom: 1rem;">
-                <i class="fas fa-eye"></i> Vista Previa
-            </h3>
-            <div style="background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-secundario) 100%); padding: 1rem; border-radius: 8px; color: white; margin-bottom: 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    {% if config.logo %}
-                        <img src="{{ config.logo.url }}" alt="Preview" style="max-height: 30px;">
-                    {% else %}
-                        <i class="fas fa-globe-americas"></i>
-                    {% endif %}
-                    <strong>{{ config.nombre_empresa }}</strong>
+            
+            <!-- Pestaña 3: Colores del Sistema -->
+            <div class="config-tab-content" id="tab-colores">
+                <div class="config-section">
+                    <h3><i class="fas fa-paint-brush"></i> Colores del Sistema</h3>
+                    
+                    <div class="color-grid">
+                        <div class="form-group">
+                            <label for="{{ form.color_primario.id_for_label }}">
+                                <i class="fas fa-circle" style="color: {{ config.color_primario }};"></i> {{ form.color_primario.label }}
+                            </label>
+                            <div class="color-input-group">
+                                {{ form.color_primario }}
+                                <input type="text" value="{{ config.color_primario }}" id="color_primario_text" class="form-control" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.color_secundario.id_for_label }}">
+                                <i class="fas fa-circle" style="color: {{ config.color_secundario }};"></i> {{ form.color_secundario.label }}
+                            </label>
+                            <div class="color-input-group">
+                                {{ form.color_secundario }}
+                                <input type="text" value="{{ config.color_secundario }}" id="color_secundario_text" class="form-control" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.color_exito.id_for_label }}">
+                                <i class="fas fa-circle" style="color: {{ config.color_exito }};"></i> {{ form.color_exito.label }}
+                            </label>
+                            <div class="color-input-group">
+                                {{ form.color_exito }}
+                                <input type="text" value="{{ config.color_exito }}" id="color_exito_text" class="form-control" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.color_advertencia.id_for_label }}">
+                                <i class="fas fa-circle" style="color: {{ config.color_advertencia }};"></i> {{ form.color_advertencia.label }}
+                            </label>
+                            <div class="color-input-group">
+                                {{ form.color_advertencia }}
+                                <input type="text" value="{{ config.color_advertencia }}" id="color_advertencia_text" class="form-control" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.color_peligro.id_for_label }}">
+                                <i class="fas fa-circle" style="color: {{ config.color_peligro }};"></i> {{ form.color_peligro.label }}
+                            </label>
+                            <div class="color-input-group">
+                                {{ form.color_peligro }}
+                                <input type="text" value="{{ config.color_peligro }}" id="color_peligro_text" class="form-control" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.color_info.id_for_label }}">
+                                <i class="fas fa-circle" style="color: {{ config.color_info }};"></i> {{ form.color_info.label }}
+                            </label>
+                            <div class="color-input-group">
+                                {{ form.color_info }}
+                                <input type="text" value="{{ config.color_info }}" id="color_info_text" class="form-control" readonly>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <span class="badge badge-success">Éxito</span>
-                <span class="badge badge-warning">Advertencia</span>
-                <span class="badge badge-danger">Peligro</span>
-                <span class="badge badge-info">Info</span>
+            
+            <!-- Pestaña 4: Vista Previa -->
+            <div class="config-tab-content" id="tab-preview">
+                <div class="preview-box">
+                    <h3 style="color: var(--color-primario); margin-bottom: 1rem;">
+                        <i class="fas fa-eye"></i> Vista Previa
+                    </h3>
+                    <div class="preview-header">
+                        {% if config.logo %}
+                            <img src="{{ config.logo.url }}" alt="Preview" style="max-height: 30px;">
+                        {% else %}
+                            <i class="fas fa-globe-americas"></i>
+                        {% endif %}
+                        <strong>{{ config.nombre_empresa }}</strong>
+                    </div>
+                    <div class="preview-badges">
+                        <span class="badge badge-success">Éxito</span>
+                        <span class="badge badge-warning">Advertencia</span>
+                        <span class="badge badge-danger">Peligro</span>
+                        <span class="badge badge-info">Info</span>
+                    </div>
+                </div>
             </div>
-        </div>
-        
-        <!-- Botones -->
-        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-            <button type="submit" class="btn">
-                <i class="fas fa-save"></i> Guardar Configuración
-            </button>
-            <a href="{% url 'home' %}" class="btn btn-secondary">
-                <i class="fas fa-times"></i> Cancelar
-            </a>
+            
+            <!-- Botones de acción -->
+            <div class="form-actions">
+                <button type="submit" class="btn">
+                    <i class="fas fa-save"></i> Guardar Configuración
+                </button>
+                <a href="{% url 'home' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+            </div>
         </div>
     </form>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Sistema de pestañas
+    const tabs = document.querySelectorAll('.config-tab');
+    const tabContents = document.querySelectorAll('.config-tab-content');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const targetTab = this.getAttribute('data-tab');
+            
+            // Remover clase active de todas las pestañas y contenidos
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Agregar clase active a la pestaña y contenido seleccionados
+            this.classList.add('active');
+            document.getElementById('tab-' + targetTab).classList.add('active');
+        });
+    });
+    
     // Sincronizar color picker con input de texto
     const colorInputs = {
         'id_color_primario': 'color_primario_text',
@@ -244,18 +480,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (colorPicker && textInput) {
             colorPicker.addEventListener('input', function() {
                 textInput.value = this.value;
-                // Actualizar preview en tiempo real
                 updatePreview();
             });
         }
     });
     
     function updatePreview() {
-        // Actualizar variables CSS para preview
         const primario = document.getElementById('id_color_primario')?.value || '{{ config.color_primario }}';
         const secundario = document.getElementById('id_color_secundario')?.value || '{{ config.color_secundario }}';
         
-        const preview = document.querySelector('[style*="linear-gradient"]');
+        const preview = document.querySelector('.preview-header');
         if (preview) {
             preview.style.background = `linear-gradient(135deg, ${primario} 0%, ${secundario} 100%)`;
         }
@@ -263,4 +497,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
-

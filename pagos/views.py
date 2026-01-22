@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from core.roles_decorators import permiso_required
-from django.db.models import Q, Sum, Count, Avg
+from django.db.models import Q, Sum, Count, Avg, Max
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.core.paginator import Paginator
@@ -14,12 +14,160 @@ import json
 import logging
 import requests
 from .models import Pago, PlanPago, TransaccionPago
-from .forms import PagoForm, PlanPagoForm
+from .forms import PagoForm, PlanPagoForm, PagoManualForm
+from instalaciones.models import Instalacion
 from .payment_gateway import PaymentGateway
 from clientes.models import Cliente
 from instalaciones.models import Instalacion
+from core.models import ConfiguracionSistema
 
 logger = logging.getLogger(__name__)
+
+
+@login_required
+@permiso_required('ver_pagos')
+def pago_pendientes_list(request):
+    """Lista todos los pagos pendientes (aún no vencidos)."""
+    # Actualizar automáticamente pagos vencidos primero
+    Pago.actualizar_pagos_vencidos()
+    
+    hoy = timezone.now().date()
+    
+    # Obtener todos los pagos pendientes (que aún no han vencido)
+    pagos_pendientes = Pago.objects.filter(
+        estado='pendiente',
+        fecha_vencimiento__gte=hoy  # Solo los que aún no han vencido
+    ).select_related('cliente', 'instalacion').order_by('fecha_vencimiento', 'cliente__nombre')
+    
+    # Búsqueda
+    query = request.GET.get('q', '')
+    if query:
+        pagos_pendientes = pagos_pendientes.filter(
+            Q(cliente__nombre__icontains=query) |
+            Q(cliente__apellido1__icontains=query) |
+            Q(cliente__apellido2__icontains=query) |
+            Q(cliente__telefono__icontains=query) |
+            Q(concepto__icontains=query)
+        )
+    
+    # Filtro por días hasta vencimiento
+    dias_proximos = request.GET.get('dias', '')
+    if dias_proximos:
+        try:
+            dias = int(dias_proximos)
+            fecha_limite = hoy + timedelta(days=dias)
+            pagos_pendientes = pagos_pendientes.filter(
+                fecha_vencimiento__lte=fecha_limite
+            )
+        except ValueError:
+            pass
+    
+    # Calcular días hasta vencimiento para cada pago
+    pagos_con_dias = []
+    for pago in pagos_pendientes:
+        dias_hasta_vencimiento = (pago.fecha_vencimiento - hoy).days
+        pagos_con_dias.append({
+            'pago': pago,
+            'dias_hasta_vencimiento': dias_hasta_vencimiento
+        })
+    
+    # Estadísticas
+    total_pendiente = pagos_pendientes.aggregate(Sum('monto'))['monto__sum'] or 0
+    total_pagos_pendientes = pagos_pendientes.count()
+    
+    # Pagos próximos a vencer (próximos 7 días)
+    fecha_proximos_7_dias = hoy + timedelta(days=7)
+    pagos_proximos = pagos_pendientes.filter(
+        fecha_vencimiento__lte=fecha_proximos_7_dias
+    ).count()
+    monto_proximos = pagos_pendientes.filter(
+        fecha_vencimiento__lte=fecha_proximos_7_dias
+    ).aggregate(Sum('monto'))['monto__sum'] or 0
+    
+    # Paginación
+    paginator = Paginator(pagos_con_dias, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'pagos_pendientes': page_obj,
+        'total_pendiente': total_pendiente,
+        'total_pagos_pendientes': total_pagos_pendientes,
+        'pagos_proximos': pagos_proximos,
+        'monto_proximos': monto_proximos,
+        'query': query,
+        'dias_proximos': dias_proximos,
+        'hoy': hoy,
+    }
+    
+    return render(request, 'pagos/pago_pendientes_list.html', context)
+
+
+@login_required
+@permiso_required('ver_pagos')
+def pago_vencidos_list(request):
+    """Lista todos los pagos vencidos y clientes morosos."""
+    # Actualizar automáticamente pagos vencidos
+    cantidad_actualizados = Pago.actualizar_pagos_vencidos()
+    if cantidad_actualizados > 0:
+        messages.info(request, f'Se actualizaron {cantidad_actualizados} pago(s) a estado vencido.')
+    
+    # Obtener todos los pagos vencidos
+    pagos_vencidos = Pago.objects.filter(
+        estado='vencido'
+    ).select_related('cliente', 'instalacion').order_by('fecha_vencimiento', 'cliente__nombre')
+    
+    # Búsqueda
+    query = request.GET.get('q', '')
+    if query:
+        pagos_vencidos = pagos_vencidos.filter(
+            Q(cliente__nombre__icontains=query) |
+            Q(cliente__apellido1__icontains=query) |
+            Q(cliente__apellido2__icontains=query) |
+            Q(cliente__telefono__icontains=query) |
+            Q(concepto__icontains=query)
+        )
+    
+    # Agrupar por cliente para mostrar resumen
+    clientes_morosos = pagos_vencidos.values(
+        'cliente__id', 'cliente__nombre', 'cliente__apellido1', 
+        'cliente__apellido2', 'cliente__telefono', 'cliente__email'
+    ).annotate(
+        total_vencido=Sum('monto'),
+        cantidad_pagos=Count('id'),
+        fecha_mas_antigua=Max('fecha_vencimiento')
+    ).order_by('-total_vencido')
+    
+    # Calcular días vencidos para cada cliente
+    hoy = timezone.now().date()
+    for cliente_data in clientes_morosos:
+        if cliente_data['fecha_mas_antigua']:
+            cliente_data['dias_mas_vencido'] = (hoy - cliente_data['fecha_mas_antigua']).days
+        else:
+            cliente_data['dias_mas_vencido'] = 0
+    
+    # Estadísticas
+    total_vencido = pagos_vencidos.aggregate(Sum('monto'))['monto__sum'] or 0
+    total_pagos_vencidos = pagos_vencidos.count()
+    total_clientes_morosos = clientes_morosos.count()
+    
+    # Paginación
+    paginator = Paginator(pagos_vencidos, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'pagos_vencidos': page_obj,
+        'clientes_morosos': clientes_morosos,
+        'total_vencido': total_vencido,
+        'total_pagos_vencidos': total_pagos_vencidos,
+        'total_clientes_morosos': total_clientes_morosos,
+        'query': query,
+    }
+    
+    return render(request, 'pagos/pago_vencidos_list.html', context)
 
 
 @login_required
@@ -117,11 +265,16 @@ def pago_detail(request, pk):
         (bool(getattr(settings, 'PAYPAL_CLIENT_ID', None)) and bool(getattr(settings, 'PAYPAL_SECRET', None)))
     )
     
+    # Obtener configuración del sistema
+    config = ConfiguracionSistema.get_activa()
+    pagos_online_habilitados = config.pagos_online_habilitados if config else True
+    
     context = {
         'pago': pago,
         'notificaciones': notificaciones,
         'transacciones': transacciones,
         'tiene_pasarela': tiene_pasarela,
+        'pagos_online_habilitados': pagos_online_habilitados,
     }
     
     return render(request, 'pagos/pago_detail.html', context)
@@ -158,6 +311,44 @@ def pago_create(request, cliente_id=None):
     }
     
     return render(request, 'pagos/pago_form.html', context)
+
+
+@login_required
+@permiso_required('crear_pagos')
+def pago_registro_manual(request, cliente_id=None):
+    """Registra un pago manual cuando el cliente trae un comprobante de depósito."""
+    cliente_pre_seleccionado = None
+    if cliente_id:
+        try:
+            cliente_pre_seleccionado = Cliente.objects.get(pk=cliente_id)
+        except Cliente.DoesNotExist:
+            messages.error(request, 'Cliente no encontrado.')
+            return redirect('pagos:pago_list')
+    
+    if request.method == 'POST':
+        form = PagoManualForm(request.POST, cliente_id=cliente_id)
+        if form.is_valid():
+            pago = form.save()
+            messages.success(
+                request, 
+                f'Pago de ${pago.monto} registrado exitosamente para {pago.cliente.nombre_completo}. '
+                f'Referencia: {pago.referencia_pago}'
+            )
+            return redirect('pagos:pago_detail', pk=pago.pk)
+    else:
+        form = PagoManualForm(cliente_id=cliente_id)
+        if cliente_pre_seleccionado:
+            form.fields['cliente'].initial = cliente_pre_seleccionado
+            form.fields['instalacion'].queryset = cliente_pre_seleccionado.instalaciones.all()
+    
+    context = {
+        'form': form,
+        'title': 'Registrar Pago Manual (Depósito/Comprobante)',
+        'cliente_pre_seleccionado': cliente_pre_seleccionado,
+        'es_registro_manual': True,
+    }
+    
+    return render(request, 'pagos/pago_manual_form.html', context)
 
 
 @login_required
@@ -210,23 +401,59 @@ def pago_delete(request, pk):
 @login_required
 @permiso_required('marcar_pagos_pagados')
 def pago_marcar_pagado(request, pk):
-    """Marca un pago como pagado."""
+    """Marca un pago como pagado con formulario completo para registro manual."""
     pago = get_object_or_404(Pago, pk=pk)
     
-    if request.method == 'POST':
-        metodo_pago = request.POST.get('metodo_pago', '')
-        referencia_pago = request.POST.get('referencia_pago', '')
-        
-        pago.marcar_como_pagado(
-            metodo_pago=metodo_pago if metodo_pago else None,
-            referencia=referencia_pago if referencia_pago else None
-        )
-        messages.success(request, f'Pago marcado como pagado exitosamente.')
+    # Verificar que el pago no esté ya pagado
+    if pago.estado == 'pagado':
+        messages.warning(request, 'Este pago ya está marcado como pagado.')
         return redirect('pagos:pago_detail', pk=pago.pk)
+    
+    if request.method == 'POST':
+        from .forms import PagoMarcarPagadoForm
+        form = PagoMarcarPagadoForm(request.POST)
+        
+        if form.is_valid():
+            metodo_pago = form.cleaned_data['metodo_pago']
+            referencia_pago = form.cleaned_data.get('referencia_pago', '')
+            fecha_pago = form.cleaned_data['fecha_pago']
+            notas = form.cleaned_data.get('notas', '')
+            
+            # Actualizar el pago con todos los datos
+            pago.estado = 'pagado'
+            pago.metodo_pago = metodo_pago
+            pago.referencia_pago = referencia_pago if referencia_pago else None
+            pago.fecha_pago = fecha_pago
+            if notas:
+                # Agregar notas, preservando las existentes si hay
+                if pago.notas:
+                    pago.notas = f"{pago.notas}\n\n[Pago registrado manualmente - {timezone.now().strftime('%d/%m/%Y %H:%M')}]\n{notas}"
+                else:
+                    pago.notas = f"[Pago registrado manualmente - {timezone.now().strftime('%d/%m/%Y %H:%M')}]\n{notas}"
+            pago.save()
+            
+            messages.success(
+                request, 
+                f'Pago marcado como pagado exitosamente. '
+                f'Método: {pago.get_metodo_pago_display()}, '
+                f'Fecha: {fecha_pago.strftime("%d/%m/%Y %H:%M")}'
+            )
+            
+            # Redirigir según el origen
+            next_url = request.GET.get('next', 'pagos:pago_list')
+            if next_url == 'pago_detail':
+                return redirect('pagos:pago_detail', pk=pago.pk)
+            elif next_url == 'pago_vencidos_list':
+                return redirect('pagos:pago_vencidos_list')
+            else:
+                return redirect('pagos:pago_list')
+    else:
+        from .forms import PagoMarcarPagadoForm
+        form = PagoMarcarPagadoForm()
     
     context = {
         'pago': pago,
-        'metodos': Pago.METODO_PAGO_CHOICES,
+        'form': form,
     }
     
     return render(request, 'pagos/pago_marcar_pagado.html', context)
@@ -706,6 +933,18 @@ def pago_reportes(request):
 
 def pago_procesar_online(request, pk):
     """Inicia el proceso de pago en línea para un pago."""
+    # Verificar si los pagos en línea están habilitados
+    config = ConfiguracionSistema.get_activa()
+    if not config.pagos_online_habilitados:
+        messages.error(
+            request, 
+            'Los pagos en línea están deshabilitados. Por favor, contacta al administrador para realizar el pago.'
+        )
+        if request.user.is_staff:
+            return redirect('pagos:pago_detail', pk=pk)
+        else:
+            return redirect('clientes:portal_mis_pagos')
+    
     pago = get_object_or_404(Pago, pk=pk)
     
     # Verificar permisos: solo el cliente dueño o staff puede pagar
@@ -1489,3 +1728,169 @@ def pago_reembolsar(request, transaccion_id):
     }
     
     return render(request, 'pagos/pago_reembolsar.html', context)
+
+
+# ============================================
+# CRUD de PlanPago
+# ============================================
+
+@login_required
+@permiso_required('ver_pagos')
+def plan_pago_list(request):
+    """Lista todos los planes de pago."""
+    planes_pago = PlanPago.objects.select_related('instalacion', 'instalacion__cliente').all().order_by('-activo', 'instalacion__cliente__nombre')
+    
+    # Filtro por activo
+    activo_filter = request.GET.get('activo', '')
+    if activo_filter == '1':
+        planes_pago = planes_pago.filter(activo=True)
+    elif activo_filter == '0':
+        planes_pago = planes_pago.filter(activo=False)
+    
+    # Búsqueda
+    query = request.GET.get('q', '')
+    if query:
+        planes_pago = planes_pago.filter(
+            Q(instalacion__cliente__nombre__icontains=query) |
+            Q(instalacion__cliente__apellido1__icontains=query) |
+            Q(instalacion__numero_contrato__icontains=query)
+        )
+    
+    # Estadísticas
+    total_planes = planes_pago.count()
+    planes_activos = planes_pago.filter(activo=True).count()
+    planes_inactivos = planes_pago.filter(activo=False).count()
+    
+    # Paginación
+    paginator = Paginator(planes_pago, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'planes_pago': page_obj,
+        'total_planes': total_planes,
+        'planes_activos': planes_activos,
+        'planes_inactivos': planes_inactivos,
+        'activo_filter': activo_filter,
+        'query': query,
+    }
+    
+    return render(request, 'pagos/plan_pago_list.html', context)
+
+
+@login_required
+@permiso_required('ver_pagos')
+def plan_pago_detail(request, pk):
+    """Muestra los detalles de un plan de pago."""
+    plan_pago = get_object_or_404(
+        PlanPago.objects.select_related('instalacion', 'instalacion__cliente'),
+        pk=pk
+    )
+    
+    # Obtener pagos generados desde este plan
+    pagos_generados = Pago.objects.filter(
+        instalacion=plan_pago.instalacion
+    ).order_by('-periodo_anio', '-periodo_mes')[:12]
+    
+    # Calcular próximo vencimiento
+    proximo_vencimiento = plan_pago.calcular_proximo_vencimiento()
+    
+    context = {
+        'plan_pago': plan_pago,
+        'pagos_generados': pagos_generados,
+        'proximo_vencimiento': proximo_vencimiento,
+    }
+    
+    return render(request, 'pagos/plan_pago_detail.html', context)
+
+
+@login_required
+@permiso_required('crear_pagos')
+def plan_pago_create(request, instalacion_id=None):
+    """Crea un nuevo plan de pago."""
+    instalacion_pre_seleccionada = None
+    if instalacion_id:
+        try:
+            instalacion_pre_seleccionada = Instalacion.objects.get(pk=instalacion_id)
+            # Verificar si ya tiene un plan de pago
+            if hasattr(instalacion_pre_seleccionada, 'plan_pago'):
+                messages.warning(request, 'Esta instalación ya tiene un plan de pago. Puedes editarlo desde aquí.')
+                return redirect('pagos:plan_pago_update', pk=instalacion_pre_seleccionada.plan_pago.pk)
+        except Instalacion.DoesNotExist:
+            messages.error(request, 'Instalación no encontrada.')
+            return redirect('pagos:plan_pago_list')
+    
+    if request.method == 'POST':
+        form = PlanPagoForm(request.POST)
+        if instalacion_pre_seleccionada:
+            form.data = form.data.copy()
+            form.data['instalacion'] = instalacion_pre_seleccionada.pk
+        
+        if form.is_valid():
+            plan_pago = form.save()
+            messages.success(request, f'Plan de pago creado exitosamente para {plan_pago.instalacion.cliente.nombre_completo}.')
+            return redirect('pagos:plan_pago_detail', pk=plan_pago.pk)
+        else:
+            messages.error(request, 'Error al crear el plan de pago. Por favor, corrige los errores.')
+    else:
+        form = PlanPagoForm()
+        if instalacion_pre_seleccionada:
+            form.fields['instalacion'].initial = instalacion_pre_seleccionada
+            # Filtrar para excluir instalaciones que ya tienen plan
+            form.fields['instalacion'].queryset = Instalacion.objects.filter(
+                estado='activa'
+            ).exclude(plan_pago__isnull=False).order_by('cliente__nombre', 'cliente__apellido1')
+    
+    context = {
+        'form': form,
+        'title': 'Nuevo Plan de Pago',
+        'instalacion_pre_seleccionada': instalacion_pre_seleccionada,
+    }
+    
+    return render(request, 'pagos/plan_pago_form.html', context)
+
+
+@login_required
+@permiso_required('crear_pagos')
+def plan_pago_update(request, pk):
+    """Actualiza un plan de pago existente."""
+    plan_pago = get_object_or_404(PlanPago, pk=pk)
+    
+    if request.method == 'POST':
+        form = PlanPagoForm(request.POST, instance=plan_pago)
+        if form.is_valid():
+            plan_pago = form.save()
+            messages.success(request, f'Plan de pago actualizado exitosamente.')
+            return redirect('pagos:plan_pago_detail', pk=plan_pago.pk)
+        else:
+            messages.error(request, 'Error al actualizar el plan de pago. Por favor, corrige los errores.')
+    else:
+        form = PlanPagoForm(instance=plan_pago)
+    
+    context = {
+        'form': form,
+        'plan_pago': plan_pago,
+        'title': 'Editar Plan de Pago',
+    }
+    
+    return render(request, 'pagos/plan_pago_form.html', context)
+
+
+@login_required
+@permiso_required('crear_pagos')
+def plan_pago_delete(request, pk):
+    """Elimina un plan de pago."""
+    plan_pago = get_object_or_404(PlanPago, pk=pk)
+    
+    if request.method == 'POST':
+        instalacion_str = str(plan_pago.instalacion)
+        plan_pago.delete()
+        messages.success(request, f'Plan de pago eliminado exitosamente para {instalacion_str}.')
+        return redirect('pagos:plan_pago_list')
+    
+    context = {
+        'plan_pago': plan_pago,
+    }
+    
+    return render(request, 'pagos/plan_pago_confirm_delete.html', context)

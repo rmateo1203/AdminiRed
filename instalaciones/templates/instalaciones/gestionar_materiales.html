@@ -42,19 +42,43 @@
         <form method="post" id="form-agregar-material">
             {% csrf_token %}
             <input type="hidden" name="accion" value="agregar">
-            <div style="display: grid; grid-template-columns: 2fr 1fr 2fr auto; gap: 1rem; align-items: end;">
-                <div>
+            <div style="display: grid; grid-template-columns: 2fr 1fr 2fr auto; gap: 1rem; align-items: end;" class="form-grid-responsive">
+                <div style="position: relative;">
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
                         <i class="fas fa-box"></i> Material <span style="color: #ef4444;">*</span>
                     </label>
-                    <select name="material_id" id="id_material" class="form-control" required>
-                        <option value="">-- Seleccionar material --</option>
-                        {% for material in materiales_disponibles %}
-                        <option value="{{ material.pk }}" data-stock="{{ material.stock_actual }}" data-unidad="{{ material.get_unidad_medida_display }}">
-                            {{ material.nombre }} (Stock: {{ material.stock_actual }} {{ material.get_unidad_medida_display }})
-                        </option>
-                        {% endfor %}
-                    </select>
+                    <div style="position: relative;">
+                        <input 
+                            type="text" 
+                            id="material_search" 
+                            class="form-control" 
+                            placeholder="🔍 Buscar material por nombre, código, categoría..."
+                            autocomplete="off"
+                            style="padding: 0.75rem 1rem 0.75rem 2.5rem; border: 2px solid #e5e7eb; border-radius: 8px; width: 100%; font-size: 1rem; transition: all 0.3s ease;"
+                        >
+                        <i class="fas fa-search" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #9ca3af; pointer-events: none;"></i>
+                        <button type="button" id="clearMaterialSearch" style="display: none; position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: #9ca3af; cursor: pointer; padding: 0.5rem; font-size: 1rem;" title="Limpiar búsqueda">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <input type="hidden" name="material_id" id="id_material" required>
+                    </div>
+                    <!-- Sugerencias de autocompletado -->
+                    <div id="materialSuggestions" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; max-height: 400px; overflow-y: auto; margin-top: 0.5rem;">
+                        <div id="materialSuggestionsList"></div>
+                    </div>
+                    <!-- Material seleccionado -->
+                    <div id="selectedMaterial" style="display: none; margin-top: 0.5rem; padding: 0.75rem; background: #e0e7ff; border: 1px solid #667eea; border-radius: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong id="selectedMaterialName" style="color: #667eea;"></strong>
+                                <br>
+                                <small id="selectedMaterialCode" style="color: #6b7280; font-family: monospace;"></small>
+                            </div>
+                            <button type="button" id="removeSelectedMaterial" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 0.25rem 0.5rem; font-size: 1.2rem;" title="Quitar selección">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <div>
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
@@ -167,26 +191,190 @@
     </div>
 </div>
 
+{% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const materialSelect = document.getElementById('id_material');
+    const materialSearch = document.getElementById('material_search');
+    const materialIdInput = document.getElementById('id_material');
+    const materialSuggestions = document.getElementById('materialSuggestions');
+    const materialSuggestionsList = document.getElementById('materialSuggestionsList');
+    const clearMaterialSearch = document.getElementById('clearMaterialSearch');
+    const selectedMaterial = document.getElementById('selectedMaterial');
+    const selectedMaterialName = document.getElementById('selectedMaterialName');
+    const selectedMaterialCode = document.getElementById('selectedMaterialCode');
+    const removeSelectedMaterial = document.getElementById('removeSelectedMaterial');
     const cantidadInput = document.getElementById('id_cantidad');
     const stockInfo = document.getElementById('stock-info');
+    let searchTimeout = null;
+    let selectedMaterialData = null;
     
-    function actualizarInfoStock() {
-        const materialId = materialSelect.value;
-        const cantidad = parseInt(cantidadInput.value) || 0;
+    // Mostrar/ocultar botón de limpiar
+    function toggleClearButton() {
+        if (materialSearch.value.trim().length > 0 && !selectedMaterialData) {
+            clearMaterialSearch.style.display = 'block';
+        } else {
+            clearMaterialSearch.style.display = 'none';
+        }
+    }
+    
+    // Limpiar búsqueda
+    clearMaterialSearch.addEventListener('click', function() {
+        materialSearch.value = '';
+        materialSuggestions.style.display = 'none';
+        toggleClearButton();
+        materialSearch.focus();
+    });
+    
+    // Quitar material seleccionado
+    removeSelectedMaterial.addEventListener('click', function() {
+        selectedMaterialData = null;
+        materialIdInput.value = '';
+        materialSearch.value = '';
+        selectedMaterial.style.display = 'none';
+        materialSearch.style.display = 'block';
+        stockInfo.textContent = '';
+        stockInfo.style.background = '';
+        stockInfo.style.border = '';
+        cantidadInput.value = '';
+        materialSearch.focus();
+    });
+    
+    // Búsqueda en tiempo real con autocompletado
+    materialSearch.addEventListener('input', function() {
+        const query = this.value.trim();
+        toggleClearButton();
         
-        if (!materialId) {
+        // Si hay un material seleccionado, no buscar
+        if (selectedMaterialData) {
+            return;
+        }
+        
+        // Limpiar timeout anterior
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+        
+        // Si la búsqueda tiene menos de 2 caracteres, ocultar sugerencias
+        if (query.length < 2) {
+            materialSuggestions.style.display = 'none';
+            return;
+        }
+        
+        // Esperar 300ms antes de buscar (debounce)
+        searchTimeout = setTimeout(function() {
+            buscarMateriales(query);
+        }, 300);
+    });
+    
+    // Función para buscar materiales
+    function buscarMateriales(query) {
+        fetch(`{% url 'inventario:api_buscar_materiales' %}?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                // Filtrar solo materiales disponibles o con bajo stock
+                const materialesFiltrados = data.materiales.filter(m => 
+                    m.estado === 'Disponible' || m.estado === 'Bajo Stock'
+                );
+                mostrarSugerencias(materialesFiltrados, query);
+            })
+            .catch(error => {
+                console.error('Error en búsqueda:', error);
+            });
+    }
+    
+    // Mostrar sugerencias
+    function mostrarSugerencias(materiales, query) {
+        if (materiales.length === 0) {
+            materialSuggestionsList.innerHTML = `
+                <div style="padding: 1rem; text-align: center; color: #9ca3af;">
+                    <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
+                    <p>No se encontraron materiales disponibles</p>
+                    <small>Intenta con otro término de búsqueda</small>
+                </div>
+            `;
+            materialSuggestions.style.display = 'block';
+            return;
+        }
+        
+        let html = '';
+        materiales.forEach(function(material) {
+            // Resaltar el término de búsqueda
+            const nombreHighlight = resaltarTexto(material.nombre, query);
+            const codigoHighlight = resaltarTexto(material.codigo, query);
+            
+            // Determinar color del estado
+            let estadoColor = '#9ca3af';
+            if (material.estado === 'Disponible') estadoColor = '#10b981';
+            else if (material.estado === 'Bajo Stock') estadoColor = '#f59e0b';
+            
+            html += `
+                <div class="suggestion-item" style="padding: 0.75rem 1rem; border-bottom: 1px solid #f3f4f6; cursor: pointer; transition: background 0.2s ease;" 
+                     onmouseover="this.style.background='#f9fafb'" 
+                     onmouseout="this.style.background='white'"
+                     onclick="seleccionarMaterial(${material.id}, '${material.nombre.replace(/'/g, "\\'")}', '${material.codigo}', ${material.stock_actual}, '${material.unidad_medida}')">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: #111827; margin-bottom: 0.25rem;">
+                                ${nombreHighlight}
+                            </div>
+                            <div style="font-size: 0.875rem; color: #6b7280; font-family: monospace; margin-bottom: 0.25rem;">
+                                ${codigoHighlight}
+                            </div>
+                            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                                ${material.categoria ? `<span style="padding: 0.2rem 0.5rem; border-radius: 12px; background: #e0e7ff; color: #667eea; font-size: 0.75rem;">${material.categoria}</span>` : ''}
+                                <span style="font-size: 0.875rem; color: #6b7280;">
+                                    <i class="fas fa-boxes"></i> ${material.stock_actual} ${material.unidad_medida}
+                                </span>
+                            </div>
+                        </div>
+                        <div style="margin-left: 1rem;">
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: ${estadoColor}; color: white;">
+                                ${material.estado}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        materialSuggestionsList.innerHTML = html;
+        materialSuggestions.style.display = 'block';
+    }
+    
+    // Resaltar texto
+    function resaltarTexto(texto, busqueda) {
+        if (!busqueda) return texto;
+        const regex = new RegExp(`(${busqueda.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        return texto.replace(regex, '<mark style="background: #fef3c7; color: #92400e; padding: 0.1rem 0.2rem; border-radius: 3px;">$1</mark>');
+    }
+    
+    // Seleccionar material de las sugerencias
+    window.seleccionarMaterial = function(id, nombre, codigo, stock, unidad) {
+        selectedMaterialData = { id, nombre, codigo, stock, unidad };
+        materialIdInput.value = id;
+        materialSearch.value = '';
+        materialSearch.style.display = 'none';
+        selectedMaterialName.textContent = nombre;
+        selectedMaterialCode.textContent = `Código: ${codigo}`;
+        selectedMaterial.style.display = 'block';
+        materialSuggestions.style.display = 'none';
+        toggleClearButton();
+        actualizarInfoStock();
+        cantidadInput.focus();
+    };
+    
+    // Actualizar información de stock
+    function actualizarInfoStock() {
+        if (!selectedMaterialData) {
             stockInfo.textContent = '';
             stockInfo.style.background = '';
             stockInfo.style.border = '';
             return;
         }
         
-        const option = materialSelect.options[materialSelect.selectedIndex];
-        const stock = parseInt(option.dataset.stock) || 0;
-        const unidad = option.dataset.unidad || '';
+        const cantidad = parseInt(cantidadInput.value) || 0;
+        const stock = selectedMaterialData.stock;
+        const unidad = selectedMaterialData.unidad;
         
         if (cantidad > 0) {
             if (stock >= cantidad) {
@@ -211,10 +399,77 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    materialSelect.addEventListener('change', actualizarInfoStock);
+    // Ocultar sugerencias al hacer clic fuera
+    document.addEventListener('click', function(event) {
+        if (!materialSearch.contains(event.target) && !materialSuggestions.contains(event.target) && !selectedMaterial.contains(event.target)) {
+            materialSuggestions.style.display = 'none';
+        }
+    });
+    
+    // Manejar teclas especiales
+    materialSearch.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            materialSuggestions.style.display = 'none';
+            this.blur();
+        } else if (e.key === 'Enter' && materialSuggestions.style.display === 'block') {
+            e.preventDefault();
+            const firstSuggestion = materialSuggestionsList.querySelector('.suggestion-item');
+            if (firstSuggestion) {
+                firstSuggestion.click();
+            }
+        }
+    });
+    
+    // Actualizar stock cuando cambia la cantidad
     cantidadInput.addEventListener('input', actualizarInfoStock);
+    
+    // Validar formulario antes de enviar
+    document.getElementById('form-agregar-material').addEventListener('submit', function(e) {
+        if (!materialIdInput.value) {
+            e.preventDefault();
+            alert('Por favor, selecciona un material.');
+            materialSearch.focus();
+            return false;
+        }
+        if (!cantidadInput.value || parseInt(cantidadInput.value) <= 0) {
+            e.preventDefault();
+            alert('Por favor, ingresa una cantidad válida.');
+            cantidadInput.focus();
+            return false;
+        }
+    });
+    
+    // Inicializar
+    toggleClearButton();
 });
 </script>
+<style>
+    #material_search:focus {
+        outline: none;
+        border-color: #667eea !important;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+    }
+    
+    .suggestion-item:hover {
+        background: #f9fafb !important;
+    }
+    
+    @media (max-width: 768px) {
+        #material_search {
+            font-size: 0.9rem !important;
+            padding: 0.75rem 0.875rem 0.75rem 2.5rem !important;
+        }
+        
+        .form-grid-responsive {
+            grid-template-columns: 1fr !important;
+        }
+        
+        .form-grid-responsive > div:last-child {
+            grid-column: 1;
+        }
+    }
+</style>
+{% endblock %}
 {% endblock %}
 
 

@@ -1,5 +1,8 @@
 from django.contrib import admin
+from django import forms
 from django.utils.html import format_html
+from django.template.response import TemplateResponse
+from django.urls import path
 from .models import (
     ConfiguracionSistema, Rol, Permiso, PermisoRol,
     PerfilUsuario, UsuarioRol
@@ -8,12 +11,21 @@ from .models import (
 
 @admin.register(ConfiguracionSistema)
 class ConfiguracionSistemaAdmin(admin.ModelAdmin):
-    list_display = ['nombre_empresa', 'activa', 'fecha_actualizacion']
-    list_filter = ['activa']
-    readonly_fields = ['fecha_creacion', 'fecha_actualizacion']
+    list_display = ['nombre_empresa', 'activa', 'pagos_online_habilitados', 'fecha_actualizacion']
+    list_filter = ['activa', 'pagos_online_habilitados']
+    readonly_fields = ['fecha_creacion', 'fecha_actualizacion', 'pagos_online_habilitados_display']
+    
+    
+    # El JavaScript y estilos están ahora en el template personalizado
+    # templates/admin/core/configuracionsistema/change_form.html
+    
     fieldsets = (
         ('Información de la Empresa', {
             'fields': ('activa', 'nombre_empresa', 'descripcion_sistema', 'titulo_sistema', 'logo')
+        }),
+        ('Configuración de Pagos', {
+            'fields': ('pagos_online_habilitados_display',),
+            'description': 'Si los pagos en línea están deshabilitados, los clientes no podrán pagar online. Los administradores podrán registrar pagos manuales cuando los clientes traigan comprobantes de depósito.',
         }),
         ('Colores del Sistema', {
             'fields': (
@@ -30,6 +42,69 @@ class ConfiguracionSistemaAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    
+    def pagos_online_habilitados_display(self, obj):
+        """Muestra el campo de pagos como checkbox editable."""
+        if obj:
+            try:
+                from django.db import connection
+                with connection.cursor() as cursor:
+                    if 'sqlite' in connection.vendor:
+                        cursor.execute(
+                            "SELECT pagos_online_habilitados FROM core_configuracionsistema WHERE id = ?",
+                            [obj.pk]
+                        )
+                    else:
+                        cursor.execute(
+                            "SELECT pagos_online_habilitados FROM core_configuracionsistema WHERE id = %s",
+                            [obj.pk]
+                        )
+                    result = cursor.fetchone()
+                    valor_actual = bool(result[0]) if result else True
+            except:
+                valor_actual = True
+        else:
+            valor_actual = True
+        
+        checked = 'checked' if valor_actual else ''
+        return format_html(
+            '<div style="margin: 10px 0; padding: 10px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">'
+            '<input type="checkbox" name="pagos_online_habilitados" id="id_pagos_online_habilitados" value="1" {} style="margin-right: 8px;"> '
+            '<label for="id_pagos_online_habilitados" style="font-weight: bold;">Pagos en línea habilitados</label>'
+            '<p class="help" style="margin-top: 8px; color: #666;">{}</p>'
+            '</div>',
+            checked,
+            'Si está desactivado, los clientes no podrán pagar en línea. Los administradores podrán registrar pagos manuales cuando los clientes traigan comprobantes de depósito.'
+        )
+    pagos_online_habilitados_display.short_description = 'Pagos en línea habilitados'
+    pagos_online_habilitados_display.allow_tags = True
+    
+    def save_model(self, request, obj, form, change):
+        """Guarda el modelo y el campo de pagos desde el POST."""
+        super().save_model(request, obj, form, change)
+        
+        # Guardar el valor del checkbox de pagos_online_habilitados
+        if 'pagos_online_habilitados' in request.POST:
+            valor = request.POST.get('pagos_online_habilitados') == '1'
+            try:
+                from django.db import connection
+                with connection.cursor() as cursor:
+                    valor_int = 1 if valor else 0
+                    if 'sqlite' in connection.vendor:
+                        cursor.execute(
+                            "UPDATE core_configuracionsistema SET pagos_online_habilitados = ? WHERE id = ?",
+                            [valor_int, obj.pk]
+                        )
+                    else:
+                        cursor.execute(
+                            "UPDATE core_configuracionsistema SET pagos_online_habilitados = %s WHERE id = %s",
+                            [valor_int, obj.pk]
+                        )
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error al guardar pagos_online_habilitados: {e}")
+    
 
 
 # =============================================================================

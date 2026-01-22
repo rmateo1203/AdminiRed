@@ -245,3 +245,6 @@ Configura ngrok y actualiza tu `.env` con la URL HTTPS de ngrok.
 
 
 
+
+
+

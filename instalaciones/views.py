@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 import logging
-from .models import Instalacion, PlanInternet, ConfiguracionNumeroContrato
+from .models import Instalacion, PlanInternet, ConfiguracionNumeroContrato, CambioEstadoInstalacion
 from .forms import InstalacionForm, ConfiguracionNumeroContratoForm
 from .services import NumeroContratoService
 from clientes.models import Cliente
@@ -77,9 +77,20 @@ def instalacion_detail(request, pk):
     # Obtener pagos relacionados si existen
     pagos = instalacion.pagos.all() if hasattr(instalacion, 'pagos') else []
     
+    # Obtener historial de cambios de estado
+    cambios_estado = instalacion.cambios_estado.all().select_related('usuario').order_by('-fecha_cambio')[:10]
+    
+    # Obtener historial completo (Simple History)
+    historial = None
+    if hasattr(instalacion, 'history'):
+        historial = instalacion.history.all()[:20]
+    
     context = {
         'instalacion': instalacion,
         'pagos': pagos,
+        'cambios_estado': cambios_estado,
+        'historial': historial,
+        'estados': Instalacion.ESTADO_CHOICES,
     }
     
     return render(request, 'instalaciones/instalacion_detail.html', context)
@@ -277,15 +288,27 @@ def configurar_numero_contrato(request):
     
     # Generar preview del formato
     preview = None
-    if form.is_valid() or request.method == 'GET':
+    if request.method == 'GET':
         try:
-            preview = NumeroContratoService.obtener_preview(
-                formato=form['formato'].value() or config.formato,
-                prefijo=form['prefijo'].value() or config.prefijo,
-                numero_inicial=form['numero_inicial'].value() or config.numero_inicial,
-                digitos_secuencia=form['digitos_secuencia'].value() or config.digitos_secuencia,
-                reiniciar_diario=form['reiniciar_diario'].value() if form['reiniciar_diario'].value() is not None else config.reiniciar_diario
+            preview = NumeroContratoService.obtener_preview(config)
+        except:
+            preview = None
+    elif form.is_valid():
+        try:
+            # Crear una instancia temporal con los datos del formulario para el preview
+            config_preview = ConfiguracionNumeroContrato(
+                prefijo=form.cleaned_data.get('prefijo', config.prefijo),
+                separador=form.cleaned_data.get('separador', config.separador),
+                sufijo=form.cleaned_data.get('sufijo', config.sufijo),
+                incluir_anio=form.cleaned_data.get('incluir_anio', config.incluir_anio),
+                formato_anio=form.cleaned_data.get('formato_anio', config.formato_anio),
+                incluir_mes=form.cleaned_data.get('incluir_mes', config.incluir_mes),
+                incluir_secuencia=form.cleaned_data.get('incluir_secuencia', config.incluir_secuencia),
+                longitud_secuencia=form.cleaned_data.get('longitud_secuencia', config.longitud_secuencia),
+                resetear_secuencia=form.cleaned_data.get('resetear_secuencia', config.resetear_secuencia),
+                activa=True
             )
+            preview = NumeroContratoService.obtener_preview(config_preview)
         except:
             preview = None
     
@@ -326,20 +349,200 @@ def configurar_numero_contrato(request):
 @login_required
 def preview_numero_contrato(request):
     """API para obtener preview del número de contrato."""
-    formato = request.GET.get('formato', '')
-    prefijo = request.GET.get('prefijo', 'INST')
-    numero_inicial = int(request.GET.get('numero_inicial', 1))
-    digitos_secuencia = int(request.GET.get('digitos_secuencia', 4))
-    reiniciar_diario = request.GET.get('reiniciar_diario', 'true').lower() == 'true'
+    prefijo = request.GET.get('prefijo', 'CONT')
+    separador = request.GET.get('separador', '-')
+    sufijo = request.GET.get('sufijo', '')
+    incluir_anio = request.GET.get('incluir_anio', 'true').lower() == 'true'
+    formato_anio = request.GET.get('formato_anio', 'completo')
+    incluir_mes = request.GET.get('incluir_mes', 'true').lower() == 'true'
+    incluir_secuencia = request.GET.get('incluir_secuencia', 'true').lower() == 'true'
+    longitud_secuencia = int(request.GET.get('longitud_secuencia', 4))
+    resetear_secuencia = request.GET.get('resetear_secuencia', 'mensual')
     
     try:
-        preview = NumeroContratoService.obtener_preview(
-            formato=formato,
+        # Crear una instancia temporal de configuración para el preview
+        config_preview = ConfiguracionNumeroContrato(
             prefijo=prefijo,
-            numero_inicial=numero_inicial,
-            digitos_secuencia=digitos_secuencia,
-            reiniciar_diario=reiniciar_diario
+            separador=separador,
+            sufijo=sufijo,
+            incluir_anio=incluir_anio,
+            formato_anio=formato_anio,
+            incluir_mes=incluir_mes,
+            incluir_secuencia=incluir_secuencia,
+            longitud_secuencia=longitud_secuencia,
+            resetear_secuencia=resetear_secuencia,
+            activa=True
         )
+        preview = NumeroContratoService.obtener_preview(config_preview)
         return JsonResponse({'preview': preview, 'success': True})
     except Exception as e:
         return JsonResponse({'error': str(e), 'success': False}, status=400)
+
+
+@login_required
+def instalacion_cambiar_estado(request, pk):
+    """Cambia el estado de una instalación."""
+    instalacion = get_object_or_404(Instalacion, pk=pk)
+    
+    if request.method == 'POST':
+        nuevo_estado = request.POST.get('estado')
+        notas = request.POST.get('notas', '')
+        
+        if not nuevo_estado:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'error': 'Estado no proporcionado', 'success': False}, status=400)
+            messages.error(request, 'Estado no proporcionado.')
+            return redirect('instalaciones:instalacion_detail', pk=instalacion.pk)
+        
+        # Validar que el estado sea válido
+        estados_validos = [choice[0] for choice in Instalacion.ESTADO_CHOICES]
+        if nuevo_estado not in estados_validos:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'error': 'Estado inválido', 'success': False}, status=400)
+            messages.error(request, 'Estado inválido.')
+            return redirect('instalaciones:instalacion_detail', pk=instalacion.pk)
+        
+        # Si el estado es el mismo, no hacer nada
+        if instalacion.estado == nuevo_estado:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'error': 'La instalación ya tiene ese estado', 'success': False}, status=400)
+            messages.warning(request, 'La instalación ya tiene ese estado.')
+            return redirect('instalaciones:instalacion_detail', pk=instalacion.pk)
+        
+        # Guardar el estado anterior
+        estado_anterior = instalacion.estado
+        
+        # Cambiar el estado
+        instalacion.estado = nuevo_estado
+        instalacion.save()
+        
+        # Registrar el cambio en el historial
+        CambioEstadoInstalacion.objects.create(
+            instalacion=instalacion,
+            estado_anterior=estado_anterior,
+            estado_nuevo=nuevo_estado,
+            usuario=request.user,
+            notas=notas
+        )
+        
+        estado_anterior_display = instalacion._get_estado_display(estado_anterior)
+        estado_nuevo_display = instalacion.get_estado_display()
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': f'Estado cambiado de {estado_anterior_display} a {estado_nuevo_display}',
+                'nuevo_estado': nuevo_estado,
+                'nuevo_estado_display': estado_nuevo_display
+            })
+        
+        messages.success(request, f'Estado cambiado de {estado_anterior_display} a {estado_nuevo_display}.')
+        return redirect('instalaciones:instalacion_detail', pk=instalacion.pk)
+    
+    # Si es GET, mostrar formulario para cambiar estado
+    context = {
+        'instalacion': instalacion,
+        'estados': Instalacion.ESTADO_CHOICES,
+        'estado_actual': instalacion.estado,
+    }
+    
+    return render(request, 'instalaciones/cambiar_estado.html', context)
+
+
+@login_required
+def instalacion_seguimiento_rapido(request, pk):
+    """Vista para seguimiento rápido de instalaciones (cambiar estado y agregar notas sin editar)."""
+    instalacion = get_object_or_404(Instalacion, pk=pk)
+    
+    if request.method == 'POST':
+        nuevo_estado = request.POST.get('nuevo_estado', '').strip()
+        notas = request.POST.get('notas', '').strip()
+        
+        if not nuevo_estado:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Debes seleccionar un nuevo estado.'
+                }, status=400)
+            messages.error(request, 'Debes seleccionar un nuevo estado.')
+            return redirect('instalaciones:instalacion_detail', pk=instalacion.pk)
+        
+        # Validar que el estado sea válido
+        estados_validos = [estado[0] for estado in Instalacion.ESTADO_CHOICES]
+        if nuevo_estado not in estados_validos:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Estado inválido.'
+                }, status=400)
+            messages.error(request, 'Estado inválido.')
+            return redirect('instalaciones:instalacion_detail', pk=instalacion.pk)
+        
+        # Guardar el estado anterior
+        estado_anterior = instalacion.estado
+        
+        # Cambiar el estado
+        instalacion.estado = nuevo_estado
+        
+        # Actualizar fechas según el nuevo estado
+        from django.utils import timezone
+        if nuevo_estado == 'programada' and not instalacion.fecha_programada:
+            # Si se programa, actualizar fecha programada si no existe
+            fecha_programada = request.POST.get('fecha_programada')
+            if fecha_programada:
+                try:
+                    from django.utils.dateparse import parse_datetime
+                    instalacion.fecha_programada = parse_datetime(fecha_programada)
+                except:
+                    pass
+        elif nuevo_estado == 'activa':
+            # Si se activa, establecer fecha_activacion si no existe
+            if not instalacion.fecha_activacion:
+                instalacion.fecha_activacion = timezone.now()
+            # La señal creará automáticamente el PlanPago si no existe
+        elif nuevo_estado == 'en_proceso' and not instalacion.fecha_instalacion:
+            # Si está en proceso, podría ser el inicio de la instalación
+            pass
+        
+        instalacion.save()
+        
+        # Registrar el cambio en el historial
+        CambioEstadoInstalacion.objects.create(
+            instalacion=instalacion,
+            estado_anterior=estado_anterior,
+            estado_nuevo=nuevo_estado,
+            usuario=request.user,
+            notas=notas
+        )
+        
+        estado_anterior_display = dict(Instalacion.ESTADO_CHOICES).get(estado_anterior, estado_anterior)
+        estado_nuevo_display = instalacion.get_estado_display()
+        
+        mensaje = f'Estado actualizado de {estado_anterior_display} a {estado_nuevo_display}.'
+        
+        # Si se activó la instalación, verificar si se creó PlanPago
+        if nuevo_estado == 'activa':
+            # Recargar la instalación para obtener el PlanPago si se creó
+            instalacion.refresh_from_db()
+            try:
+                if hasattr(instalacion, 'plan_pago') and instalacion.plan_pago:
+                    mensaje += f' Plan de pago creado automáticamente: ${instalacion.plan_pago.monto_mensual}/mes, día {instalacion.plan_pago.dia_vencimiento}.'
+            except:
+                pass
+        
+        if notas:
+            mensaje += f' Notas: {notas}'
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': mensaje,
+                'nuevo_estado': nuevo_estado,
+                'nuevo_estado_display': estado_nuevo_display
+            })
+        
+        messages.success(request, mensaje)
+        return redirect('instalaciones:instalacion_detail', pk=instalacion.pk)
+    
+    # Si es GET, redirigir al detalle
+    return redirect('instalaciones:instalacion_detail', pk=instalacion.pk)

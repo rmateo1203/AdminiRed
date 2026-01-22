@@ -237,6 +237,19 @@ class Instalacion(models.Model):
         if user:
             self._usuario_cambio = user
         
+        # Capturar estado anterior antes de guardar
+        estado_anterior = None
+        if self.pk:
+            try:
+                instancia_anterior = Instalacion.objects.get(pk=self.pk)
+                estado_anterior = instancia_anterior.estado
+            except Instalacion.DoesNotExist:
+                pass
+        
+        # Si el estado cambia a "activa" y no hay fecha_activacion, establecerla
+        if self.estado == 'activa' and not self.fecha_activacion:
+            self.fecha_activacion = timezone.now()
+        
         # Solo generar si es una nueva instalación (no tiene pk) o si no tiene número de contrato
         if not self.numero_contrato:
             try:
@@ -252,7 +265,7 @@ class Instalacion(models.Model):
         
         super().save(*args, **kwargs)
         
-        # El registro de cambio de estado se maneja en signals.py
+        # El registro de cambio de estado y creación de PlanPago se maneja en signals.py
     
     def _get_estado_display(self, estado):
         """Helper para obtener el display de un estado."""
