@@ -10,8 +10,6 @@ urlpatterns = [
     path('<int:pk>/', views.instalacion_detail, name='instalacion_detail'),
     path('<int:pk>/editar/', views.instalacion_update, name='instalacion_update'),
     path('<int:pk>/eliminar/', views.instalacion_delete, name='instalacion_delete'),
-    path('<int:pk>/cambiar-estado/', views.instalacion_cambiar_estado, name='instalacion_cambiar_estado'),
-    path('<int:pk>/seguimiento-rapido/', views.instalacion_seguimiento_rapido, name='instalacion_seguimiento_rapido'),
     path('api/plan/<int:plan_id>/', views.get_plan_data, name='get_plan_data'),
     
     # API para búsqueda de clientes

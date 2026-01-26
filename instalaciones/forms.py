@@ -181,14 +181,14 @@ class ConfiguracionNumeroContratoForm(forms.ModelForm):
         fields = [
             'activa',
             'prefijo',
-            'separador',
-            'sufijo',
             'incluir_anio',
             'formato_anio',
             'incluir_mes',
             'incluir_secuencia',
             'longitud_secuencia',
             'resetear_secuencia',
+            'separador',
+            'sufijo',
         ]
         widgets = {
             'activa': forms.CheckboxInput(attrs={
@@ -197,15 +197,6 @@ class ConfiguracionNumeroContratoForm(forms.ModelForm):
             'prefijo': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'CONT, INST, etc.'
-            }),
-            'separador': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '-',
-                'maxlength': 5
-            }),
-            'sufijo': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Sufijo opcional'
             }),
             'incluir_anio': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
@@ -227,11 +218,14 @@ class ConfiguracionNumeroContratoForm(forms.ModelForm):
             'resetear_secuencia': forms.Select(attrs={
                 'class': 'form-control'
             }),
+            'separador': forms.TextInput(attrs={
+                'class': 'form-control',
+                'maxlength': 5,
+                'placeholder': '-'
+            }),
+            'sufijo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Opcional'
+            }),
         }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Hacer algunos campos opcionales
-        self.fields['sufijo'].required = False
-        self.fields['prefijo'].required = False
 

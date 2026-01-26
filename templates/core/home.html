@@ -157,13 +157,8 @@
 
 <!-- Alertas -->
 {% if pagos_vencidos > 0 %}
-<div class="alert alert-danger" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-    <div>
-        <strong>⚠️ Atención:</strong> Tienes {{ pagos_vencidos }} pago(s) vencido(s) que requieren atención.
-    </div>
-    <a href="{% url 'pagos:pago_vencidos_list' %}" class="btn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600;">
-        <i class="fas fa-exclamation-triangle"></i> Ver Pagos Vencidos
-    </a>
+<div class="alert alert-danger">
+    <strong>⚠️ Atención:</strong> Tienes {{ pagos_vencidos }} pago(s) vencido(s) que requieren atención.
 </div>
 {% endif %}
 

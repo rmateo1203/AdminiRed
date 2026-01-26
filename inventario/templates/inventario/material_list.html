@@ -14,30 +14,15 @@
     </div>
     
     <!-- Búsqueda y Filtros -->
-    <div class="search-filters" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-        <form method="get" class="search-form" id="searchForm">
-            <div style="position: relative; margin-bottom: 1rem;">
-                <div style="position: relative;">
-                    <input 
-                        type="text" 
-                        name="q" 
-                        id="searchInput"
-                        value="{{ query }}" 
-                        placeholder="🔍 Buscar material por nombre, código, categoría, ubicación..."
-                        class="form-control"
-                        style="padding: 0.875rem 1rem 0.875rem 3rem; font-size: 1rem; border: 2px solid #e5e7eb; border-radius: 8px; width: 100%; transition: all 0.3s ease;"
-                        autocomplete="off"
-                    >
-                    <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #9ca3af; pointer-events: none;"></i>
-                    <button type="button" id="clearSearch" style="display: none; position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: #9ca3af; cursor: pointer; padding: 0.5rem; font-size: 1rem;" title="Limpiar búsqueda">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <!-- Sugerencias de autocompletado -->
-                <div id="searchSuggestions" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; max-height: 400px; overflow-y: auto; margin-top: 0.5rem;">
-                    <div id="suggestionsList"></div>
-                </div>
-            </div>
+    <div class="search-filters">
+        <form method="get" class="search-form">
+            <input 
+                type="text" 
+                name="q" 
+                value="{{ query }}" 
+                placeholder="Buscar por nombre, código o descripción..."
+                class="form-control"
+            >
             <select name="estado" class="form-control">
                 <option value="">Todos los estados</option>
                 {% for estado_code, estado_name in estados %}
@@ -72,21 +57,10 @@
                 <option value="stock_actual" {% if orden == 'stock_actual' %}selected{% endif %}>Stock (menor)</option>
                 <option value="-stock_actual" {% if orden == '-stock_actual' %}selected{% endif %}>Stock (mayor)</option>
             </select>
-            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-                <button type="submit" class="btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
-                    <i class="fas fa-search"></i> Buscar
-                </button>
-                {% if query or estado_filter or categoria_filter or unidad_filter or stock_bajo %}
-                    <a href="{% url 'inventario:material_list' %}" class="btn btn-secondary" style="padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
-                        <i class="fas fa-times"></i> Limpiar Filtros
-                    </a>
-                {% endif %}
-                {% if query %}
-                    <span style="padding: 0.5rem 1rem; background: #e0e7ff; color: #667eea; border-radius: 6px; font-size: 0.875rem; font-weight: 600;">
-                        <i class="fas fa-info-circle"></i> {{ total_materiales }} resultado{{ total_materiales|pluralize }} para "{{ query }}"
-                    </span>
-                {% endif %}
-            </div>
+            <button type="submit" class="btn"><i class="fas fa-search"></i> Buscar</button>
+            {% if query or estado_filter or categoria_filter or unidad_filter or stock_bajo %}
+                <a href="{% url 'inventario:material_list' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
         </form>
     </div>
     
@@ -112,123 +86,105 @@
     
     <!-- Tabla de Materiales -->
     {% if page_obj %}
-        {% if page_obj.object_list %}
-        <div class="table-responsive">
-            <table class="table data-table" style="width: 100%; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <thead>
-                    <tr style="background: #f8f9fa;">
-                        <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Nombre</th>
-                        <th class="hide-mobile" style="padding: 0.75rem; text-align: left; font-weight: 600;">Código</th>
-                        <th class="hide-mobile" style="padding: 0.75rem; text-align: left; font-weight: 600;">Categoría</th>
-                        <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Stock</th>
-                        <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Estado</th>
-                        <th class="hide-mobile" style="padding: 0.75rem; text-align: left; font-weight: 600;">Precio</th>
-                        <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for material in page_obj %}
-                    <tr style="border-bottom: 1px solid #e5e7eb;">
-                        <td style="padding: 0.75rem;">
-                            <strong style="color: #111827;">{{ material.nombre }}</strong>
-                            <span class="mobile-only" style="display: block; font-size: 0.75rem; color: #6b7280; font-family: monospace;">{{ material.codigo }}</span>
-                        </td>
-                        <td class="hide-mobile" style="padding: 0.75rem; color: #6b7280; font-family: monospace; font-size: 0.85rem;">{{ material.codigo }}</td>
-                        <td class="hide-mobile" style="padding: 0.75rem;">
-                            {% if material.categoria %}
-                                <span style="padding: 0.2rem 0.5rem; border-radius: 12px; background: #e0e7ff; color: #667eea; font-size: 0.75rem;">
-                                    {{ material.categoria.nombre }}
-                                </span>
-                            {% else %}
-                                <span style="color: #9ca3af;">—</span>
-                            {% endif %}
-                        </td>
-                        <td style="padding: 0.75rem;">
-                            <strong style="font-size: 1rem;">{{ material.stock_actual }}</strong>
-                            <span style="color: #6b7280; font-size: 0.75rem;">{{ material.get_unidad_medida_display }}</span>
-                            {% if material.necesita_reposicion %}
-                                <br><small style="color: #f59e0b; font-weight: 600;">Mín: {{ material.stock_minimo }}</small>
-                            {% endif %}
-                        </td>
-                        <td style="padding: 0.75rem;">
-                            {% if material.estado == 'disponible' %}
-                                <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #10b981; color: white; white-space: nowrap;">
-                                    <i class="fas fa-check-circle"></i> <span class="desktop-only">Disponible</span>
-                                </span>
-                            {% elif material.estado == 'bajo_stock' %}
-                                <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #f59e0b; color: white; white-space: nowrap;">
-                                    <i class="fas fa-exclamation-triangle"></i> <span class="desktop-only">Bajo Stock</span>
-                                </span>
-                            {% elif material.estado == 'agotado' %}
-                                <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #ef4444; color: white; white-space: nowrap;">
-                                    <i class="fas fa-times-circle"></i> <span class="desktop-only">Agotado</span>
-                                </span>
-                            {% else %}
-                                <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #9ca3af; color: white; white-space: nowrap;">
-                                    <span class="desktop-only">{{ material.get_estado_display }}</span>
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td class="hide-mobile" style="padding: 0.75rem;">
-                            {% if material.precio_compra %}
-                                <span style="color: #374151;">${{ material.precio_compra|floatformat:2 }}</span>
-                            {% else %}
-                                <span style="color: #9ca3af;">—</span>
-                            {% endif %}
-                        </td>
-                        <td style="padding: 0.75rem; text-align: center;">
-                            <div style="display: flex; gap: 0.25rem; justify-content: center; flex-wrap: wrap;">
-                                <a href="{% url 'inventario:material_detail' material.pk %}" class="btn btn-action" title="Ver detalles">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{% url 'inventario:material_update' material.pk %}" class="btn btn-secondary btn-action" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" style="padding: 2rem; text-align: center; color: #6b7280;">
-                            <i class="fas fa-boxes" style="font-size: 2rem; color: #9ca3af; margin-bottom: 0.5rem; display: block;"></i>
-                            No se encontraron materiales con los filtros seleccionados
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="table-responsive">
+        <table class="table data-table" style="width: 100%; background: white; border-radius: 12px; overflow: hidden;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Nombre</th>
+                    <th class="hide-mobile" style="padding: 0.75rem; text-align: left; font-weight: 600;">Código</th>
+                    <th class="hide-mobile" style="padding: 0.75rem; text-align: left; font-weight: 600;">Categoría</th>
+                    <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Stock</th>
+                    <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Estado</th>
+                    <th class="hide-mobile" style="padding: 0.75rem; text-align: left; font-weight: 600;">Precio</th>
+                    <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for material in page_obj %}
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 0.75rem;">
+                        <strong style="color: #111827;">{{ material.nombre }}</strong>
+                        <span class="mobile-only" style="display: block; font-size: 0.75rem; color: #6b7280; font-family: monospace;">{{ material.codigo }}</span>
+                    </td>
+                    <td class="hide-mobile" style="padding: 0.75rem; color: #6b7280; font-family: monospace; font-size: 0.85rem;">{{ material.codigo }}</td>
+                    <td class="hide-mobile" style="padding: 0.75rem;">
+                        {% if material.categoria %}
+                            <span style="padding: 0.2rem 0.5rem; border-radius: 12px; background: #e0e7ff; color: #667eea; font-size: 0.75rem;">
+                                {{ material.categoria.nombre }}
+                            </span>
+                        {% else %}
+                            <span style="color: #9ca3af;">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        <strong style="font-size: 1rem;">{{ material.stock_actual }}</strong>
+                        <span style="color: #6b7280; font-size: 0.75rem;">{{ material.get_unidad_medida_display }}</span>
+                        {% if material.necesita_reposicion %}
+                            <br><small style="color: #f59e0b; font-weight: 600;">Mín: {{ material.stock_minimo }}</small>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        {% if material.estado == 'disponible' %}
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #10b981; color: white; white-space: nowrap;">
+                                <i class="fas fa-check-circle"></i> <span class="desktop-only">Disponible</span>
+                            </span>
+                        {% elif material.estado == 'bajo_stock' %}
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #f59e0b; color: white; white-space: nowrap;">
+                                <i class="fas fa-exclamation-triangle"></i> <span class="desktop-only">Bajo Stock</span>
+                            </span>
+                        {% elif material.estado == 'agotado' %}
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #ef4444; color: white; white-space: nowrap;">
+                                <i class="fas fa-times-circle"></i> <span class="desktop-only">Agotado</span>
+                            </span>
+                        {% else %}
+                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #9ca3af; color: white; white-space: nowrap;">
+                                <span class="desktop-only">{{ material.get_estado_display }}</span>
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="hide-mobile" style="padding: 0.75rem;">
+                        {% if material.precio_compra %}
+                            <span style="color: #374151;">${{ material.precio_compra|floatformat:2 }}</span>
+                        {% else %}
+                            <span style="color: #9ca3af;">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem; text-align: center;">
+                        <div style="display: flex; gap: 0.25rem; justify-content: center; flex-wrap: wrap;">
+                            <a href="{% url 'inventario:material_detail' material.pk %}" class="btn btn-action" title="Ver detalles">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{% url 'inventario:material_update' material.pk %}" class="btn btn-secondary btn-action" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Paginación -->
+        {% if page_obj.has_other_pages %}
+        <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 0.5rem;">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if categoria_filter %}&categoria={{ categoria_filter }}{% endif %}{% if stock_bajo %}&stock_bajo={{ stock_bajo }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-secondary">
+                    <i class="fas fa-chevron-left"></i> Anterior
+                </a>
+            {% endif %}
             
-            <!-- Paginación -->
-            {% if page_obj.has_other_pages %}
-            <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 0.5rem;">
-                {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if categoria_filter %}&categoria={{ categoria_filter }}{% endif %}{% if stock_bajo %}&stock_bajo={{ stock_bajo }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-secondary">
-                        <i class="fas fa-chevron-left"></i> Anterior
-                    </a>
-                {% endif %}
-                
-                <span style="padding: 0.5rem 1rem; background: white; border-radius: 6px; display: flex; align-items: center;">
-                    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-                </span>
-                
-                {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if categoria_filter %}&categoria={{ categoria_filter }}{% endif %}{% if stock_bajo %}&stock_bajo={{ stock_bajo }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-secondary">
-                        Siguiente <i class="fas fa-chevron-right"></i>
-                    </a>
-                {% endif %}
-            </div>
+            <span style="padding: 0.5rem 1rem; background: white; border-radius: 6px; display: flex; align-items: center;">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+            
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if categoria_filter %}&categoria={{ categoria_filter }}{% endif %}{% if stock_bajo %}&stock_bajo={{ stock_bajo }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}" class="btn btn-secondary">
+                    Siguiente <i class="fas fa-chevron-right"></i>
+                </a>
             {% endif %}
         </div>
-        {% else %}
-        <div class="empty-state" style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 8px; margin-top: 2rem;">
-            <i class="fas fa-boxes" style="font-size: 4rem; color: #9ca3af; margin-bottom: 1rem;"></i>
-            <p style="font-size: 1.25rem; color: #6b7280; margin-bottom: 0.5rem;">No se encontraron materiales</p>
-            <p style="color: #9ca3af; margin-bottom: 1.5rem;">Comienza registrando tu primer material</p>
-            <a href="{% url 'inventario:material_create' %}" class="btn" style="margin-top: 1rem;">
-                <i class="fas fa-plus"></i> Crear Primer Material
-            </a>
-        </div>
         {% endif %}
+    </div>
     {% else %}
     <div class="empty-state" style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 8px; margin-top: 2rem;">
         <i class="fas fa-boxes" style="font-size: 4rem; color: #9ca3af; margin-bottom: 1rem;"></i>
@@ -239,224 +195,8 @@
         </a>
     </div>
     {% endif %}
-    </div>
+</div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('searchInput');
-    const searchSuggestions = document.getElementById('searchSuggestions');
-    const suggestionsList = document.getElementById('suggestionsList');
-    const clearSearch = document.getElementById('clearSearch');
-    const searchForm = document.getElementById('searchForm');
-    let searchTimeout = null;
-    
-    // Mostrar/ocultar botón de limpiar
-    function toggleClearButton() {
-        if (searchInput.value.trim().length > 0) {
-            clearSearch.style.display = 'block';
-        } else {
-            clearSearch.style.display = 'none';
-            searchSuggestions.style.display = 'none';
-        }
-    }
-    
-    // Limpiar búsqueda
-    clearSearch.addEventListener('click', function() {
-        searchInput.value = '';
-        searchSuggestions.style.display = 'none';
-        toggleClearButton();
-        searchInput.focus();
-        // Enviar formulario para limpiar resultados
-        searchForm.submit();
-    });
-    
-    // Búsqueda en tiempo real con autocompletado
-    searchInput.addEventListener('input', function() {
-        const query = this.value.trim();
-        toggleClearButton();
-        
-        // Limpiar timeout anterior
-        if (searchTimeout) {
-            clearTimeout(searchTimeout);
-        }
-        
-        // Si la búsqueda tiene menos de 2 caracteres, ocultar sugerencias
-        if (query.length < 2) {
-            searchSuggestions.style.display = 'none';
-            return;
-        }
-        
-        // Esperar 300ms antes de buscar (debounce)
-        searchTimeout = setTimeout(function() {
-            buscarMateriales(query);
-        }, 300);
-    });
-    
-    // Función para buscar materiales
-    function buscarMateriales(query) {
-        fetch(`{% url 'inventario:api_buscar_materiales' %}?q=${encodeURIComponent(query)}`)
-            .then(response => response.json())
-            .then(data => {
-                mostrarSugerencias(data.materiales, query);
-            })
-            .catch(error => {
-                console.error('Error en búsqueda:', error);
-            });
-    }
-    
-    // Mostrar sugerencias
-    function mostrarSugerencias(materiales, query) {
-        if (materiales.length === 0) {
-            suggestionsList.innerHTML = `
-                <div style="padding: 1rem; text-align: center; color: #9ca3af;">
-                    <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
-                    <p>No se encontraron materiales</p>
-                    <small>Intenta con otro término de búsqueda</small>
-                </div>
-            `;
-            searchSuggestions.style.display = 'block';
-            return;
-        }
-        
-        let html = '';
-        materiales.forEach(function(material) {
-            // Resaltar el término de búsqueda
-            const nombreHighlight = resaltarTexto(material.nombre, query);
-            const codigoHighlight = resaltarTexto(material.codigo, query);
-            
-            // Determinar color del estado
-            let estadoColor = '#9ca3af';
-            if (material.estado === 'Disponible') estadoColor = '#10b981';
-            else if (material.estado === 'Bajo Stock') estadoColor = '#f59e0b';
-            else if (material.estado === 'Agotado') estadoColor = '#ef4444';
-            
-            html += `
-                <div class="suggestion-item" style="padding: 0.75rem 1rem; border-bottom: 1px solid #f3f4f6; cursor: pointer; transition: background 0.2s ease;" 
-                     onmouseover="this.style.background='#f9fafb'" 
-                     onmouseout="this.style.background='white'"
-                     onclick="seleccionarMaterial('${material.nombre}', '${material.codigo}')">
-                    <div style="display: flex; justify-content: space-between; align-items: start;">
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600; color: #111827; margin-bottom: 0.25rem;">
-                                ${nombreHighlight}
-                            </div>
-                            <div style="font-size: 0.875rem; color: #6b7280; font-family: monospace; margin-bottom: 0.25rem;">
-                                ${codigoHighlight}
-                            </div>
-                            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                                ${material.categoria ? `<span style="padding: 0.2rem 0.5rem; border-radius: 12px; background: #e0e7ff; color: #667eea; font-size: 0.75rem;">${material.categoria}</span>` : ''}
-                                <span style="font-size: 0.875rem; color: #6b7280;">
-                                    <i class="fas fa-boxes"></i> ${material.stock_actual} ${material.unidad_medida}
-                                </span>
-                            </div>
-                        </div>
-                        <div style="margin-left: 1rem;">
-                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: ${estadoColor}; color: white;">
-                                ${material.estado}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        // Agregar opción para buscar todo
-        html += `
-            <div class="suggestion-item" style="padding: 0.75rem 1rem; background: #f9fafb; border-top: 2px solid #e5e7eb; cursor: pointer; font-weight: 600; color: #667eea; text-align: center;"
-                 onclick="buscarTodo('${query}')">
-                <i class="fas fa-search"></i> Ver todos los resultados para "${query}"
-            </div>
-        `;
-        
-        suggestionsList.innerHTML = html;
-        searchSuggestions.style.display = 'block';
-    }
-    
-    // Resaltar texto
-    function resaltarTexto(texto, busqueda) {
-        if (!busqueda) return texto;
-        const regex = new RegExp(`(${busqueda})`, 'gi');
-        return texto.replace(regex, '<mark style="background: #fef3c7; color: #92400e; padding: 0.1rem 0.2rem; border-radius: 3px;">$1</mark>');
-    }
-    
-    // Seleccionar material de las sugerencias
-    window.seleccionarMaterial = function(nombre, codigo) {
-        searchInput.value = nombre;
-        searchSuggestions.style.display = 'none';
-        toggleClearButton();
-        searchForm.submit();
-    };
-    
-    // Buscar todo
-    window.buscarTodo = function(query) {
-        searchInput.value = query;
-        searchSuggestions.style.display = 'none';
-        toggleClearButton();
-        searchForm.submit();
-    };
-    
-    // Ocultar sugerencias al hacer clic fuera
-    document.addEventListener('click', function(event) {
-        if (!searchInput.contains(event.target) && !searchSuggestions.contains(event.target)) {
-            searchSuggestions.style.display = 'none';
-        }
-    });
-    
-    // Manejar teclas especiales
-    searchInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            searchSuggestions.style.display = 'none';
-            this.blur();
-        } else if (e.key === 'Enter' && searchSuggestions.style.display === 'block') {
-            e.preventDefault();
-            const firstSuggestion = suggestionsList.querySelector('.suggestion-item:not(:last-child)');
-            if (firstSuggestion) {
-                firstSuggestion.click();
-            } else {
-                searchForm.submit();
-            }
-        }
-    });
-    
-    // Inicializar
-    toggleClearButton();
-    
-    // Enfocar el campo de búsqueda si hay un query
-    {% if query %}
-        searchInput.focus();
-        searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
-    {% endif %}
-});
-</script>
-<style>
-    #searchInput:focus {
-        outline: none;
-        border-color: #667eea !important;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
-    }
-    
-    .suggestion-item:hover {
-        background: #f9fafb !important;
-    }
-    
-    mark {
-        background: #fef3c7;
-        color: #92400e;
-        padding: 0.1rem 0.2rem;
-        border-radius: 3px;
-    }
-    
-    @media (max-width: 768px) {
-        .search-filters {
-            padding: 1rem !important;
-        }
-        
-        #searchInput {
-            font-size: 0.9rem !important;
-            padding: 0.75rem 0.875rem 0.75rem 2.5rem !important;
-        }
-    }
-</style>
-{% endblock %}
+
+

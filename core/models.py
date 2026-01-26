@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from django.db import models
 from django.core.cache import cache
 from django.core.validators import RegexValidator
@@ -94,13 +93,6 @@ class ConfiguracionSistema(models.Model):
         help_text='Color para información, badges de info'
     )
     
-    # Configuración de pagos
-    pagos_online_habilitados = models.BooleanField(
-        default=True,
-        verbose_name='Pagos en línea habilitados',
-        help_text='Si está desactivado, los clientes no podrán pagar en línea. Los administradores podrán registrar pagos manuales.'
-    )
-    
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de creación')
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name='Última actualización')
     
@@ -142,8 +134,7 @@ class ConfiguracionSistema(models.Model):
                     color_exito='#10b981',
                     color_advertencia='#f59e0b',
                     color_peligro='#ef4444',
-                    color_info='#3b82f6',
-                    pagos_online_habilitados=True
+                    color_info='#3b82f6'
                 )
             cache.set('config_sistema', config, 3600)  # Cache por 1 hora
         return config
@@ -299,6 +290,10 @@ class Permiso(models.Model):
                 raise ValidationError({
                     'codigo': 'El código solo puede contener letras, números y guiones bajos.'
                 })
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class PermisoRol(models.Model):

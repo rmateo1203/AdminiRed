@@ -59,14 +59,10 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Generando pagos para {mes}/{anio}...'))
         
         # Obtener todos los PlanPago activos
-        # IMPORTANTE: Solo generar pagos para instalaciones activas
-        planes_pago = PlanPago.objects.filter(
-            activo=True,
-            instalacion__estado='activa'  # Solo instalaciones activas
-        ).select_related('instalacion', 'instalacion__cliente')
+        planes_pago = PlanPago.objects.filter(activo=True).select_related('instalacion', 'instalacion__cliente')
         
         if not planes_pago.exists():
-            self.stdout.write(self.style.WARNING('No hay PlanPago activos para instalaciones activas.'))
+            self.stdout.write(self.style.WARNING('No hay PlanPago activos.'))
             return
         
         pagos_creados = 0

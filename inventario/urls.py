@@ -25,7 +25,6 @@ urlpatterns = [
     
     # API
     path('api/buscar-categorias/', views.api_buscar_categorias, name='api_buscar_categorias'),
-    path('api/buscar-materiales/', views.api_buscar_materiales, name='api_buscar_materiales'),
 ]
 
 

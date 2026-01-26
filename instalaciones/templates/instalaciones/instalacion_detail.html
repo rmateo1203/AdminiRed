@@ -17,66 +17,13 @@
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Estado Actual</div>
-                <div style="font-size: 1.5rem; font-weight: bold;" id="estado-actual-display">{{ instalacion.get_estado_display }}</div>
+                <div style="font-size: 1.5rem; font-weight: bold;">{{ instalacion.get_estado_display }}</div>
             </div>
             <div style="font-size: 3rem; opacity: 0.3;">
                 <i class="fas fa-wifi"></i>
             </div>
         </div>
     </div>
-    
-    <!-- Panel de Seguimiento Rápido -->
-    {% if instalacion.estado == 'pendiente' or instalacion.estado == 'programada' or instalacion.estado == 'en_proceso' %}
-    <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 2rem; border: 2px solid #e0e7ff;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <h3 style="color: #667eea; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
-                <i class="fas fa-tasks"></i> Seguimiento Rápido
-            </h3>
-            <span style="padding: 0.5rem 1rem; background: #e0e7ff; color: #667eea; border-radius: 20px; font-size: 0.875rem; font-weight: 600;">
-                <i class="fas fa-clock"></i> Actualizar sin editar
-            </span>
-        </div>
-        
-        <form id="form-seguimiento-rapido" method="post" action="{% url 'instalaciones:instalacion_seguimiento_rapido' instalacion.pk %}">
-            {% csrf_token %}
-            <div style="display: grid; grid-template-columns: 1fr 2fr auto; gap: 1rem; align-items: end;">
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
-                        <i class="fas fa-exchange-alt"></i> Cambiar Estado
-                    </label>
-                    <select name="nuevo_estado" id="nuevo_estado" class="form-control" required style="padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem; width: 100%;">
-                        <option value="">-- Seleccionar estado --</option>
-                        {% for estado_code, estado_name in estados %}
-                            {% if estado_code != instalacion.estado %}
-                            <option value="{{ estado_code }}">{{ estado_name }}</option>
-                            {% endif %}
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
-                        <i class="fas fa-sticky-note"></i> Notas de Seguimiento
-                    </label>
-                    <input 
-                        type="text" 
-                        name="notas" 
-                        id="notas_seguimiento" 
-                        class="form-control" 
-                        placeholder="Ej: Cliente confirmó disponibilidad, Materiales listos, etc."
-                        style="padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem; width: 100%;"
-                    >
-                </div>
-                <div>
-                    <button type="submit" class="btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap;">
-                        <i class="fas fa-check"></i> Actualizar
-                    </button>
-                </div>
-            </div>
-        </form>
-        
-        <div id="mensaje-seguimiento" style="display: none; margin-top: 1rem; padding: 1rem; border-radius: 8px;"></div>
-    </div>
-    {% endif %}
     
     <!-- Información de la Instalación -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
@@ -221,76 +168,6 @@
         {% endwith %}
     </div>
     
-    <!-- Plan de Pago Recurrente -->
-    <div style="margin-top: 2rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h3 style="color: #667eea; margin: 0;">
-                <i class="fas fa-calendar-check"></i> Plan de Pago Recurrente
-            </h3>
-            {% if not instalacion.plan_pago %}
-                <a href="{% url 'pagos:plan_pago_create_for_instalacion' instalacion.pk %}" class="btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
-                    <i class="fas fa-plus"></i> Crear Plan de Pago
-                </a>
-            {% endif %}
-        </div>
-        
-        {% if instalacion.plan_pago %}
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 2px solid #e0e7ff;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 1rem;">
-                <div>
-                    <strong style="color: #6b7280; font-size: 0.875rem;">Monto Mensual</strong>
-                    <p style="color: #667eea; font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0 0 0;">${{ instalacion.plan_pago.monto_mensual|floatformat:2 }}</p>
-                </div>
-                <div>
-                    <strong style="color: #6b7280; font-size: 0.875rem;">Día de Vencimiento</strong>
-                    <p style="color: #111827; font-size: 1.2rem; font-weight: bold; margin: 0.5rem 0 0 0;">
-                        <span style="padding: 0.35rem 0.6rem; border-radius: 6px; background: #e0e7ff; color: #667eea;">Día {{ instalacion.plan_pago.dia_vencimiento }}</span>
-                    </p>
-                </div>
-                <div>
-                    <strong style="color: #6b7280; font-size: 0.875rem;">Estado</strong>
-                    <p style="margin: 0.5rem 0 0 0;">
-                        {% if instalacion.plan_pago.activo %}
-                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #10b981; color: white;">
-                                <i class="fas fa-check-circle"></i> Activo
-                            </span>
-                        {% else %}
-                            <span style="padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; background: #9ca3af; color: white;">
-                                <i class="fas fa-pause-circle"></i> Inactivo
-                            </span>
-                        {% endif %}
-                    </p>
-                </div>
-                <div>
-                    <strong style="color: #6b7280; font-size: 0.875rem;">Próximo Vencimiento</strong>
-                    <p style="color: #111827; font-size: 1rem; font-weight: 600; margin: 0.5rem 0 0 0;">
-                        {{ instalacion.proximo_vencimiento|date:"d/m/Y" }}
-                    </p>
-                </div>
-            </div>
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <a href="{% url 'pagos:plan_pago_detail' instalacion.plan_pago.pk %}" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-                    <i class="fas fa-eye"></i> Ver Detalles
-                </a>
-                <a href="{% url 'pagos:plan_pago_update' instalacion.plan_pago.pk %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-                    <i class="fas fa-edit"></i> Editar Plan
-                </a>
-            </div>
-        </div>
-        {% else %}
-        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; text-align: center; border: 2px dashed #d1d5db;">
-            <i class="fas fa-calendar-check" style="font-size: 3rem; color: #9ca3af; margin-bottom: 1rem; opacity: 0.5;"></i>
-            <p style="color: #6b7280; margin-bottom: 1rem;">No hay un plan de pago recurrente configurado para esta instalación.</p>
-            <p style="color: #9ca3af; font-size: 0.875rem; margin-bottom: 1.5rem;">
-                Crea un plan de pago para generar pagos mensuales automáticamente.
-            </p>
-            <a href="{% url 'pagos:plan_pago_create_for_instalacion' instalacion.pk %}" class="btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
-                <i class="fas fa-plus"></i> Crear Plan de Pago
-            </a>
-        </div>
-        {% endif %}
-    </div>
-    
     <!-- Pagos Relacionados -->
     {% if pagos %}
     <div style="margin-top: 2rem;">
@@ -353,13 +230,7 @@
                         <td>
                             <span class="badge badge-primary">{{ cambio.get_estado_nuevo_display }}</span>
                         </td>
-                        <td>
-                            {% if cambio.usuario %}
-                                {{ cambio.usuario.get_full_name|default:cambio.usuario.username }}
-                            {% else %}
-                                Sistema
-                            {% endif %}
-                        </td>
+                        <td>{{ cambio.usuario.get_full_name|default:cambio.usuario.username|default:"Sistema" }}</td>
                         <td>{{ cambio.notas|default:"—" }}</td>
                     </tr>
                     {% endfor %}
@@ -389,13 +260,7 @@
                     {% for h in historial %}
                     <tr>
                         <td>{{ h.history_date|date:"d/m/Y H:i" }}</td>
-                        <td>
-                            {% if h.history_user %}
-                                {{ h.history_user.get_full_name|default:h.history_user.username }}
-                            {% else %}
-                                Sistema
-                            {% endif %}
-                        </td>
+                        <td>{{ h.history_user.get_full_name|default:h.history_user.username|default:"Sistema" }}</td>
                         <td>
                             {% if h.history_type == '+' %}
                                 <span class="badge badge-success">Creado</span>
@@ -431,94 +296,5 @@
         <a href="{% url 'instalaciones:instalacion_delete' instalacion.pk %}" class="btn btn-danger"><i class="fas fa-trash"></i> Eliminar Instalación</a>
     </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const formSeguimiento = document.getElementById('form-seguimiento-rapido');
-    const mensajeSeguimiento = document.getElementById('mensaje-seguimiento');
-    
-    if (formSeguimiento) {
-        formSeguimiento.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const nuevoEstado = formData.get('nuevo_estado');
-            const notas = formData.get('notas');
-            
-            if (!nuevoEstado) {
-                mostrarMensaje('Por favor, selecciona un nuevo estado.', 'error');
-                return;
-            }
-            
-            // Mostrar loading
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Actualizando...';
-            
-            // Enviar petición AJAX
-            fetch(this.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    mostrarMensaje(data.message, 'success');
-                    
-                    // Actualizar el estado en la página
-                    const estadoDisplay = document.getElementById('estado-actual-display');
-                    if (estadoDisplay) {
-                        estadoDisplay.textContent = data.nuevo_estado_display;
-                    }
-                    
-                    // Limpiar formulario
-                    formSeguimiento.reset();
-                    
-                    // Recargar la página después de 1.5 segundos para ver los cambios
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 1500);
-                } else {
-                    mostrarMensaje(data.message || 'Error al actualizar el estado.', 'error');
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalText;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                mostrarMensaje('Error al actualizar el estado. Por favor, intenta de nuevo.', 'error');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            });
-        });
-    }
-    
-    function mostrarMensaje(mensaje, tipo) {
-        if (!mensajeSeguimiento) return;
-        
-        mensajeSeguimiento.style.display = 'block';
-        mensajeSeguimiento.textContent = mensaje;
-        
-        if (tipo === 'success') {
-            mensajeSeguimiento.style.background = '#d1fae5';
-            mensajeSeguimiento.style.color = '#065f46';
-            mensajeSeguimiento.style.border = '1px solid #10b981';
-        } else {
-            mensajeSeguimiento.style.background = '#fee2e2';
-            mensajeSeguimiento.style.color = '#991b1b';
-            mensajeSeguimiento.style.border = '1px solid #ef4444';
-        }
-        
-        // Ocultar después de 5 segundos
-        setTimeout(function() {
-            mensajeSeguimiento.style.display = 'none';
-        }, 5000);
-    }
-});
-</script>
 {% endblock %}
 

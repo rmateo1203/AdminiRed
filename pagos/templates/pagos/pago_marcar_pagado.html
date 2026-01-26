@@ -1,170 +1,56 @@
 {% extends 'base.html' %}
-{% load static %}
 
-{% block title %}Registrar Pago Manual - AdminiRed{% endblock %}
+{% block title %}Marcar como Pagado - AdminiRed{% endblock %}
 
 {% block content %}
-<div style="max-width: 800px; margin: 0 auto; padding: 2rem;">
-    <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid #e5e7eb;">
-            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                <i class="fas fa-check-circle" style="font-size: 2rem; color: white;"></i>
+<div class="section">
+    <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #10b981; margin-bottom: 1.5rem;"><i class="fas fa-check-circle"></i> Marcar como Pagado</h2>
+        
+        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 0.75rem;">
+                <strong>Cliente:</strong> {{ pago.cliente.nombre_completo }}
+            </div>
+            <div style="margin-bottom: 0.75rem;">
+                <strong>Concepto:</strong> {{ pago.concepto }}
+            </div>
+            <div style="margin-bottom: 0.75rem;">
+                <strong>Monto:</strong> ${{ pago.monto|floatformat:2 }}
             </div>
             <div>
-                <h2 style="margin: 0; color: #1f2937;">Registrar Pago Manual</h2>
-                <p style="margin: 0.25rem 0 0 0; color: #6b7280;">Complete los datos del pago realizado</p>
+                <strong>Fecha de Vencimiento:</strong> {{ pago.fecha_vencimiento|date:"d/m/Y" }}
             </div>
         </div>
         
-        <!-- Información del Pago -->
-        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border-left: 4px solid #10b981;">
-            <h3 style="margin: 0 0 1rem 0; color: #065f46; font-size: 1.1rem;">
-                <i class="fas fa-info-circle"></i> Información del Pago
-            </h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                <div>
-                    <strong style="color: #374151; display: block; margin-bottom: 0.25rem;">Cliente:</strong>
-                    <span style="color: #1f2937;">{{ pago.cliente.nombre_completo }}</span>
-                </div>
-                <div>
-                    <strong style="color: #374151; display: block; margin-bottom: 0.25rem;">Concepto:</strong>
-                    <span style="color: #1f2937;">{{ pago.concepto }}</span>
-                </div>
-                <div>
-                    <strong style="color: #374151; display: block; margin-bottom: 0.25rem;">Monto:</strong>
-                    <span style="color: #10b981; font-size: 1.25rem; font-weight: bold;">${{ pago.monto|floatformat:2 }}</span>
-                </div>
-                <div>
-                    <strong style="color: #374151; display: block; margin-bottom: 0.25rem;">Vencimiento:</strong>
-                    <span style="color: #1f2937;">{{ pago.fecha_vencimiento|date:"d/m/Y" }}</span>
-                    {% if pago.esta_vencido %}
-                        <br><small style="color: #ef4444; font-weight: 600;">{{ pago.dias_vencido }} día(s) vencido</small>
-                    {% endif %}
-                </div>
-                {% if pago.instalacion %}
-                <div>
-                    <strong style="color: #374151; display: block; margin-bottom: 0.25rem;">Instalación:</strong>
-                    <span style="color: #667eea; font-weight: 600;">{{ pago.instalacion.numero_contrato|default:"—" }}</span>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-        
-        <!-- Formulario -->
-        <form method="post" id="pagoForm">
+        <form method="post">
             {% csrf_token %}
             
-            <div style="margin-bottom: 2rem;">
-                <h3 style="margin: 0 0 1.5rem 0; color: #1f2937; font-size: 1.1rem;">
-                    <i class="fas fa-edit"></i> Datos del Pago
-                </h3>
-                
-                <div style="display: grid; gap: 1.5rem;">
-                    <!-- Método de Pago -->
-                    <div>
-                        <label for="{{ form.metodo_pago.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
-                            {{ form.metodo_pago.label }}
-                            <span style="color: #ef4444;">*</span>
-                        </label>
-                        {{ form.metodo_pago }}
-                        {% if form.metodo_pago.errors %}
-                            <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">
-                                {{ form.metodo_pago.errors }}
-                            </div>
-                        {% endif %}
-                        {% if form.metodo_pago.help_text %}
-                            <small style="color: #6b7280; font-size: 0.875rem; display: block; margin-top: 0.25rem;">
-                                {{ form.metodo_pago.help_text }}
-                            </small>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Referencia de Pago -->
-                    <div>
-                        <label for="{{ form.referencia_pago.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
-                            {{ form.referencia_pago.label }}
-                        </label>
-                        {{ form.referencia_pago }}
-                        {% if form.referencia_pago.errors %}
-                            <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">
-                                {{ form.referencia_pago.errors }}
-                            </div>
-                        {% endif %}
-                        {% if form.referencia_pago.help_text %}
-                            <small style="color: #6b7280; font-size: 0.875rem; display: block; margin-top: 0.25rem;">
-                                {{ form.referencia_pago.help_text }}
-                            </small>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Fecha y Hora de Pago -->
-                    <div>
-                        <label for="{{ form.fecha_pago.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
-                            {{ form.fecha_pago.label }}
-                            <span style="color: #ef4444;">*</span>
-                        </label>
-                        {{ form.fecha_pago }}
-                        {% if form.fecha_pago.errors %}
-                            <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">
-                                {{ form.fecha_pago.errors }}
-                            </div>
-                        {% endif %}
-                        {% if form.fecha_pago.help_text %}
-                            <small style="color: #6b7280; font-size: 0.875rem; display: block; margin-top: 0.25rem;">
-                                {{ form.fecha_pago.help_text }}
-                            </small>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Notas -->
-                    <div>
-                        <label for="{{ form.notas.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
-                            {{ form.notas.label }}
-                        </label>
-                        {{ form.notas }}
-                        {% if form.notas.errors %}
-                            <div style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem;">
-                                {{ form.notas.errors }}
-                            </div>
-                        {% endif %}
-                        {% if form.notas.help_text %}
-                            <small style="color: #6b7280; font-size: 0.875rem; display: block; margin-top: 0.25rem;">
-                                {{ form.notas.help_text }}
-                            </small>
-                        {% endif %}
-                    </div>
-                </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="metodo_pago">Método de Pago</label>
+                <select name="metodo_pago" id="metodo_pago" class="form-control">
+                    <option value="">Seleccionar método...</option>
+                    {% for metodo_code, metodo_name in metodos %}
+                        <option value="{{ metodo_code }}">{{ metodo_name }}</option>
+                    {% endfor %}
+                </select>
             </div>
             
-            <!-- Botones -->
-            <div style="display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1.5rem; border-top: 2px solid #e5e7eb;">
-                <a href="{% url 'pagos:pago_detail' pago.pk %}" class="btn btn-secondary" style="text-decoration: none;">
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="referencia_pago">Referencia de Pago (opcional)</label>
+                <input type="text" name="referencia_pago" id="referencia_pago" class="form-control" placeholder="Número de transacción, referencia bancaria, etc.">
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <a href="{% url 'pagos:pago_detail' pago.pk %}" class="btn btn-secondary">
                     <i class="fas fa-times"></i> Cancelar
                 </a>
-                <button type="submit" class="btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none;">
-                    <i class="fas fa-check-circle"></i> Registrar Pago
+                <button type="submit" class="btn" style="background: #10b981;">
+                    <i class="fas fa-check"></i> Marcar como Pagado
                 </button>
             </div>
         </form>
     </div>
 </div>
-
-<script>
-// Establecer fecha y hora actual si el campo está vacío
-document.addEventListener('DOMContentLoaded', function() {
-    const fechaPagoInput = document.getElementById('{{ form.fecha_pago.id_for_label }}');
-    if (fechaPagoInput && !fechaPagoInput.value) {
-        const now = new Date();
-        // Ajustar a zona horaria local
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        fechaPagoInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
-    }
-});
-</script>
 {% endblock %}
 
 

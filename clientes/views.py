@@ -3,7 +3,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.http import JsonResponse
 from .models import Cliente
 from .forms import ClienteForm
 
@@ -129,62 +128,10 @@ def cliente_delete(request, pk):
         nombre_completo = cliente.nombre_completo
         cliente.delete()
         messages.success(request, f'Cliente "{nombre_completo}" eliminado exitosamente.')
-        return redirect('clientes:cliente_list')
+        return redirect('cliente_list')
     
     context = {
         'cliente': cliente,
     }
     
     return render(request, 'clientes/cliente_confirm_delete.html', context)
-
-
-@login_required
-def cliente_verificar_duplicado(request):
-    """API para verificar si un campo (email, teléfono) ya existe en otro cliente."""
-    campo = request.GET.get('campo', '').strip()
-    valor = request.GET.get('valor', '').strip()
-    cliente_id = request.GET.get('cliente_id', '').strip()
-    
-    if not campo or not valor:
-        return JsonResponse({
-            'valido': False,
-            'mensaje': 'Campo y valor son requeridos'
-        })
-    
-    # Validar que el campo sea uno de los permitidos
-    campos_permitidos = ['email', 'telefono']
-    if campo not in campos_permitidos:
-        return JsonResponse({
-            'valido': False,
-            'mensaje': 'Campo no válido para verificación'
-        })
-    
-    # Construir el filtro
-    filtro = {campo: valor}
-    
-    # Si estamos editando un cliente, excluirlo de la búsqueda
-    if cliente_id:
-        try:
-            cliente_actual = Cliente.objects.get(pk=cliente_id)
-            clientes_duplicados = Cliente.objects.filter(**filtro).exclude(pk=cliente_id)
-        except Cliente.DoesNotExist:
-            clientes_duplicados = Cliente.objects.filter(**filtro)
-    else:
-        clientes_duplicados = Cliente.objects.filter(**filtro)
-    
-    if clientes_duplicados.exists():
-        cliente_dup = clientes_duplicados.first()
-        return JsonResponse({
-            'valido': False,
-            'mensaje': f'Ya existe un cliente con este {campo}: {cliente_dup.nombre_completo}',
-            'cliente_existente': {
-                'id': cliente_dup.pk,
-                'nombre': cliente_dup.nombre_completo,
-                'telefono': cliente_dup.telefono,
-            }
-        })
-    else:
-        return JsonResponse({
-            'valido': True,
-            'mensaje': f'{campo.capitalize()} disponible'
-        })
